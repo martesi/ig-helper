@@ -61,14 +61,15 @@ export var timer = setInterval(function () {
 
             // This is a delayed function call that prevents the dialog element from appearing before the function is called.
             var dialogTimer = setInterval(() => {
-                // body > div[id^="mount"] section nav + div > article << (mobile page in single post) >>
+                // article:visible a[href^="intent://instagram.com/p/"] << (mobile page in single post) >>
                 // section:visible > main > div > div > div > div > div > hr << (single foreground post in page, non-floating // <hr> element here is literally the line beneath poster's username) >>
                 // section:visible > main > div > div > article > div > div > div > div > div > header (is the same as above, except that this is on the route of the /{username}/p/{shortcode} structure)
                 // section:visible > main > div > div.xdt5ytf << (former CSS selector for single foreground post in page, non-floating) >>
                 // <hr> is much more unique element than "div.xdt5ytf"
                 if ($(`body > div[class]:not([id^="mount"]) div div[role="dialog"] article,
                             section:visible > main > div > div > div > div > div > hr,
-                            body > div[id^="mount"] section nav + div > article,
+                            article:visible a[href^="intent://instagram.com/p/"],
+                            article:visible a[href^="intent://instagram.com/reel/"],
                             section:visible > main > div > div > article > div > div > div > div > div > header
                         `).length > 0) {
                     clearInterval(dialogTimer);
