@@ -2012,6 +2012,7 @@
             return { $article: $(), postPath: null };
         }
 
+        const postLinkPattern = /(?:^\/|instagram\.com\/)(?:[^/?#]+\/)?(?:p|reel)\/([^/?#;]+)/i;
         const candidates = [];
         const pushHref = (href) => {
             if (typeof href === 'string' && href.trim().length > 0) {
@@ -2026,7 +2027,7 @@
 
         $article.find('a[role="link"][href], a[href]').each(function () {
             const href = $(this).attr('href') || '';
-            if (href.startsWith('/p/') || href.startsWith('/reel/') || href.match(/^\/[^/]+\/(p|reel)\//i)) {
+            if (postLinkPattern.test(href)) {
                 pushHref(href);
                 return false;
             }
@@ -2034,14 +2035,9 @@
 
         let postPath = null;
         for (const href of candidates) {
-            const parts = href.split('/').filter(Boolean);
-            const idx = parts.findIndex(p => p === 'p' || p === 'reel');
-            if (idx >= 0 && parts[idx + 1]) {
-                postPath = parts[idx + 1];
-                break;
-            }
-            if ((href.startsWith('/p/') || href.startsWith('/reel/')) && parts[1]) {
-                postPath = parts[1];
+            const match = href.match(postLinkPattern);
+            if (match?.[1]) {
+                postPath = match[1];
                 break;
             }
         }
