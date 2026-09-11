@@ -28,6 +28,15 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Upload userscript artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ig-helper
+          path: |
+            dist/ig-helper.user.js
+            dist/ig-helper.meta.js
+          if-no-files-found: error
+
       - name: Read package version
         id: version
         shell: bash
@@ -41,7 +50,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
-          gh release create "$TAG" dist/main.js \
+          gh release create "$TAG" \
+            dist/ig-helper.user.js \
+            dist/ig-helper.meta.js \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "$TAG" \

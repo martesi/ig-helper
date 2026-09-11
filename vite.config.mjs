@@ -32,10 +32,10 @@ export default {
                     'zh-CN': 'IG小助手',
                     'zh-TW': 'IG小精靈',
                 },
-                namespace: 'https://github.com/martesi/ig-helper/',
+                namespace: 'github.com/martesi',
                 version: packageJson.version,
-                updateURL: 'https://github.com/martesi/ig-helper/releases/latest/download/main.js',
-                downloadURL: 'https://github.com/martesi/ig-helper/releases/latest/download/main.js',
+                updateURL: 'https://github.com/martesi/ig-helper/releases/latest/download/ig-helper.meta.js',
+                downloadURL: 'https://github.com/martesi/ig-helper/releases/latest/download/ig-helper.user.js',
                 description: {
                     '': 'Download photos and videos from Instagram posts in one click, including Stories, Reels, and profile pictures.',
                     ar: 'نزّل صورًا ومقاطع فيديو من منشورات Instagram بنقرة واحدة، بما في ذلك القصص وReels وصور الملف الشخصي.',
@@ -91,7 +91,8 @@ export default {
             },
             build: {
                 autoGrant: false,
-                fileName: 'main.js',
+                fileName: 'ig-helper.user.js',
+                metaFileName: true,
                 externalGlobals: {
                     mediabunny: ['Mediabunny', mediabunnyUrl],
                     jquery: ['jQuery', jqueryUrl],
