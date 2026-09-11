@@ -8,9 +8,10 @@ import {
     setDownloadProgress,
     triggerReactClickHandler
 } from "../utils/general";
-import { getBlobMedia } from "../utils/api";
+import { getBlobMedia, getMediaInfo } from "../utils/api";
 import { _i18n } from "../utils/i18n";
 import { openImageViewer } from "../utils/image_viewer";
+import { mediaIdFromURL } from "../utils/image_cache";
 import { IG_createDM, IG_setDM } from "../utils/dialog";
 
 /**
@@ -467,7 +468,7 @@ export function registerPostClickHandlers() {
 
     // OPTIMIZATION: All body-level delegated handlers now use cached $body reference
     $body.on('click.igHelperPost', '.IG_IMAGE_VIEWER', function () {
-        const { $article } = getPostContextFromButton(this);
+        const $article = getPostContainerFromButton(this);
         let url = $article.data('igHelper_displayResourceURL');
 
         if (!url) {
@@ -488,7 +489,7 @@ export function registerPostClickHandlers() {
         updateLoadingBar(true);
 
         try {
-            const { $article, postPath } = getPostContextFromButton(this);
+            const { $article, postPath } = await getPostContextFromButton(this);
             if ($article.length === 0 || !postPath) {
                 alert('Cannot determine post path.');
                 return;
@@ -539,7 +540,7 @@ export function registerPostClickHandlers() {
         updateLoadingBar(true);
 
         try {
-            const { $article, postPath } = getPostContextFromButton(this);
+            const { $article, postPath } = await getPostContextFromButton(this);
             if ($article.length === 0 || !postPath) {
                 alert('Cannot determine post path.');
                 return;
@@ -595,7 +596,7 @@ export function registerPostClickHandlers() {
 
     $body.on('click.igHelperPost', '.IG_DW_ALL_MAIN', async function () {
         try {
-            const { $article, postPath } = getPostContextFromButton(this);
+            const { $article, postPath } = await getPostContextFromButton(this);
             if ($article.length === 0 || !postPath) {
                 alert('Cannot determine post path.');
                 return;
@@ -635,7 +636,7 @@ export function registerPostClickHandlers() {
 
     $body.on('click.igHelperPost', '.IG_DW_MAIN', async function () {
         try {
-            const { $article, postPath } = getPostContextFromButton(this);
+            const { $article, postPath } = await getPostContextFromButton(this);
             if ($article.length === 0 || !postPath) {
                 alert('Cannot determine post path.');
                 return;
@@ -1073,62 +1074,63 @@ export async function batchDownloadPostFiles($elements) {
 }
 
 
+const postLinkPattern = /(?:^\/|instagram\.com\/)(?:[^/?#]+\/)?(?:p|reel)\/([^/?#;]+)/i;
+
+function getPostContainerFromButton(target) {
+    return $(target).closest('[data-snig="canDownload"]');
+}
+
+function getPostPathFromURL(url) {
+    return url?.match(postLinkPattern)?.[1] || null;
+}
+
+async function getPostPathFromMedia(target) {
+    const $mediaRoot = $(target).closest('.button_wrapper').parent();
+    const mediaElement = $mediaRoot.find('img[src*="ig_cache_key="], video[poster*="ig_cache_key="]').first()[0];
+    const mediaURL = mediaElement?.currentSrc || mediaElement?.src || mediaElement?.poster;
+    const mediaId = mediaIdFromURL(mediaURL);
+    if (!mediaId) return null;
+
+    try {
+        const mediaItem = (await getMediaInfo(mediaId))?.items?.[0];
+        if (!mediaItem?.code) return null;
+        if (mediaItem.product_type !== 'carousel_item') return mediaItem.code;
+
+        const response = await fetch(`/p/${mediaItem.code}/`, { credentials: 'same-origin' });
+        return getPostPathFromURL(response.url) || mediaItem.code;
+    }
+    catch (err) {
+        logger('getPostPathFromMedia', err);
+        return null;
+    }
+}
+
 /**
  * getPostContextFromButton
  * @description Resolve the current post container and shortcode safely across
- * homepage, dialog, /p/, /reel/, and changing Instagram layouts.
+ * homepage, dialog, /p/, /reel/, and feed layouts without post permalinks.
  *
  * @param {HTMLElement|JQuery} target
- * @return {{ $article: JQuery<HTMLElement>, postPath: (string|null) }}
+ * @return {Promise<{ $article: JQuery<HTMLElement>, postPath: (string|null) }>}
  */
-export function getPostContextFromButton(target) {
-    const $article = $(target).closest('[data-snig="canDownload"], article, div[data-snig]');
+export async function getPostContextFromButton(target) {
+    const $article = getPostContainerFromButton(target);
     if ($article.length === 0) {
         return { $article: $(), postPath: null };
     }
 
-    const postLinkPattern = /(?:^\/|instagram\.com\/)(?:[^/?#]+\/)?(?:p|reel)\/([^/?#;]+)/i;
+    const cachedPath = $article.data('igHelper_postPath');
+    if (cachedPath) return { $article, postPath: cachedPath };
+
     const candidates = [];
-    const pushHref = (href) => {
-        if (typeof href === 'string' && href.trim().length > 0) {
-            candidates.push(href.trim());
-        }
-    };
-
-    pushHref($article.find('a[href^="/p/"]').first().attr('href'));
-    pushHref($article.find('a[href^="/reel/"]').first().attr('href'));
-    pushHref($article.find('a[href*="/p/"]').first().attr('href'));
-    pushHref($article.find('a[href*="/reel/"]').first().attr('href'));
-
-    $article.find('a[role="link"][href], a[href]').each(function () {
-        const href = $(this).attr('href') || '';
-        if (postLinkPattern.test(href)) {
-            pushHref(href);
-            return false;
-        }
+    $article.find('a[href]').each(function () {
+        const href = $(this).attr('href');
+        if (getPostPathFromURL(href)) candidates.push(href);
     });
 
-    let postPath = null;
-    for (const href of candidates) {
-        const match = href.match(postLinkPattern);
-        if (match?.[1]) {
-            postPath = match[1];
-            break;
-        }
-    }
-
-    if (!postPath) {
-        const pathParts = location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
-        if ((pathParts[0] === 'p' || pathParts[0] === 'reel') && pathParts[1]) {
-            postPath = pathParts[1];
-        }
-        else {
-            const routeIndex = pathParts.findIndex(p => p === 'p' || p === 'reel');
-            if (routeIndex >= 0 && pathParts[routeIndex + 1]) {
-                postPath = pathParts[routeIndex + 1];
-            }
-        }
-    }
+    let postPath = candidates.map(getPostPathFromURL).find(Boolean) || getPostPathFromURL(location.href);
+    if (!postPath) postPath = await getPostPathFromMedia(target);
+    if (postPath) $article.data('igHelper_postPath', postPath);
 
     return { $article, postPath };
 }
