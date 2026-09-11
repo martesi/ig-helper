@@ -306,6 +306,16 @@ export function createDownloadButton() {
 
                 if ($resourceLayout.length === 0) return;
 
+                if (window.matchMedia('(hover: hover)').matches && !$mainElement.data('igHelper_controlsRequested')) {
+                    $mainElement.attr('data-snig', 'canDownload');
+                    $mainElement.off('pointerenter.igHelperPostControls').one('pointerenter.igHelperPostControls', function () {
+                        $mainElement.data('igHelper_controlsRequested', true);
+                        $mainElement.removeAttr('data-snig');
+                        createDownloadButton();
+                    });
+                    return;
+                }
+
                 $resourceLayout.append(`<div class="button_wrapper">`);
 
                 // Add icons
