@@ -1,6 +1,3 @@
-
-/*! ESLINT IMPORT END !*/
-
 const DB_NAME = 'IG_HELPER';
 const DB_VERSION = 1;
 const STORE_NAME = 'DATA_CACHE';

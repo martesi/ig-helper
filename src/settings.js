@@ -1,5 +1,5 @@
+import $ from 'jquery';
 import { onReadyMyDW } from "./functions/post";
-/*! ESLINT IMPORT END !*/
 
 /******** USER SETTINGS ********/
 // !!! DO NOT CHANGE THIS AREA !!!

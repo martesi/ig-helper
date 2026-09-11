@@ -1,3 +1,4 @@
+import $ from 'jquery';
 import { USER_SETTING, SVG, state } from "../settings";
 import {
     updateLoadingBar, openNewTab, logger,
@@ -11,7 +12,6 @@ import { getHighlightStories, getMediaInfo } from "../utils/api";
 import { createStoryListDOM } from "./story";
 import { getImageFromCache } from "../utils/image_cache";
 import { IG_createDM } from "../utils/dialog";
-/*! ESLINT IMPORT END !*/
 
 /**
  * getHighlightsStoryUsername

@@ -1,3 +1,4 @@
+import $ from 'jquery';
 import { USER_SETTING, SVG, state } from "../settings";
 import {
     updateLoadingBar, setDownloadProgress,
@@ -12,7 +13,6 @@ import { getUserId, getStories, getMediaInfo } from "../utils/api";
 import { _i18n } from "../utils/i18n";
 import { getImageFromCache } from "../utils/image_cache";
 import { IG_createDM } from "../utils/dialog";
-/*! ESLINT IMPORT END !*/
 
 /**
  * createStoryListDOM

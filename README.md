@@ -66,25 +66,33 @@ cd ig-helper
 ```
 npm install
 ```
-3. Build the script:
+3. Start the Vite development server:
 ```
-node build.js
+npm run dev
 ```
-Install the generated main.js file in your userscript manager.
+Install the development userscript offered by vite-plugin-monkey for live development.
+
+4. Build the release script:
+```
+npm run build
+```
+Install the generated `dist/main.js` file in your userscript manager.
+
+For a GitHub release, run the **Publish Release** workflow manually. It builds `dist/main.js`, derives the release tag from its `@version`, and uploads the userscript as a release asset.
 
 ### Contribution Workflow
 
 #### Development Process
 1. **Fork & Clone**: Fork the repository and clone it locally
 2. **Branch**: Create a feature branch
-3. **Develop**: Make changes to the source files
-4. **Build**: Run node build.js to generate the `main.js` file
+3. **Develop**: Run `npm run dev` and make changes to the source files
+4. **Build**: Run `npm run build` to generate `dist/main.js`
 5. **Test**: Install the script in your userscript manager and test your changes
 6. **Submit**: Create a pull request
 
 #### Code Standards
 - Follow the existing code style
-- Use ESLint to ensure code quality: `npx eslint main.js`
+- Use ESLint to ensure code quality: `npx eslint src vite.config.mjs`
 - Document new functions and features
 
 ## Contributiner

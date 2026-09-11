@@ -1,3 +1,4 @@
+import $ from 'jquery';
 import { USER_SETTING, SVG, state, $body, resourceCountSelector } from "../settings";
 import {
     updateLoadingBar, openNewTab, logger,
@@ -11,7 +12,6 @@ import { getBlobMedia } from "../utils/api";
 import { _i18n } from "../utils/i18n";
 import { openImageViewer } from "../utils/image_viewer";
 import { IG_createDM, IG_setDM } from "../utils/dialog";
-/*! ESLINT IMPORT END !*/
 
 /**
  * onReadyMyDW

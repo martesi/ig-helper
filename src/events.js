@@ -1,3 +1,4 @@
+import $ from 'jquery';
 import { state, USER_SETTING, $body } from "./settings";
 import {
     reloadScript,
@@ -13,7 +14,6 @@ import { _i18n, getTranslationText, repaintingTranslations } from "./utils/i18n"
 import { getImageFromCache, registerPerformanceObserver } from "./utils/image_cache";
 import { batchDownloadPostFiles } from "./functions/post";
 import { registerMenuCommand, showDebugDOM, showHotkeySetting, showSetting } from "./utils/dialog";
-/*! ESLINT IMPORT END !*/
 
 // Running if document is ready
 $(function () {
@@ -36,7 +36,7 @@ $(function () {
         state.GL_logger.forEach(log => {
             var jsonData = JSON.stringify(log.content, function (key, value) {
                 if (Array.isArray(this)) {
-                    if (typeof value === "object" && value instanceof jQuery) {
+                    if (typeof value === "object" && value instanceof $) {
                         return ConvertDOM(value);
                     }
                     return value;

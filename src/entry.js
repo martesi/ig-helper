@@ -1,30 +1,3 @@
-FS_IMPORT('./metadata.js');
-
-// eslint-disable-next-line no-unused-vars
-(function ($, Mediabunny) {
-    'use strict';
-
-    /* initial */
-    FS_IMPORT('./settings.js');
-    FS_IMPORT('./initial.js');
-    FS_IMPORT('./timer.js');
-
-    /* Main functions */
-    FS_IMPORT('./functions/highlight.js');
-    FS_IMPORT('./functions/post.js');
-    FS_IMPORT('./functions/profile.js');
-    FS_IMPORT('./functions/reel.js');
-    FS_IMPORT('./functions/story.js');
-
-    /* utils */
-    FS_IMPORT('./utils/indexedDB.js');
-    FS_IMPORT('./utils/api.js');
-    FS_IMPORT('./utils/general.js');
-    FS_IMPORT('./utils/dialog.js');
-    FS_IMPORT('./utils/image_viewer.js');
-    FS_IMPORT('./utils/image_cache.js');
-    FS_IMPORT('./utils/i18n.js');
-
-    /* register all events */
-    FS_IMPORT('./events.js');
-})(jQuery, Mediabunny);
+import './initial.js';
+import './timer.js';
+import './events.js';

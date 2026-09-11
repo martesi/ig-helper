@@ -1,9 +1,9 @@
+import $ from 'jquery';
 import { USER_SETTING, SVG, state } from "../settings";
 import { updateLoadingBar, saveFiles, openNewTab, logger, toggleVolumeSilder, triggerReactClickHandler } from "../utils/general";
 import { getBlobMedia } from "../utils/api";
 import { filterResourceData } from "./post";
 import { _i18n } from "../utils/i18n";
-/*! ESLINT IMPORT END !*/
 
 /**
  * onReels

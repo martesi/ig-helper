@@ -1,5 +1,5 @@
+import $ from 'jquery';
 import { $body, SVG } from "../settings";
-/*! ESLINT IMPORT END !*/
 
 var detectMovingViewerTimer = null;
 

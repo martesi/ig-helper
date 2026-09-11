@@ -1,6 +1,6 @@
+import $ from 'jquery';
 import { state } from "../settings";
 import { logger } from "./general";
-/*! ESLINT IMPORT END !*/
 
 /**
  * translateText

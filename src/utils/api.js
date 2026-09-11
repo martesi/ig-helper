@@ -1,6 +1,5 @@
 import { userIdCache } from "../settings";
 import { logger, getAppID, updateLoadingBar } from "./general";
-/*! ESLINT IMPORT END !*/
 
 /**
  * getHighlightStories
@@ -107,7 +106,6 @@ export function getUserId(username) {
                         getUserIdWithAgent(username).then((result) => {
                             userIdCache.set(username, result);
                             resolve(result);
-                        // eslint-disable-next-line no-unused-vars
                         }).catch((err) => {
                             userIdCache.delete(username);
                             logger('getUserId()', 'fallback reject', err);

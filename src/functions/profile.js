@@ -1,8 +1,8 @@
+import $ from 'jquery';
 import { SVG, USER_SETTING } from "../settings";
 import { updateLoadingBar, saveFiles, logger } from "../utils/general";
 import { _i18n } from "../utils/i18n";
 import { getUserId, getUserHighSizeProfile } from "../utils/api";
-/*! ESLINT IMPORT END !*/
 
 /**
  * onProfileAvatar

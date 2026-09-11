@@ -1,3 +1,4 @@
+import $ from 'jquery';
 import { state, checkInterval, USER_SETTING } from "./settings";
 import { logger, checkingScriptUpdate } from "./utils/general";
 import { onReadyMyDW } from "./functions/post";
@@ -5,10 +6,8 @@ import { onReels } from "./functions/reel";
 import { onProfileAvatar, skipSharedWithYouDialog } from "./functions/profile";
 import { onHighlightsStory, onHighlightsStoryThumbnail } from "./functions/highlight";
 import { onStory } from "./functions/story";
-/*! ESLINT IMPORT END !*/
 
 // Main Timer
-// eslint-disable-next-line no-unused-vars
 export var timer = setInterval(function () {
     // page loading or unnecessary route
     if ($('div#splash-screen').length > 0 && !$('div#splash-screen').is(':hidden') ||

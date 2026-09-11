@@ -1,7 +1,7 @@
+import $ from 'jquery';
 import { locale_manifest, PARENT_CHILD_MAPPING, state, SVG, USER_SETTING, $body } from "../settings";
 import { callNotification, getPlatformModifierKey, logger, reloadScript } from "./general";
 import { _i18n } from "./i18n";
-/*! ESLINT IMPORT END !*/
 
 /**
  * IG_createDM

@@ -5,7 +5,7 @@ import importPlugin from "eslint-plugin-import";
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
-    files: ["**/*.js"],
+    files: ["**/*.{js,mjs}"],
     plugins: {
       import: importPlugin,
     },
@@ -14,9 +14,6 @@ export default [
       globals: {
         // **
         ...globals.browser,
-        $: 'readonly',
-        jQuery: 'readonly',
-        Mediabunny: 'readonly',
         GM_info: 'readable',
         GM_addStyle: 'readable',
         GM_setValue: 'readable',
@@ -28,8 +25,7 @@ export default [
         GM_notification: 'readable',
         GM_openInTab: 'readable',
         GM_getResourceURL: 'readable',
-        GM_download: 'readable',
-        FS_IMPORT: 'readable'
+        GM_download: 'readable'
       }
     },
     rules: {
@@ -37,16 +33,6 @@ export default [
       "import/named": "error",
       "import/no-duplicates": "warn",
     },
-  },
-  {
-    files: ["build.js"],
-    languageOptions: {
-      sourceType: "commonjs",
-      globals: {
-        ...globals.browser,
-        ...globals.node
-      }
-    }
   },
   pluginJs.configs.recommended,
 ];

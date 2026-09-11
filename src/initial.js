@@ -4,7 +4,6 @@ import { style, state } from "./settings";
 import { purgeCache } from "./utils/image_cache";
 import { registerMenuCommand } from "./utils/dialog";
 import { registerPostClickHandlers } from "./functions/post";
-/*! ESLINT IMPORT END !*/
 
 // initialization script
 initSettings();
