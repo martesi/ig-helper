@@ -244,7 +244,7 @@ export function createDownloadButton() {
         return $(this).is('section:visible > main > div > div > div > div > div > hr') ? $(this).parent().parent().parent().parent()[0] : this;
     }).filter(function () {
         const $this = $(this);
-        return $this.height() > 0 && $this.width() > 0
+        return document.hidden || ($this.height() > 0 && $this.width() > 0);
     })
         .each(function (index) {
             // OPTIMIZATION: cache $(this) — referenced 8+ times in this each() body
@@ -297,6 +297,8 @@ export function createDownloadButton() {
                     if ($candidate.find('video').length > 0) return true;
 
                     return $candidate.find('img').filter(function () {
+                        if (this.style.objectFit) return true;
+
                         const rect = this.getBoundingClientRect();
                         return rect.width > 64 && rect.height > 64;
                     }).length > 0;

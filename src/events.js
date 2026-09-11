@@ -12,7 +12,7 @@ import { onHighlightsStory, onHighlightsStoryAll, onHighlightsStoryThumbnail } f
 import { onReels } from "./functions/reel";
 import { _i18n, getTranslationText, repaintingTranslations } from "./utils/i18n";
 import { getImageFromCache, registerPerformanceObserver } from "./utils/image_cache";
-import { batchDownloadPostFiles } from "./functions/post";
+import { batchDownloadPostFiles, createDownloadButton } from "./functions/post";
 import { registerMenuCommand, showDebugDOM, showHotkeySetting, showSetting } from "./utils/dialog";
 
 // Running if document is ready
@@ -440,6 +440,11 @@ $(function () {
     registerPerformanceObserver();
 
     const element_observer = new MutationObserver((mutationsList) => {
+        const hasPostMutation = location.pathname === '/' && mutationsList.some((mutation) =>
+            mutation.target.closest?.('article') ||
+            [...mutation.addedNodes].some((node) => node.matches?.('article') || node.querySelector?.('article'))
+        );
+
         for (const mutation of mutationsList) {
             if (mutation.type === 'childList') {
                 mutation.addedNodes.forEach((node) => {
@@ -627,6 +632,8 @@ $(function () {
                 });
             }
         }
+
+        if (hasPostMutation) createDownloadButton();
     });
 
     (function installElementObserver(attempts) {
