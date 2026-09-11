@@ -1,6 +1,6 @@
 import $ from 'jquery';
 import { state, checkInterval, USER_SETTING } from "./settings";
-import { logger, checkingScriptUpdate } from "./utils/general";
+import { logger } from "./utils/general";
 import { onReadyMyDW } from "./functions/post";
 import { onReels } from "./functions/reel";
 import { onProfileAvatar, skipSharedWithYouDialog } from "./functions/profile";
@@ -203,7 +203,6 @@ export var timer = setInterval(function () {
             }
         }
 
-        checkingScriptUpdate(300);
         state.GL_referrer = new URL(location.href).pathname;
     }
 }, checkInterval);

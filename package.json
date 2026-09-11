@@ -1,6 +1,7 @@
 {
   "name": "ig-helper",
-  "version": "1.0.0",
+  "version": "4.2.1",
+  "packageManager": "bun@1.3.13",
   "description": "Simple and fast download of resources from Instagram (posts, reels, stories, and more).",
   "private": true,
   "author": "SN-Koarashi",

@@ -1,7 +1,4 @@
 {
-    "NOTICE_UPDATE_TITLE": "Wololo! Nuova versione rilasciata.",
-    "NOTICE_UPDATE_CONTENT": "IG-Helper ha rilasciato una nuova versione, clicca qui per aggiornare.",
-    "CHECK_FOR_UPDATE": "Controlla aggiornamenti dello script",
     "RELOAD_SCRIPT": "Ricarica script",
     "DONATE": "Dona",
     "FEEDBACK": "Feedback",
@@ -89,7 +86,6 @@
     "PREFER_DASH_MANIFEST_INTRO": "Preferisci il manifest DASH per le risorse video tramite la Media API. Se è disponibile un manifest DASH, il video e l'audio verranno scaricati SEPARATAMENTE per ottenere la migliore qualità possibile.",
     "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "Quando la Media API raggiunge il limite di richieste o non può essere usata per altri motivi, verrà usata la Forced Fetch API per scaricare le risorse (la qualità della risorsa potrebbe essere leggermente inferiore).",
     "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "Il pulsante [Apri in una nuova scheda] nei post userà sempre la Media API per ottenere risorse ad alta risoluzione.",
-    "CHECK_FOR_UPDATE_INTRO": "Controlla gli aggiornamenti quando lo script viene attivato (controllo ogni 300 secondi).\nLe notifiche di aggiornamento verranno inviate come notifiche desktop tramite il browser.",
     "SKIP_VIEW_STORY_CONFIRM_INTRO": "Salta automaticamente la pagina di conferma quando viene mostrata in una storia o in un contenuto in evidenza.",
     "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "Clicca automaticamente su \"Non ora\" nella finestra di dialogo \"X ha condiviso con te\" quando apri qualsiasi link ?igsh=.",
     "MODIFY_RESOURCE_EXIF_INTRO": "Modifica gli attributi EXIF della risorsa immagine per includere metadati come il link del post, la data dello scatto e l'autore.",

@@ -1,7 +1,4 @@
 {
-    "NOTICE_UPDATE_TITLE": "Wololo! O nouă versiune a fost lansată.",
-    "NOTICE_UPDATE_CONTENT": "IG-Helper a lansat o nouă versiune, dă clic aici pentru a actualiza.",
-    "CHECK_FOR_UPDATE": "Caută actualizări pentru script",
     "RELOAD_SCRIPT": "Reîncarcă scriptul",
     "DONATE": "Donează",
     "FEEDBACK": "Feedback",
@@ -89,7 +86,6 @@
     "PREFER_DASH_MANIFEST_INTRO": "Preferă manifestul DASH pentru resursele video prin Media API. Dacă este disponibil un manifest DASH, va descărca fluxurile video și audio SEPARAT pentru cea mai bună calitate posibilă.",
     "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "Când Media API atinge limita de rată sau nu poate fi folosit din alte motive, Forced Fetch API va fi folosit pentru a descărca resursele (calitatea resurselor poate fi puțin mai scăzută).",
     "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "Butonul [Deschide într-o filă nouă] din postări va folosi întotdeauna Media API pentru a obține resurse la rezoluție înaltă.",
-    "CHECK_FOR_UPDATE_INTRO": "Caută actualizări atunci când scriptul este declanșat (verifică la fiecare 300 de secunde).\nNotificările pentru actualizare vor fi trimise ca notificări desktop prin intermediul browserului.",
     "SKIP_VIEW_STORY_CONFIRM_INTRO": "Omite automat atunci când pagina de confirmare este afișată într-un story sau highlight.",
     "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "Dă clic automat pe „Nu acum” în caseta de dialog „X a partajat asta cu tine” când se deschide orice link ?igsh=.",
     "MODIFY_RESOURCE_EXIF_INTRO": "Modifică atributele EXIF ale resurselor de tip imagine pentru a include metadate precum linkul postării, data capturării și autorul.",

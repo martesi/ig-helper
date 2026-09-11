@@ -1,4 +1,4 @@
-import { initSettings, checkingScriptUpdate, logger } from "./utils/general";
+import { initSettings, logger } from "./utils/general";
 import { getTranslationText, repaintingTranslations } from "./utils/i18n";
 import { state } from "./settings";
 import { purgeCache } from "./utils/image_cache";
@@ -13,10 +13,8 @@ getTranslationText(state.lang).then((res) => {
     state.locale[state.lang] = res;
     repaintingTranslations();
     registerMenuCommand();
-    checkingScriptUpdate(300);
 }).catch((err) => {
     registerMenuCommand();
-    checkingScriptUpdate(300);
 
     if (!state.lang.startsWith('en')) {
         console.error('getTranslationText catch error:', err);

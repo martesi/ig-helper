@@ -1,7 +1,4 @@
 {
-    "NOTICE_UPDATE_TITLE": "Wololo! Eine neue Version wurde veröffentlicht.",
-    "NOTICE_UPDATE_CONTENT": "IG-Helper hat eine neue Version veröffentlicht, klicke hier, um zu aktualisieren.",
-    "CHECK_FOR_UPDATE": "Nach Skript-Updates suchen",
     "RELOAD_SCRIPT": "Skript neu laden",
     "DONATE": "Spenden",
     "FEEDBACK": "Feedback",
@@ -89,7 +86,6 @@
     "PREFER_DASH_MANIFEST_INTRO": "Bevorzugt das DASH-Manifest für Videoressourcen über die Media API. Wenn ein DASH-Manifest verfügbar ist, werden die Video- und Audiostreams SEPARAT heruntergeladen, um die bestmögliche Qualität zu erhalten.",
     "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "Wenn die Media API ihre Ratenbegrenzung erreicht oder aus anderen Gründen nicht verwendet werden kann, wird die Forced Fetch API zum Herunterladen der Ressourcen verwendet (die Ressourcenqualität kann etwas niedriger sein).",
     "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "Die Schaltfläche [In neuem Tab öffnen] in Beiträgen verwendet immer die Media API, um hochauflösende Ressourcen zu erhalten.",
-    "CHECK_FOR_UPDATE_INTRO": "Sucht nach Updates, wenn das Skript ausgelöst wird (Überprüfung alle 300 Sekunden).\nUpdate-Benachrichtigungen werden als Desktopbenachrichtigungen über den Browser gesendet.",
     "SKIP_VIEW_STORY_CONFIRM_INTRO": "Überspringt automatisch, wenn die Bestätigungsseite in einer Story oder einem Highlight angezeigt wird.",
     "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "Klickt beim Öffnen beliebiger ?igsh=-Links automatisch auf „Jetzt nicht“ im Dialog „X hat dies mit dir geteilt“.",
     "MODIFY_RESOURCE_EXIF_INTRO": "Ändert die EXIF-Attribute der Bildressource, um Metadaten wie Beitragslink, Aufnahmedatum und Autor einzuschließen.",

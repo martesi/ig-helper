@@ -1,7 +1,4 @@
 {
-    "NOTICE_UPDATE_TITLE": "Wololo! 새 버전이 출시되었습니다.",
-    "NOTICE_UPDATE_CONTENT": "IG-Helper의 새 버전이 출시되었습니다. 업데이트하려면 여기를 클릭하세요.",
-    "CHECK_FOR_UPDATE": "스크립트 업데이트 확인",
     "RELOAD_SCRIPT": "스크립트 다시 불러오기",
     "DONATE": "기부",
     "FEEDBACK": "피드백",
@@ -89,7 +86,6 @@
     "PREFER_DASH_MANIFEST_INTRO": "Media API를 통한 동영상 리소스에 DASH 매니페스트를 우선 사용합니다. DASH 매니페스트를 사용할 수 있으면 최상의 품질을 위해 동영상과 오디오 스트림을 별도로 다운로드합니다.",
     "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "Media API가 속도 제한에 도달했거나 다른 이유로 사용할 수 없는 경우, Forced Fetch API를 사용하여 리소스를 다운로드합니다(리소스 품질이 약간 낮을 수 있음).",
     "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "게시물의 [새 탭에서 열기] 버튼은 고해상도 리소스를 가져오기 위해 항상 Media API를 사용합니다.",
-    "CHECK_FOR_UPDATE_INTRO": "스크립트가 트리거될 때 업데이트를 확인합니다(300초마다 확인).\n업데이트 알림은 브라우저를 통해 데스크톱 알림으로 전송됩니다.",
     "SKIP_VIEW_STORY_CONFIRM_INTRO": "스토리 또는 하이라이트에서 확인 페이지가 표시되면 자동으로 건너뜁니다.",
     "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "?igsh= 링크를 열 때 “X님이 회원님과 공유했습니다” 대화 상자에서 “나중에”를 자동으로 클릭합니다.",
     "MODIFY_RESOURCE_EXIF_INTRO": "이미지 리소스의 EXIF 속성을 수정하여 게시물 링크, 촬영 날짜, 작성자 등의 메타데이터를 포함합니다.",

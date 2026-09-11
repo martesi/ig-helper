@@ -1,7 +1,4 @@
 {
-    "NOTICE_UPDATE_TITLE": "Wololo！新しいバージョンがリリースされました。",
-    "NOTICE_UPDATE_CONTENT": "IG-Helper の新しいバージョンがリリースされました。ここをクリックして更新してください。",
-    "CHECK_FOR_UPDATE": "スクリプトの更新を確認",
     "RELOAD_SCRIPT": "スクリプトを再読み込み",
     "DONATE": "寄付",
     "FEEDBACK": "フィードバック",
@@ -89,7 +86,6 @@
     "PREFER_DASH_MANIFEST_INTRO": "Media API 経由の動画リソースでは DASH マニフェストを優先します。DASH マニフェストが利用可能な場合、最高品質を得るために動画ストリームと音声ストリームを別々にダウンロードします。",
     "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "Media API がレート制限に達した場合、またはその他の理由で使用できない場合、Forced Fetch API を使用してリソースをダウンロードします（リソースの品質はやや低くなる場合があります）。",
     "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "投稿内の「新しいタブで開く」ボタンは、高解像度リソースを取得するために常に Media API を使用します。",
-    "CHECK_FOR_UPDATE_INTRO": "スクリプトがトリガーされたときに更新を確認します（300 秒ごとに確認）。\n更新通知はブラウザーを通じてデスクトップ通知として送信されます。",
     "SKIP_VIEW_STORY_CONFIRM_INTRO": "ストーリーまたはハイライトで確認ページが表示された場合、自動的にスキップします。",
     "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "?igsh= リンクを開いたとき、「X があなたとこれを共有しました」ダイアログで「後で」を自動的にクリックします。",
     "MODIFY_RESOURCE_EXIF_INTRO": "画像リソースの EXIF 属性を変更し、投稿リンク、撮影日、作成者などのメタデータを含めます。",

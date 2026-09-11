@@ -1,7 +1,4 @@
 {
-    "NOTICE_UPDATE_TITLE": "Wololo! Đã phát hành phiên bản mới.",
-    "NOTICE_UPDATE_CONTENT": "IG-Helper đã phát hành phiên bản mới, nhấp vào đây để cập nhật.",
-    "CHECK_FOR_UPDATE": "Kiểm tra cập nhật script",
     "RELOAD_SCRIPT": "Tải lại script",
     "DONATE": "Quyên góp",
     "FEEDBACK": "Phản hồi",
@@ -89,7 +86,6 @@
     "PREFER_DASH_MANIFEST_INTRO": "Ưu tiên DASH Manifest cho tài nguyên video qua Media API. Nếu có DASH Manifest, luồng video và âm thanh sẽ được tải xuống RIÊNG BIỆT để đạt chất lượng tốt nhất có thể.",
     "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "Khi Media API đạt giới hạn tốc độ hoặc không thể dùng vì lý do khác, Forced Fetch API sẽ được dùng để tải xuống tài nguyên (chất lượng tài nguyên có thể thấp hơn một chút).",
     "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "Nút「Mở trong thẻ mới」trong bài viết sẽ luôn dùng Media API để lấy tài nguyên có độ phân giải cao.",
-    "CHECK_FOR_UPDATE_INTRO": "Kiểm tra cập nhật khi script được kích hoạt (kiểm tra mỗi 300 giây).\nThông báo cập nhật sẽ được gửi dưới dạng thông báo trên màn hình nền qua trình duyệt.",
     "SKIP_VIEW_STORY_CONFIRM_INTRO": "Tự động bỏ qua khi trang xác nhận được hiển thị trong tin hoặc tin nổi bật.",
     "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "Tự động nhấp vào “Không phải bây giờ” trong hộp thoại “X đã chia sẻ nội dung này với bạn” khi mở bất kỳ liên kết ?igsh= nào.",
     "MODIFY_RESOURCE_EXIF_INTRO": "Sửa đổi thuộc tính EXIF của tài nguyên hình ảnh để bao gồm siêu dữ liệu như liên kết bài viết, ngày chụp và tác giả.",

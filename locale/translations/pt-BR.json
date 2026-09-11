@@ -1,7 +1,4 @@
 {
-    "NOTICE_UPDATE_TITLE": "Wololo! Nova versão lançada.",
-    "NOTICE_UPDATE_CONTENT": "IG-Helper lançou uma nova versão, clique aqui para atualizar.",
-    "CHECK_FOR_UPDATE": "Verificar atualizações do script",
     "RELOAD_SCRIPT": "Recarregar script",
     "DONATE": "Doar",
     "FEEDBACK": "Feedback",
@@ -89,7 +86,6 @@
     "PREFER_DASH_MANIFEST_INTRO": "Dar preferência ao manifesto DASH para recursos de vídeo via API de Mídia. Se um manifesto DASH estiver disponível, ele baixará os fluxos de vídeo e áudio SEPARADAMENTE para obter a melhor qualidade possível.",
     "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "Quando a API de Mídia atingir seu limite de requisições ou não puder ser usada por outros motivos, a API de Busca Forçada será usada para baixar recursos (a qualidade do recurso pode ser um pouco menor).",
     "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "O botão [Abrir em nova aba] nas publicações sempre usará a API de Mídia para obter recursos de alta resolução.",
-    "CHECK_FOR_UPDATE_INTRO": "Verificar atualizações quando o script for acionado (verifica a cada 300 segundos).\nAs notificações de atualização serão enviadas como notificações da área de trabalho pelo navegador.",
     "SKIP_VIEW_STORY_CONFIRM_INTRO": "Pular automaticamente quando a página de confirmação for exibida na story ou no destaque.",
     "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "Ao abrir qualquer link ?igsh=, clica automaticamente em \"Agora não\" na caixa de diálogo \"X compartilhou isso com você\".",
     "MODIFY_RESOURCE_EXIF_INTRO": "Modificar os atributos EXIF do recurso de imagem para incluir metadados como link da publicação, data de captura e autor.",

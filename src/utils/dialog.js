@@ -1,6 +1,6 @@
 import $ from 'jquery';
 import { locale_manifest, PARENT_CHILD_MAPPING, state, SVG, USER_SETTING, $body } from "../settings";
-import { callNotification, getPlatformModifierKey, logger, reloadScript } from "./general";
+import { getPlatformModifierKey, logger, reloadScript } from "./general";
 import { _i18n } from "./i18n";
 
 /**
@@ -87,12 +87,6 @@ export function registerMenuCommand() {
         showFeedbackDOM();
     }, {
         accessKey: "f"
-    }));
-
-    state.registerMenuIds.push(GM_registerMenuCommand(_i18n('CHECK_FOR_UPDATE'), () => {
-        callNotification();
-    }, {
-        accessKey: "c"
     }));
 
     state.registerMenuIds.push(GM_registerMenuCommand(_i18n('RELOAD_SCRIPT'), () => {
@@ -272,8 +266,6 @@ export function showSetting() {
             });
         }
     }
-
-    $('.IG_POPUP_DIG .IG_POPUP_DIG_BODY input#CHECK_FOR_UPDATE').closest('label').prependTo('.IG_POPUP_DIG .IG_POPUP_DIG_BODY');
 
     arrangeSettingHierarchy();
 }

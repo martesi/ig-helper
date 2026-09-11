@@ -1,7 +1,4 @@
 {
-    "NOTICE_UPDATE_TITLE": "嗚嚕嚕！新版本已發布。",
-    "NOTICE_UPDATE_CONTENT": "IG小精靈已發布新版本，點擊這裡以更新。",
-    "CHECK_FOR_UPDATE": "檢查腳本更新",
     "RELOAD_SCRIPT": "重新載入腳本",
     "DONATE": "贊助",
     "FEEDBACK": "意見回饋",
@@ -89,7 +86,6 @@
     "PREFER_DASH_MANIFEST_INTRO": "透過 Media API 優先使用 DASH 清單作為影片資源。如果有可用的 DASH 清單，將會分別下載影片與音訊串流，以取得最佳品質。",
     "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "當 Media API 達到速率限制，或因其他原因無法使用時，將使用強制擷取 API 下載資源（資源品質可能略低）。",
     "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "貼文中的「在新分頁中開啟」按鈕將一律使用 Media API 取得高解析度資源。",
-    "CHECK_FOR_UPDATE_INTRO": "當腳本被觸發時檢查更新（每 300 秒檢查一次）。\n更新通知將透過瀏覽器以桌面通知傳送。",
     "SKIP_VIEW_STORY_CONFIRM_INTRO": "在限時動態或精選動態中顯示確認頁面時，自動略過。",
     "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "開啟任何 ?igsh= 連結時，在「X 已與您分享此內容」對話框中自動點擊「現在不要」。",
     "MODIFY_RESOURCE_EXIF_INTRO": "修改圖片資源的 EXIF 屬性，以包含貼文連結、拍攝日期和作者等中繼資料。",

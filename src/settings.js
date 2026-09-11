@@ -7,7 +7,6 @@ import { onReadyMyDW } from "./functions/post";
 export const USER_SETTING = {
     'AUTO_RENAME': true,
     'CAPTURE_IMAGE_VIA_MEDIA_CACHE': true,
-    'CHECK_FOR_UPDATE': true,
     'DIRECT_DOWNLOAD_ALL': false,
     'DIRECT_DOWNLOAD_STORY': false,
     'DIRECT_DOWNLOAD_VISIBLE_RESOURCE': false,

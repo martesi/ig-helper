@@ -1,7 +1,4 @@
 {
-    "NOTICE_UPDATE_TITLE": "呜噜噜！新版本已发布。",
-    "NOTICE_UPDATE_CONTENT": "IG小助手已发布新版本，点击此处更新。",
-    "CHECK_FOR_UPDATE": "检查脚本更新",
     "RELOAD_SCRIPT": "重新加载脚本",
     "DONATE": "捐款",
     "FEEDBACK": "反馈",
@@ -89,7 +86,6 @@
     "PREFER_DASH_MANIFEST_INTRO": "通过 Media API 优先使用视频资源的 DASH 清单。如果 DASH 清单可用，将分别下载视频流和音频流，以获得尽可能最佳的质量。",
     "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "当 Media API 达到速率限制或因其他原因无法使用时，将使用 Forced Fetch API 下载资源（资源质量可能会略低）。",
     "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "帖子中的「在新选项卡中打开」按钮将始终使用 Media API 获取高分辨率资源。",
-    "CHECK_FOR_UPDATE_INTRO": "脚本触发时检查更新（每 300 秒检查一次）。\n更新通知将通过浏览器以桌面通知的形式发送。",
     "SKIP_VIEW_STORY_CONFIRM_INTRO": "当快拍或精选中显示确认页面时自动跳过。",
     "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "打开任何 ?igsh= 链接时，在“X 已与你分享此内容”对话框中自动点击“不用了”。",
     "MODIFY_RESOURCE_EXIF_INTRO": "修改图片资源的 EXIF 属性，以包含帖子链接、拍摄日期和作者等元数据。",

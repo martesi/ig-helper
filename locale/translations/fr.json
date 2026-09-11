@@ -1,7 +1,4 @@
 {
-    "NOTICE_UPDATE_TITLE": "Wololo ! Une nouvelle version a été publiée.",
-    "NOTICE_UPDATE_CONTENT": "IG-Helper a publié une nouvelle version, cliquez ici pour mettre à jour.",
-    "CHECK_FOR_UPDATE": "Vérifier les mises à jour du script",
     "RELOAD_SCRIPT": "Recharger le script",
     "DONATE": "Faire un don",
     "FEEDBACK": "Commentaires",
@@ -89,7 +86,6 @@
     "PREFER_DASH_MANIFEST_INTRO": "Préférer le manifeste DASH pour les ressources vidéo via l'API Media. Si un manifeste DASH est disponible, les flux vidéo et audio seront téléchargés SÉPARÉMENT pour obtenir la meilleure qualité possible.",
     "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "Lorsque l'API Media atteint sa limite de débit ou ne peut pas être utilisée pour d'autres raisons, l'API de récupération forcée sera utilisée pour télécharger les ressources (la qualité des ressources peut être légèrement inférieure).",
     "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "Le bouton [Ouvrir dans un nouvel onglet] dans les posts utilisera toujours l'API Media pour obtenir des ressources en haute résolution.",
-    "CHECK_FOR_UPDATE_INTRO": "Vérifier les mises à jour lorsque le script est déclenché (vérification toutes les 300 secondes).\nLes notifications de mise à jour seront envoyées comme notifications de bureau via le navigateur.",
     "SKIP_VIEW_STORY_CONFIRM_INTRO": "Ignorer automatiquement lorsque la page de confirmation s'affiche dans une story ou un contenu à la une.",
     "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "Cliquer automatiquement sur « Pas maintenant » dans la boîte de dialogue « X a partagé ceci avec vous » lors de l'ouverture de tout lien ?igsh=.",
     "MODIFY_RESOURCE_EXIF_INTRO": "Modifier les attributs EXIF de la ressource image afin d'inclure des métadonnées telles que le lien du post, la date de prise de vue et l'auteur.",

@@ -14,29 +14,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
+          bun-version: 1.3.13
 
       - name: Install dependencies
-        run: npm install
+        run: bun install --frozen-lockfile
 
       - name: Lint
-        run: npx eslint src vite.config.mjs
+        run: bunx eslint src vite.config.mjs
 
       - name: Build
-        run: npm run build
+        run: bun run build
 
-      - name: Read userscript version
+      - name: Read package version
         id: version
         shell: bash
         run: |
-          version="$(sed -nE 's#^// @version[[:space:]]+([^[:space:]]+).*#\1#p' dist/main.js | head -n1)"
-          if [ -z "$version" ]; then
-            echo "Unable to read @version from dist/main.js" >&2
-            exit 1
-          fi
+          version="$(bun -p "require('./package.json').version")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
 

@@ -1,4 +1,5 @@
 import monkey from 'vite-plugin-monkey';
+import packageJson from './package.json' with { type: 'json' };
 
 const mediabunnyUrl = 'https://cdn.jsdelivr.net/npm/mediabunny@1.34.5/dist/bundles/mediabunny.min.cjs#sha256-wUFR+x2bDvpqgMAVGy2CvGvULyjTGvGy4UUAm8rae5U=';
 const jqueryUrl = 'https://code.jquery.com/jquery-4.0.0.min.js#sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=';
@@ -31,8 +32,10 @@ export default {
                     'zh-CN': 'IG小助手',
                     'zh-TW': 'IG小精靈',
                 },
-                namespace: 'https://github.snkms.com/',
-                version: '4.2.1',
+                namespace: 'https://github.com/martesi/ig-helper/',
+                version: packageJson.version,
+                updateURL: 'https://github.com/martesi/ig-helper/releases/latest/download/main.js',
+                downloadURL: 'https://github.com/martesi/ig-helper/releases/latest/download/main.js',
                 description: {
                     '': 'Download photos and videos from Instagram posts in one click, including Stories, Reels, and profile pictures.',
                     ar: 'نزّل صورًا ومقاطع فيديو من منشورات Instagram بنقرة واحدة، بما في ذلك القصص وReels وصور الملف الشخصي.',
@@ -60,7 +63,6 @@ export default {
                     'GM_getResourceText',
                     'GM_getValue',
                     'GM_info',
-                    'GM_notification',
                     'GM_openInTab',
                     'GM_registerMenuCommand',
                     'GM_setValue',
@@ -70,12 +72,10 @@ export default {
                 connect: [
                     'cdn.jsdelivr.net',
                     'i.instagram.com',
-                    'raw.githubusercontent.com',
                 ],
                 resource: {
                     LOCALE_MANIFEST: 'https://cdn.jsdelivr.net/gh/SN-Koarashi/ig-helper@master/locale/manifest.json',
                 },
-                supportURL: 'https://github.com/SN-Koarashi/ig-helper/',
                 contributionURL: 'https://ko-fi.com/snkoarashi',
                 icon: 'https://www.google.com/s2/favicons?domain=www.instagram.com&sz=32',
                 license: 'GPL-3.0-only',

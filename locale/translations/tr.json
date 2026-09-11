@@ -1,7 +1,4 @@
 {
-    "NOTICE_UPDATE_TITLE": "Wololo! Yeni sürüm yayımlandı.",
-    "NOTICE_UPDATE_CONTENT": "IG-Helper yeni bir sürüm yayımladı, güncellemek için buraya tıkla.",
-    "CHECK_FOR_UPDATE": "Betik güncellemelerini kontrol et",
     "RELOAD_SCRIPT": "Betiği yeniden yükle",
     "DONATE": "Bağış yap",
     "FEEDBACK": "Geri bildirim",
@@ -89,7 +86,6 @@
     "PREFER_DASH_MANIFEST_INTRO": "Media API üzerinden video kaynakları için DASH manifestini tercih eder. Bir DASH manifesti mevcutsa, mümkün olan en iyi kalite için video ve ses akışlarını AYRI AYRI indirir.",
     "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "Media API hız sınırına ulaştığında veya başka nedenlerle kullanılamadığında, kaynakları indirmek için Forced Fetch API kullanılacaktır (kaynak kalitesi biraz daha düşük olabilir).",
     "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "Gönderilerdeki [Yeni sekmede aç] düğmesi, yüksek çözünürlüklü kaynakları almak için her zaman Media API’yi kullanacaktır.",
-    "CHECK_FOR_UPDATE_INTRO": "Betik tetiklendiğinde güncellemeleri kontrol eder (her 300 saniyede bir kontrol eder).\nGüncelleme bildirimleri tarayıcı üzerinden masaüstü bildirimleri olarak gönderilecektir.",
     "SKIP_VIEW_STORY_CONFIRM_INTRO": "Bir hikayede veya öne çıkanda onay sayfası gösterildiğinde otomatik olarak atlar.",
     "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "Herhangi bir ?igsh= bağlantısı açılırken \"X bunu seninle paylaştı\" iletişim kutusunda otomatik olarak \"Şimdi değil\" seçeneğine tıklar.",
     "MODIFY_RESOURCE_EXIF_INTRO": "Görsel kaynağının EXIF özniteliklerini, gönderi bağlantısı, çekim tarihi ve yazar gibi meta verileri içerecek şekilde değiştirir.",

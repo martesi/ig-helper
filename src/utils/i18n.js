@@ -11,9 +11,6 @@ import { logger } from "./general";
 export function translateText() {
     var eLocale = {
         "en-US": {
-            "NOTICE_UPDATE_TITLE": "Wololo! New version released.",
-            "NOTICE_UPDATE_CONTENT": "IG-Helper has released a new version, click here to update.",
-            "CHECK_FOR_UPDATE": "Check for Script Updates",
             "RELOAD_SCRIPT": "Reload Script",
             "DONATE": "Donate",
             "FEEDBACK": "Feedback",
@@ -101,7 +98,6 @@ export function translateText() {
             "PREFER_DASH_MANIFEST_INTRO": "Prefer the DASH manifest for video resources via the Media API. If a DASH manifest is available, it will download the video and audio streams SEPARATELY for the best possible quality.",
             "FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED_INTRO": "When the Media API reaches its rate limit or cannot be used for other reasons, the Forced Fetch API will be used to download resources (the resource quality may be slightly lower).",
             "NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST_INTRO": "The [Open in New Tab] button in posts will always use the Media API to obtain high-resolution resources.",
-            "CHECK_FOR_UPDATE_INTRO": "Check for updates when the script is triggered (check every 300 seconds).\nUpdate notifications will be sent as desktop notifications through the browser.",
             "SKIP_VIEW_STORY_CONFIRM_INTRO": "Automatically skip when confirmation page is shown in story or highlight.",
             "SKIP_SHARED_WITH_YOU_DIALOG_INTRO": "Automatically click \"Not now\" on the \"X shared this with you\" dialog when opening any ?igsh= links.",
             "MODIFY_RESOURCE_EXIF_INTRO": "Modify the EXIF attribute of the image resource to include metadata such as post link, shooting date, and author.",
