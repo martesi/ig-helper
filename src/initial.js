@@ -1,13 +1,12 @@
 import { initSettings, checkingScriptUpdate, logger } from "./utils/general";
 import { getTranslationText, repaintingTranslations } from "./utils/i18n";
-import { style, state } from "./settings";
+import { state } from "./settings";
 import { purgeCache } from "./utils/image_cache";
 import { registerMenuCommand } from "./utils/dialog";
 import { registerPostClickHandlers } from "./functions/post";
 
 // initialization script
 initSettings();
-GM_addStyle(style);
 registerMenuCommand();
 
 getTranslationText(state.lang).then((res) => {

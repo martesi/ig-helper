@@ -751,11 +751,11 @@ div[class]:hover+.volume_slider>div,
     height: auto;
 }
 
-#iv_image {
-    max-width: none;
+#imageViewer #iv_image {
+    max-width: 80svw;
     max-height: 80svh;
     width: auto;
-    height: 100%;
+    height: auto;
     user-select: none;
     cursor: grab;
 }

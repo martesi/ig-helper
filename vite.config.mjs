@@ -73,7 +73,6 @@ export default {
                     'raw.githubusercontent.com',
                 ],
                 resource: {
-                    INTERNAL_CSS: 'https://cdn.jsdelivr.net/gh/SN-Koarashi/ig-helper@master/style.css',
                     LOCALE_MANIFEST: 'https://cdn.jsdelivr.net/gh/SN-Koarashi/ig-helper@master/locale/manifest.json',
                 },
                 supportURL: 'https://github.com/SN-Koarashi/ig-helper/',
