@@ -291,7 +291,19 @@ export function createDownloadButton() {
                     });
                 }
 
-                $childElement.eq((tagName === "DIV") ? 0 : $childElement.length - 2).append(`<div class="button_wrapper">`);
+                const $resourceLayout = $childElement.filter(function () {
+                    const $candidate = $(this);
+                    if ($candidate.find('video').length > 0) return true;
+
+                    return $candidate.find('img').filter(function () {
+                        const rect = this.getBoundingClientRect();
+                        return rect.width > 64 && rect.height > 64;
+                    }).length > 0;
+                }).first();
+
+                if ($resourceLayout.length === 0) return;
+
+                $resourceLayout.append(`<div class="button_wrapper">`);
 
                 // Add icons
                 const DownloadElement = `<div data-ih-locale-title="DW" title="${_i18n("DW")}" class="IG_DW_MAIN">${SVG.DOWNLOAD}</div>`;
@@ -299,8 +311,7 @@ export function createDownloadButton() {
                 const ThumbnailElement = `<div data-ih-locale-title="VIDEO_THUMBNAIL" title="${_i18n("VIDEO_THUMBNAIL")}" class="IG_THUMBNAIL_MAIN">${SVG.THUMBNAIL}</div>`;
                 const ViewerElement = `<div data-ih-locale-title="IMAGE_VIEWER" title="${_i18n("IMAGE_VIEWER")}" class="IG_IMAGE_VIEWER">${SVG.FULLSCREEN}</div>`;
 
-                // OPTIMIZATION: cache .button_wrapper inside $childElement (used 5+ times)
-                const $buttonWrapper = $childElement.find(".button_wrapper");
+                const $buttonWrapper = $resourceLayout.children(".button_wrapper");
                 $buttonWrapper.append(DownloadElement);
 
                 const resource_count = $mainElement.find(resourceCountSelector).length;
@@ -311,11 +322,6 @@ export function createDownloadButton() {
                 }
 
                 $buttonWrapper.append(NewTabElement);
-
-                let $resourceLayout = $childElement.filter(function () {
-                    const $this = $(this);
-                    return $this.width() > 100 && $this.height() > 100;
-                }).first();
 
                 let $isNewPostStyleLayout = $resourceLayout.find(`a[role="link"][tabindex="0"][href^="/"]`).filter(function () {
                     const href = $(this).attr('href');
