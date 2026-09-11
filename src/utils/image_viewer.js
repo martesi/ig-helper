@@ -19,7 +19,7 @@ export function openImageViewer(imageUrl) {
     <section>
         <div id="iv_transform">
             <div id="iv_rotate">
-                <img id="iv_image" src="" />
+                <img id="iv_image" src="" style="max-width:80svw;max-height:80svh;width:auto;height:auto;" />
             </div>
         </div>
     </section>
