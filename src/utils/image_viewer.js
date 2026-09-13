@@ -68,13 +68,6 @@ export function openImageViewer(imageUrl) {
         previousPosition = currentPosition;
     }, 100);
 
-
-    $image.on('load', () => {
-        posX = 0;
-        posY = 0;
-        updateImageStyle();
-    });
-
     $image.on('dragstart drop', (e) => {
         e.preventDefault();
     });
