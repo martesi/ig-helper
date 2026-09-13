@@ -297,10 +297,10 @@ export function createDownloadButton() {
                     if ($candidate.find('video').length > 0) return true;
 
                     return $candidate.find('img').filter(function () {
-                        if (this.style.objectFit) return true;
-
                         const rect = this.getBoundingClientRect();
-                        return rect.width > 64 && rect.height > 64;
+                        const width = rect.width || this.naturalWidth;
+                        const height = rect.height || this.naturalHeight;
+                        return width > 64 && height > 64;
                     }).length > 0;
                 }).first();
 

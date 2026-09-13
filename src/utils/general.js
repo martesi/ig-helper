@@ -394,7 +394,10 @@ export function saveFiles(downloadLink, metadata) {
                 sourceType === 'photo'
             ) {
                 fetch(downloadLink)
-                    .then(res => res.blob())
+                    .then(res => {
+                        if (!res.ok) throw new Error(`Download failed with HTTP ${res.status}`);
+                        return res.blob();
+                    })
                     .then(dwel => {
                         updateLoadingBar(false);
                         return createSaveFileElement(downloadLink, dwel, metadata);
@@ -424,7 +427,10 @@ export function saveFiles(downloadLink, metadata) {
                 else {
                     updateLoadingBar(true);
                     fetch(downloadLink)
-                        .then(res => res.blob())
+                        .then(res => {
+                            if (!res.ok) throw new Error(`Download failed with HTTP ${res.status}`);
+                            return res.blob();
+                        })
                         .then(dwel => {
                             updateLoadingBar(false);
                             return createSaveFileElement(downloadLink, dwel, metadata);
@@ -1080,6 +1086,19 @@ async function changeExifData(blob, metadata) {
     });
 }
 
+function getInstagramImageScale(url) {
+    try {
+        const stp = new URL(url).searchParams.get('stp') || '';
+        const match = stp.match(/_[sp](\d+)x(\d+)(?:_|$)/);
+        if (!match) return Infinity;
+        return Math.max(Number(match[1]), Number(match[2]));
+    }
+    catch {
+        return 0;
+    }
+}
+
+
 /**
  * triggerLinkElement
  * @description Trigger the link element to start downloading or previewing the resource.
@@ -1194,6 +1213,14 @@ export async function triggerLinkElement($element, isPreview = false) {
                 if (!resource_url) {
                     alert('Cannot find download URL.');
                     return;
+                }
+
+                if (
+                    href &&
+                    filetype !== 'mp4' &&
+                    getInstagramImageScale(href) > getInstagramImageScale(resource_url)
+                ) {
+                    resource_url = href;
                 }
 
                 if (!downloadOnly && isPreview) {
