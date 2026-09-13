@@ -1,7 +1,9 @@
 name: Publish Release
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -37,18 +39,16 @@ jobs:
             dist/ig-helper.meta.js
           if-no-files-found: error
 
-      - name: Read package version
-        id: version
+      - name: Verify release tag
         shell: bash
         run: |
           version="$(bun -p "require('./package.json').version")"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          test "$GITHUB_REF_NAME" = "v$version"
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.version.outputs.tag }}
+          TAG: ${{ github.ref_name }}
         run: |
           gh release create "$TAG" \
             dist/ig-helper.user.js \
