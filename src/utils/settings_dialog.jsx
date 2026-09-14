@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { KeyboardIcon, SlidersHorizontalIcon, XIcon } from '../ui/icons.jsx';
 import { locale_manifest, PARENT_CHILD_MAPPING, state, USER_SETTING } from '../settings';
 import { Button, IconButton, Input, Select, Switch } from '../ui/components.jsx';
+import settingsStyles from '../ui/settings.css?inline';
+import { createOwnedUiRoot, getOwnedUiMount, LEGACY_DIALOG_ROOT_ID, removeOwnedUiRoot, SETTINGS_ROOT_ID } from '../ui/shadow.js';
 import { _i18n, getTranslationText, repaintingTranslations } from './i18n';
 
-const SETTINGS_ROOT_ID = 'ig-helper-settings-root';
 const HOTKEY_OPTIONS = [87, 90, 88, 68, 75, 67, 83, 192, 49, 50, 51, 52, 53];
 const HOTKEY_SETTINGS = [
     { key: 'HOTKEY_SETTINGS_KEY', stateKey: 'settingsHotkeyKeyCode', storageKey: 'G_HOTKEY_SETTINGS_KEYCODE', defaultKeyCode: 87 },
@@ -44,18 +45,22 @@ const PREFERENCE_SECTIONS = [
 
 export function showSettingsDialog(initialTab = 'preferences', onLanguageChange) {
     closeSettingsDialog();
-    document.querySelectorAll('.IG_POPUP_DIG').forEach(dialog => dialog.remove());
+    removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
 
-    const root = document.createElement('div');
-    root.id = SETTINGS_ROOT_ID;
-    document.body.append(root);
-    render(<SettingsDialog initialTab={initialTab} onLanguageChange={onLanguageChange} />, root);
+    const { mount } = createOwnedUiRoot(SETTINGS_ROOT_ID, settingsStyles);
+    render(<SettingsDialog initialTab={initialTab} onLanguageChange={onLanguageChange} />, mount);
+}
+
+export function isSettingsDialogOpen(tab) {
+    const dialog = document.getElementById(SETTINGS_ROOT_ID)?.shadowRoot?.querySelector('.IG_SETTINGS_DIALOG');
+    return Boolean(dialog && (!tab || dialog.dataset.settingsTab === tab));
 }
 
 export function closeSettingsDialog() {
     const root = document.getElementById(SETTINGS_ROOT_ID);
-    if (!root) return;
-    render(null, root);
+    const mount = getOwnedUiMount(SETTINGS_ROOT_ID);
+    if (!root || !mount) return;
+    render(null, mount);
     root.remove();
 }
 

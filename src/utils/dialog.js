@@ -4,6 +4,7 @@ import { logger } from "./logger";
 import { _i18n } from "./i18n";
 import { showSettingsDialog } from './settings_dialog.jsx';
 import { mountDebugPanel, mountFeedbackPanel, mountLegacyDialog } from '../ui/dialogs.jsx';
+import { LEGACY_DIALOG_ROOT_ID, queryAllLegacyDialog, queryLegacyDialog, removeOwnedUiRoot } from '../ui/shadow.js';
 
 /**
  * IG_createDM
@@ -35,7 +36,7 @@ export function IG_createDM(hasHidden, hasCheckbox) {
  * @return {void}
  */
 export function IG_setDM(hasHidden) {
-    document.querySelectorAll('.IG_POPUP_DIG').forEach(popup => {
+    queryAllLegacyDialog('.IG_POPUP_DIG').forEach(popup => {
         popup.classList.toggle('hidden', Boolean(hasHidden));
     });
 }
@@ -114,8 +115,8 @@ export function showSetting() {
 export function showDebugDOM() {
     removeLegacyDialogs();
     IG_createDM();
-    document.querySelector('.IG_POPUP_DIG #post_info').textContent = 'IG Debug DOM Tree';
-    mountDebugPanel(document.querySelector('.IG_POPUP_DIG .IG_POPUP_DIG_BODY'), {
+    queryLegacyDialog('.IG_POPUP_DIG #post_info').textContent = 'IG Debug DOM Tree';
+    mountDebugPanel(queryLegacyDialog('.IG_POPUP_DIG .IG_POPUP_DIG_BODY'), {
         showTree: _i18n('SHOW_DOM_TREE'),
         copyTree: _i18n('SELECT_AND_COPY'),
         downloadTree: _i18n('DOWNLOAD_DOM_TREE'),
@@ -133,8 +134,8 @@ export function showDebugDOM() {
 export function showFeedbackDOM() {
     removeLegacyDialogs();
     IG_createDM();
-    document.querySelector('.IG_POPUP_DIG #post_info').textContent = 'Feedback Options';
-    mountFeedbackPanel(document.querySelector('.IG_POPUP_DIG .IG_POPUP_DIG_BODY'), {
+    queryLegacyDialog('.IG_POPUP_DIG #post_info').textContent = 'Feedback Options';
+    mountFeedbackPanel(queryLegacyDialog('.IG_POPUP_DIG .IG_POPUP_DIG_BODY'), {
         fork: _i18n('REPORT_FORK'),
         github: _i18n('REPORT_GITHUB'),
         discord: _i18n('REPORT_DISCORD'),
@@ -142,5 +143,5 @@ export function showFeedbackDOM() {
 }
 
 function removeLegacyDialogs() {
-    document.querySelectorAll('.IG_POPUP_DIG').forEach(dialog => dialog.remove());
+    removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
 }

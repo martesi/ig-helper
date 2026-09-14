@@ -2,21 +2,27 @@ import { h, render } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ControlBar, IconButton } from '../ui/components.jsx';
 import { RotateCcwIcon, RotateCwIcon, XIcon } from '../ui/icons.jsx';
+import { createOwnedUiRoot, getOwnedUiMount } from '../ui/shadow.js';
 
 const VIEWER_ROOT_ID = 'ig-helper-image-viewer-root';
 
 export function openImageViewer(imageUrl) {
     removeImageViewer();
-    const root = document.createElement('div');
-    root.id = VIEWER_ROOT_ID;
-    document.body.append(root);
-    render(<ImageViewer imageUrl={imageUrl} />, root);
+    const { host, mount } = createOwnedUiRoot(VIEWER_ROOT_ID);
+    Object.assign(host.style, {
+        position: 'fixed',
+        inset: '0',
+        zIndex: '600001',
+        overflow: 'hidden',
+    });
+    render(<ImageViewer imageUrl={imageUrl} />, mount);
 }
 
 export function removeImageViewer() {
     const root = document.getElementById(VIEWER_ROOT_ID);
-    if (!root) return;
-    render(null, root);
+    const mount = getOwnedUiMount(VIEWER_ROOT_ID);
+    if (!root || !mount) return;
+    render(null, mount);
     root.remove();
 }
 

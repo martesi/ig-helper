@@ -6,6 +6,7 @@ import { getPostOwner, getMediaInfo, getUserId } from "./api";
 import { getImageFromCache } from "./image_cache";
 import { appendCounter, appendDownloadProgress, appendVolumeSlider, updateLoadingBar } from "../ui/status.jsx";
 import { logger } from "./logger";
+import { queryLegacyDialog } from '../ui/shadow.js';
 
 
 /**
@@ -1450,8 +1451,8 @@ export function triggerReactClickHandler(el) {
  * @param {string|JQuery} root
  * @return {void}
  */
-export function updatePopupSelectionSummary(root = '.IG_POPUP_DIG') {
-    const $root = (typeof root === 'string') ? $(root) : root;
+export function updatePopupSelectionSummary(root = queryLegacyDialog('.IG_POPUP_DIG')) {
+    const $root = (typeof root === 'string') ? $(root) : $(root);
     if (!$root || $root.length === 0) return;
 
     const $titleCheckbox = $root.find('.IG_POPUP_DIG_TITLE .IG_SELECT_ALL');

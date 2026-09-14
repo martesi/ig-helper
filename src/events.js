@@ -15,7 +15,13 @@ import { _i18n } from "./utils/i18n";
 import { getImageFromCache, registerPerformanceObserver } from "./utils/image_cache";
 import { batchDownloadPostFiles, createDownloadButton } from "./functions/post";
 import { showDebugDOM, showHotkeySetting, showSetting } from "./utils/dialog";
-import { closeSettingsDialog } from './utils/settings_dialog.jsx';
+import { closeSettingsDialog, isSettingsDialogOpen } from './utils/settings_dialog.jsx';
+import {
+    LEGACY_DIALOG_MOUNTED_EVENT,
+    LEGACY_DIALOG_ROOT_ID,
+    queryLegacyDialog,
+    removeOwnedUiRoot,
+} from './ui/shadow.js';
 
 // Running if document is ready
 $(function () {
@@ -32,99 +38,169 @@ $(function () {
         return obj;
     }
 
-    function setDOMTreeContent() {
-        let text = $('div[id^="mount"]')[0];
-        var loggerStr = "";
+    function setDOMTreeContent(root) {
+        const text = $('div[id^="mount"]')[0];
+        let loggerStr = "";
         state.GL_logger.forEach(log => {
-            var jsonData = JSON.stringify(log.content, function (key, value) {
+            const jsonData = JSON.stringify(log.content, function (key, value) {
                 if (Array.isArray(this)) {
                     if (typeof value === "object" && value instanceof $) {
                         return ConvertDOM(value);
                     }
                     return value;
                 }
-                else {
-                    return value;
-                }
+                return value;
             }, "\t");
-            loggerStr += `${new Date(log.time).toISOString()}: ${jsonData}\n`
+            loggerStr += `${new Date(log.time).toISOString()}: ${jsonData}\n`;
         });
-        $('.IG_POPUP_DIG .IG_POPUP_DIG_BODY textarea').text("Logger:\n" + loggerStr + "\n-----\n\nLocation: " + location.pathname + "\nDOM Tree with div#mount:\n" + text.innerHTML);
+
+        $(root).find('.IG_POPUP_DIG_BODY textarea').text(
+            "Logger:\n" + loggerStr + "\n-----\n\nLocation: " + location.pathname + "\nDOM Tree with div#mount:\n" + text.innerHTML
+        );
     }
 
-    $body.on('click', '.IG_POPUP_DIG .IG_POPUP_DIG_BODY .IG_DISPLAY_DOM_TREE', function () {
-        setDOMTreeContent();
-    });
-
-    // OPTIMIZATION: replace deprecated document.execCommand('copy') with modern
-    // navigator.clipboard.writeText() API. Falls back to execCommand on browsers
-    // that don't support it (unlikely on Chrome/Firefox/Edge >= 100).
-    $body.on('click', '.IG_POPUP_DIG .IG_POPUP_DIG_BODY .IG_SELECT_DOM_TREE', function () {
-        const $textarea = $('.IG_POPUP_DIG .IG_POPUP_DIG_BODY textarea');
-        const textContent = $textarea.val() || $textarea.text();
-        $textarea.trigger('select');
-
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(textContent).catch(err => {
-                logger('Clipboard API failed, falling back to execCommand:', err);
-                try { document.execCommand('copy'); } catch (e) { logger('execCommand fallback failed:', e); }
+    function bindLegacyDialogEvents(root) {
+        const $root = $(root);
+        const on = (type, selector, handler) => {
+            root.addEventListener(type, event => {
+                const target = event.target instanceof Element ? event.target.closest(selector) : null;
+                if (!target || !root.contains(target)) return;
+                handler.call(target, event);
             });
-        }
-        else {
+        };
+
+        on('click', '.IG_DISPLAY_DOM_TREE', () => setDOMTreeContent(root));
+
+        on('click', '.IG_SELECT_DOM_TREE', function () {
+            const $textarea = $root.find('.IG_POPUP_DIG_BODY textarea');
+            const textContent = $textarea.val() || $textarea.text();
+            $textarea.trigger('select');
+
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(textContent).catch(err => {
+                    logger('Clipboard API failed, falling back to execCommand:', err);
+                    try { document.execCommand('copy'); } catch (e) { logger('execCommand fallback failed:', e); }
+                });
+                return;
+            }
+
             try { document.execCommand('copy'); } catch (e) { logger('execCommand failed:', e); }
-        }
-    });
+        });
 
-    $body.on('click', '.IG_POPUP_DIG .IG_POPUP_DIG_BODY .IG_DOWNLOAD_DOM_TREE', function () {
-        const $textarea = $('.IG_POPUP_DIG .IG_POPUP_DIG_BODY textarea');
-        if ($textarea.text().length === 0) {
-            setDOMTreeContent();
-        }
+        on('click', '.IG_DOWNLOAD_DOM_TREE', function () {
+            const $textarea = $root.find('.IG_POPUP_DIG_BODY textarea');
+            if ($textarea.text().length === 0) setDOMTreeContent(root);
 
-        var text = $textarea.text();
-        var a = document.createElement("a");
-        var file = new Blob([text], { type: "text/plain" });
-        a.href = URL.createObjectURL(file);
-        a.download = "DOMTree-" + new Date().getTime() + ".txt";
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([$textarea.text()], { type: 'text/plain' }));
+            a.download = `DOMTree-${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        });
 
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-    });
+        on('click', '.IG_POPUP_DIG_BTN, .IG_POPUP_DIG_BG', () => {
+            removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+        });
 
-    // Close the download dialog if user click the close icon
-    $body.on('click', '.IG_POPUP_DIG_BTN, .IG_POPUP_DIG_BG', function () {
-        $('.IG_POPUP_DIG').remove();
-    });
+        on('click', 'a[data-needed="direct"]', function (e) {
+            e.preventDefault();
+            triggerLinkElement($(this), false);
+        });
+
+        on('click', '.IG_POPUP_DIG_BODY .newTab', function () {
+            const $linkA = $(this).parent().children('a');
+            if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && USER_SETTING.NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST) {
+                triggerLinkElement($linkA.first()[0], true);
+                return;
+            }
+            openNewTab(replaceSameOriginHost($linkA.data('href')));
+        });
+
+        on('click', '.IG_POPUP_DIG_BODY .videoThumbnail', function () {
+            const $linkA = $(this).parent().children('a');
+            let timestamp = Date.now();
+            if (USER_SETTING.RENAME_PUBLISH_DATE && $linkA.attr('datetime')) timestamp = $linkA.attr('datetime');
+
+            const postPath = $linkA.data('path') ?? $(queryLegacyDialog('#article-id')).text();
+            if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
+                const mediaId = $linkA.first().attr('media-id');
+                const cached = getImageFromCache(mediaId);
+                if (cached) {
+                    logger('[Restore Cached postThumbnail]', mediaId);
+                    saveFiles(cached, {
+                        username: $linkA.data('username'),
+                        sourceType: 'thumbnail',
+                        timestamp,
+                        filetype: 'jpg',
+                        shortcode: postPath,
+                    });
+                    return;
+                }
+            }
+
+            saveFiles($linkA.find('img').first().attr('src'), {
+                username: $linkA.data('username'),
+                sourceType: 'thumbnail',
+                timestamp,
+                filetype: 'jpg',
+                shortcode: postPath,
+            });
+        });
+
+        on('change', '.IG_POPUP_DIG_TITLE .IG_SELECT_ALL', function () {
+            const isChecked = $(this).find('input').prop('checked');
+            $root.find('.IG_POPUP_DIG_BODY .inner_box').prop('checked', isChecked);
+            updatePopupSelectionSummary($root.find('.IG_POPUP_DIG'));
+        });
+
+        on('change', '.IG_POPUP_DIG_BODY .inner_box', () => {
+            updatePopupSelectionSummary($root.find('.IG_POPUP_DIG'));
+        });
+
+        on('click', '#batch_download_selected', function () {
+            if ($root.find('#_SNLOAD').length > 0) return;
+
+            const links = $root.find('.IG_POPUP_DIG_BODY a[data-needed="direct"]').filter(function () {
+                return $(this).prev().children('input').prop('checked');
+            }).map(function () { return $(this); }).get();
+
+            if (links.length === 0) {
+                alert(_i18n('NO_CHECK_RESOURCE'));
+                return;
+            }
+            batchDownloadPostFiles(links);
+        });
+
+        on('click', '#batch_download_direct', function () {
+            if ($root.find('#_SNLOAD').length > 0) return;
+            const links = $root.find('.IG_POPUP_DIG_BODY a[data-needed="direct"]').map(function () { return $(this); }).get();
+            batchDownloadPostFiles(links);
+        });
+    }
+
+    document.addEventListener(LEGACY_DIALOG_MOUNTED_EVENT, event => bindLegacyDialogEvents(event.detail));
 
     $(window).on('keydown', function (e) {
         // Hot key [Alt+Q] to close legacy download/debug dialogs.
         if (e.altKey && e.which == 81) {
-            $('.IG_POPUP_DIG:not(.IG_SETTINGS_DIALOG)').remove();
+            removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
             e.preventDefault();
         }
 
         // Hot key [Alt+W] to open/close the settings dialog - use custom keycode if enabled, fallback to default Alt+W(87)
         let settingsKeyCode = state.settingsHotkeyKeyCode || 87;
         if (e.altKey && e.which == settingsKeyCode) {
-            const $popup = $('.IG_SETTINGS_DIALOG[data-settings-tab="preferences"]');
-            if ($popup.length > 0) {
-                closeSettingsDialog();
-            } else {
-                showSetting();
-            }
+            if (isSettingsDialogOpen('preferences')) closeSettingsDialog();
+            else showSetting();
             e.preventDefault();
         }
 
-        // Hot key [Alt+W] to open/close the key settings dialog - use custom keycode if enabled, fallback to default Alt+C(67)
+        // Hot key [Alt+C] to open/close the key settings dialog - use custom keycode if enabled, fallback to default Alt+C(67)
         let keySettingsHotkeyKeyCode = state.keySettingsHotkeyKeyCode || 67;
         if (e.altKey && e.which == keySettingsHotkeyKeyCode) {
-            const $popup = $('.IG_POPUP_DIG');
-            if ($popup.is('.IG_SETTINGS_DIALOG[data-settings-tab="keyboard"]')) {
-                closeSettingsDialog();
-            } else {
-                showHotkeySetting();
-            }
+            if (isSettingsDialogOpen('keyboard')) closeSettingsDialog();
+            else showHotkeySetting();
             e.preventDefault();
         }
 
@@ -152,61 +228,6 @@ $(function () {
             }
             e.preventDefault();
         }
-    });
-
-    $body.on('click', 'a[data-needed="direct"]', function (e) {
-        e.preventDefault();
-        triggerLinkElement($(this), false);
-    });
-
-    $body.on('click', '.IG_POPUP_DIG_BODY .newTab', function () {
-        const $this = $(this);
-        const $linkA = $this.parent().children('a');
-        if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && USER_SETTING.NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST) {
-            triggerLinkElement($linkA.first()[0], true);
-        }
-        else {
-            openNewTab(replaceSameOriginHost($linkA.data('href')));
-        }
-    });
-
-    $body.on('click', '.IG_POPUP_DIG_BODY .videoThumbnail', function () {
-        const $this = $(this);
-        const $linkA = $this.parent().children('a');
-        let timestamp = new Date().getTime();
-
-        if (USER_SETTING.RENAME_PUBLISH_DATE && $linkA.attr('datetime')) {
-            timestamp = $linkA.attr('datetime');
-        }
-
-        let postPath = $linkA.data('path') ?? $('#article-id').text();
-
-        if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
-            const mediaId = $linkA.first().attr('media-id');
-            const cached = getImageFromCache(mediaId);
-
-            if (cached) {
-                logger("[Restore Cached postThumbnail]", mediaId);
-                saveFiles(cached, {
-                    username: $linkA.data('username'),
-                    sourceType: 'thumbnail',
-                    timestamp,
-                    filetype: 'jpg',
-                    shortcode: postPath
-                });
-                return;
-            }
-        }
-
-        saveFiles(
-            $linkA.find('img').first().attr('src'),
-            {
-                username: $linkA.data('username'),
-                sourceType: 'thumbnail',
-                timestamp,
-                filetype: 'jpg',
-                shortcode: postPath
-            });
     });
 
     // Running if user left-click download icon in stories
@@ -301,50 +322,6 @@ $(function () {
                 }
             }
         }
-    });
-
-    $body.on('change', '.IG_POPUP_DIG_TITLE .IG_SELECT_ALL', function () {
-        const isChecked = $(this).find('input').prop('checked');
-        $('.IG_POPUP_DIG_BODY .inner_box').each(function () {
-            $(this).prop('checked', isChecked);
-        });
-        updatePopupSelectionSummary();
-    });
-
-    $body.on('change', '.IG_POPUP_DIG_BODY .inner_box', function () {
-        updatePopupSelectionSummary();
-    });
-
-    $body.on('click', '.IG_POPUP_DIG_TITLE #batch_download_selected', function () {
-        if ($('.IG_POPUP_DIG #_SNLOAD').length > 0) return;
-
-        let index = 0;
-        let links = [];
-        $('.IG_POPUP_DIG_BODY a[data-needed="direct"]').each(function () {
-            let $link = $(this);
-            if ($link.prev().children('input').prop('checked')) {
-                links.push($link);
-                index++;
-            }
-        });
-
-        if (index == 0) {
-            alert(_i18n('NO_CHECK_RESOURCE'));
-        }
-        else {
-            batchDownloadPostFiles(links);
-        }
-    });
-
-    $body.on('click', '.IG_POPUP_DIG_TITLE #batch_download_direct', function () {
-        if ($('.IG_POPUP_DIG #_SNLOAD').length > 0) return;
-
-        let links = [];
-        $('.IG_POPUP_DIG_BODY a[data-needed="direct"]').each(function () {
-            links.push($(this));
-        });
-
-        batchDownloadPostFiles(links);
     });
 
     registerPerformanceObserver();

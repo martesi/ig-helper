@@ -1,13 +1,22 @@
 import { Fragment, h, render } from 'preact';
+import legacyStyles from '../../style.css?inline';
 import { Button, Checkbox, IconButton, Textarea } from './components.jsx';
 import { XIcon } from './icons.jsx';
+import {
+    createOwnedUiRoot,
+    LEGACY_DIALOG_MOUNTED_EVENT,
+    LEGACY_DIALOG_ROOT_ID,
+    removeOwnedUiRoot,
+    SETTINGS_ROOT_ID,
+} from './shadow.js';
 
 export function mountLegacyDialog({ hidden = false, hasCheckbox = false, labels, version }) {
-    const root = document.createElement('div');
-    root.className = `IG_POPUP_DIG ig-helper-ui${hidden ? ' hidden' : ''}`;
-    document.body.append(root);
-    render(<LegacyDialog hasCheckbox={hasCheckbox} labels={labels} version={version} />, root);
-    return root;
+    removeOwnedUiRoot(SETTINGS_ROOT_ID);
+    removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+    const { mount, shadowRoot } = createOwnedUiRoot(LEGACY_DIALOG_ROOT_ID, legacyStyles);
+    render(<LegacyDialog hidden={hidden} hasCheckbox={hasCheckbox} labels={labels} version={version} />, mount);
+    document.dispatchEvent(new CustomEvent(LEGACY_DIALOG_MOUNTED_EVENT, { detail: shadowRoot }));
+    return shadowRoot.querySelector('.IG_POPUP_DIG');
 }
 
 export function mountDebugPanel(root, labels) {
@@ -18,9 +27,9 @@ export function mountFeedbackPanel(root, labels) {
     render(<FeedbackPanel labels={labels} />, root);
 }
 
-function LegacyDialog({ hasCheckbox, labels, version }) {
+function LegacyDialog({ hidden, hasCheckbox, labels, version }) {
     return (
-        <>
+        <div class={`IG_POPUP_DIG ig-helper-ui${hidden ? ' hidden' : ''}`}>
             <div class="IG_POPUP_DIG_BG" />
             <div class="IG_POPUP_DIG_MAIN">
                 <div class="IG_POPUP_DIG_TITLE">
@@ -49,7 +58,7 @@ function LegacyDialog({ hasCheckbox, labels, version }) {
                 </div>
                 <div class="IG_POPUP_DIG_BODY" />
             </div>
-        </>
+        </div>
     );
 }
 

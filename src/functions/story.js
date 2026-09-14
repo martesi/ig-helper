@@ -17,6 +17,7 @@ import { getUserId, getStories, getMediaInfo } from "../utils/api";
 import { _i18n } from "../utils/i18n";
 import { getImageFromCache } from "../utils/image_cache";
 import { IG_createDM } from "../utils/dialog";
+import { queryLegacyDialog, queryAllLegacyDialog } from '../ui/shadow.js';
 
 /**
  * createStoryListDOM
@@ -26,10 +27,8 @@ import { IG_createDM } from "../utils/dialog";
  */
 export async function createStoryListDOM(obj, type) {
     try {
-        $('.IG_POPUP_DIG #post_info').text(`${type} ID: ${obj.data.reels_media[0].id}`);
-        const selector = '.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY';
-        // OPTIMIZATION: cache target once
-        const $selector = $(selector);
+        $(queryLegacyDialog('#post_info')).text(`${type} ID: ${obj.data.reels_media[0].id}`);
+        const $selector = $(queryLegacyDialog('.IG_POPUP_DIG_BODY'));
 
         // OPTIMIZATION: cache reels_media[0] reference
         const reel = obj.data.reels_media[0];
@@ -67,7 +66,7 @@ export async function createStoryListDOM(obj, type) {
         });
 
         updatePopupSelectionSummary();
-        $('.IG_POPUP_DIG #batch_download_selected, .IG_POPUP_DIG #batch_download_direct').prop('disabled', false);
+        queryAllLegacyDialog('#batch_download_selected, #batch_download_direct').forEach(button => { button.disabled = false; });
         updateLoadingBar(false);
     }
     catch (err) {

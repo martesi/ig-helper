@@ -17,6 +17,17 @@ import { mountPostControls } from "../ui/post_controls.jsx";
 import { appendLoadingMessage, appendMediaResource, decorateMediaResource, renderPostIdLink } from "../ui/media_resource.jsx";
 import { mediaIdFromURL } from "../utils/image_cache";
 import { IG_createDM, IG_setDM } from "../utils/dialog";
+import { LEGACY_DIALOG_ROOT_ID, queryAllLegacyDialog, queryLegacyDialog, removeOwnedUiRoot } from '../ui/shadow.js';
+
+function getLegacyPopupBody() {
+    return queryLegacyDialog('.IG_POPUP_DIG_BODY');
+}
+
+function setLegacyDialogActionsDisabled(disabled) {
+    queryAllLegacyDialog('#batch_download_selected, #batch_download_direct').forEach(button => {
+        button.disabled = disabled;
+    });
+}
 
 /**
  * onReadyMyDW
@@ -487,7 +498,7 @@ async function openPostVideoThumbnail(target) {
 
         const totalInserted = await createMediaListDOM(
             state.GL_postPath,
-            ".IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY",
+            getLegacyPopupBody(),
             ""
         );
 
@@ -496,7 +507,7 @@ async function openPostVideoThumbnail(target) {
             return;
         }
 
-        const $popupBody = $('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY');
+        const $popupBody = $(getLegacyPopupBody());
         const $videoThumbnail = $popupBody
             .find('a[data-globalindex="' + (index + 1) + '"]')
             .parent()
@@ -516,7 +527,7 @@ async function openPostVideoThumbnail(target) {
     }
     finally {
         updateLoadingBar(false);
-        $('.IG_POPUP_DIG').remove();
+        removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
     }
 }
 
@@ -538,7 +549,7 @@ async function openPostResourceInNewTab(target) {
 
         const totalInserted = await createMediaListDOM(
             state.GL_postPath,
-            ".IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY",
+            getLegacyPopupBody(),
             ""
         );
 
@@ -547,7 +558,7 @@ async function openPostResourceInNewTab(target) {
             return;
         }
 
-        const $popupBody = $('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY');
+        const $popupBody = $(getLegacyPopupBody());
         const $linkElement = $popupBody.find('a[data-globalindex="' + (index + 1) + '"]');
 
         if ($linkElement.length === 0) {
@@ -574,7 +585,7 @@ async function openPostResourceInNewTab(target) {
     }
     finally {
         updateLoadingBar(false);
-        $('.IG_POPUP_DIG').remove();
+        removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
     }
 }
 
@@ -590,21 +601,21 @@ async function downloadAllPostResources(target) {
         state.GL_postPath = postPath;
 
         IG_createDM(USER_SETTING.DIRECT_DOWNLOAD_ALL, true);
-        renderPostIdLink(document.getElementById('article-id'), state.GL_postPath);
+        renderPostIdLink(queryLegacyDialog('#article-id'), state.GL_postPath);
 
         const totalInserted = await createMediaListDOM(
             state.GL_postPath,
-            ".IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY",
+            getLegacyPopupBody(),
             _i18n("LOAD_BLOB_MULTIPLE")
         );
 
         if (!totalInserted || totalInserted < 1) {
-            $('.IG_POPUP_DIG').remove();
+            removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
             return;
         }
 
         const links = [];
-        $('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY a').each(function () {
+        $(getLegacyPopupBody()).find('a').each(function () {
             links.push($(this));
         });
 
@@ -614,7 +625,7 @@ async function downloadAllPostResources(target) {
         logger('downloadAllPostResources', err);
     }
     finally {
-        $('.IG_POPUP_DIG').remove();
+        removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
     }
 }
 
@@ -630,7 +641,7 @@ async function downloadPostResource(target) {
         state.GL_postPath = postPath;
 
         IG_createDM(USER_SETTING.DIRECT_DOWNLOAD_ALL, true);
-        renderPostIdLink(document.getElementById('article-id'), state.GL_postPath);
+        renderPostIdLink(queryLegacyDialog('#article-id'), state.GL_postPath);
 
         if (USER_SETTING.DIRECT_DOWNLOAD_VISIBLE_RESOURCE) {
             updateLoadingBar(true);
@@ -641,7 +652,7 @@ async function downloadPostResource(target) {
 
                 const totalInserted = await createMediaListDOM(
                     state.GL_postPath,
-                    ".IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY",
+                    getLegacyPopupBody(),
                     ""
                 );
 
@@ -650,7 +661,7 @@ async function downloadPostResource(target) {
                     return;
                 }
 
-                const $popupBody = $('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY');
+                const $popupBody = $(getLegacyPopupBody());
                 const $targetLink = $popupBody.find('a[data-globalindex="' + (index + 1) + '"]');
                 const href = $targetLink.data('href');
 
@@ -667,7 +678,7 @@ async function downloadPostResource(target) {
             }
             finally {
                 updateLoadingBar(false);
-                $('.IG_POPUP_DIG').remove();
+                removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
             }
 
             return;
@@ -696,12 +707,12 @@ async function downloadPostResource(target) {
                 if (blob || USER_SETTING.FORCE_RESOURCE_VIA_MEDIA) {
                     await createMediaListDOM(
                         state.GL_postPath,
-                        ".IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY",
+                        getLegacyPopupBody(),
                         _i18n("LOAD_BLOB_MULTIPLE")
                     );
                 }
                 else {
-                    const $popupBody = $('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY');
+                    const $popupBody = $(getLegacyPopupBody());
                     $resourceItems.each(function () {
                         s++;
                         const $this = $(this);
@@ -720,7 +731,7 @@ async function downloadPostResource(target) {
                     if (blob) {
                         await createMediaListDOM(
                             state.GL_postPath,
-                            ".IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY",
+                            getLegacyPopupBody(),
                             _i18n("LOAD_BLOB_RELOAD")
                         );
                     }
@@ -730,7 +741,7 @@ async function downloadPostResource(target) {
                 if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA) {
                     await createMediaListDOM(
                         state.GL_postPath,
-                        ".IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY",
+                        getLegacyPopupBody(),
                         _i18n("LOAD_BLOB_MULTIPLE")
                     );
                 }
@@ -743,18 +754,18 @@ async function downloadPostResource(target) {
                     if (element_videos && element_videos.attr('src')) {
                         await createMediaListDOM(
                             state.GL_postPath,
-                            ".IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY",
+                            getLegacyPopupBody(),
                             _i18n("LOAD_BLOB_ONE")
                         );
                     }
                     if (element_images && imgLink) {
-                        appendMediaResource(document.querySelector('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY'), { datetime: publish_time, name: 'photo', type: 'jpg', username: state.GL_username, path: state.GL_postPath, index: s, href: imgLink, preview: imgLink, labelKey: 'IMG', label: _i18n('IMG') });
+                        appendMediaResource(getLegacyPopupBody(), { datetime: publish_time, name: 'photo', type: 'jpg', username: state.GL_username, path: state.GL_postPath, index: s, href: imgLink, preview: imgLink, labelKey: 'IMG', label: _i18n('IMG') });
                     }
                 }
             }
         }
 
-        document.querySelectorAll('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY a').forEach(anchor => {
+        queryAllLegacyDialog('.IG_POPUP_DIG_BODY a').forEach(anchor => {
             if (anchor.parentElement?.querySelector(':scope > .inner_box_wrapper')) return;
             decorateMediaResource(anchor, {
                 icons: { newTab: SVG.NEW_TAB, thumbnail: SVG.THUMBNAIL },
@@ -766,27 +777,27 @@ async function downloadPostResource(target) {
         if (USER_SETTING.DIRECT_DOWNLOAD_ALL) {
             const totalInserted = await createMediaListDOM(
                 state.GL_postPath,
-                ".IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY",
+                getLegacyPopupBody(),
                 _i18n("LOAD_BLOB_MULTIPLE")
             );
 
             if (!totalInserted || totalInserted < 1) {
-                $('.IG_POPUP_DIG').remove();
+                removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
                 return;
             }
 
             const links = [];
-            $('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY a').each(function () {
+            $(getLegacyPopupBody()).find('a').each(function () {
                 links.push($(this));
             });
 
             await batchDownloadPostFiles(links);
-            $('.IG_POPUP_DIG').remove();
+            removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
         }
     }
     catch (err) {
         logger('downloadPostResource', err);
-        $('.IG_POPUP_DIG').remove();
+        removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
     }
 }
 
@@ -818,17 +829,16 @@ export function filterResourceData(data) {
  * @description Create a list of media elements from post URLs.
  *
  * @param  {String}  postURL
- * @param  {String}  selector - Use CSS element selectors to choose where it appears.
+ * @param  {Element|JQuery}  root - Popup body where resources are rendered.
  * @param  {String}  message - i18n display loading message
  * @return {Promise<number>}  The number of <a> elements inserted into the DOM
  */
-export async function createMediaListDOM(postURL, selector, message) {
+export async function createMediaListDOM(postURL, root, message) {
+    const $target = $(root);
     try {
-        // OPTIMIZATION: cache the popup body selection used many times below
-        const $target = $(selector);
         $target.find('a').remove();
         appendLoadingMessage($target[0], message);
-        $('.IG_POPUP_DIG #batch_download_selected, .IG_POPUP_DIG #batch_download_direct').prop('disabled', true);
+        setLegacyDialogActionsDisabled(true);
         let result = await getBlobMedia(postURL);
         let resource = filterResourceData(result.data);
 
@@ -933,9 +943,9 @@ export async function createMediaListDOM(postURL, selector, message) {
             }
         }
 
-        $("#_SNLOAD").remove();
-        $('.IG_POPUP_DIG #batch_download_selected, .IG_POPUP_DIG #batch_download_direct').prop('disabled', false);
-        document.querySelectorAll('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY a').forEach(anchor => {
+        $target.find('#_SNLOAD').remove();
+        setLegacyDialogActionsDisabled(false);
+        queryAllLegacyDialog('.IG_POPUP_DIG_BODY a').forEach(anchor => {
             decorateMediaResource(anchor, {
                 icons: { newTab: SVG.NEW_TAB, thumbnail: SVG.THUMBNAIL },
                 labels: { newTab: _i18n('NEW_TAB'), thumbnail: _i18n('VIDEO_THUMBNAIL') },
@@ -948,8 +958,8 @@ export async function createMediaListDOM(postURL, selector, message) {
     }
     catch (err) {
         logger('createMediaListDOM', err);
-        $("#_SNLOAD").remove();
-        $('.IG_POPUP_DIG #batch_download_selected, .IG_POPUP_DIG #batch_download_direct').prop('disabled', false);
+        $target.find('#_SNLOAD').remove();
+        setLegacyDialogActionsDisabled(false);
         return 0;
     }
 }
