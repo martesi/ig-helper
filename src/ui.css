@@ -136,20 +136,6 @@
     height: 18px;
 }
 
-.button_wrapper.IG_CONTROL_BAR {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 1;
-    line-height: 0;
-}
-
-.ig-helper-ui .IG_POST_CONTROL {
-    width: 28px;
-    height: 28px;
-    padding: 5px;
-    border-radius: 8px;
-}
 
 #imageViewer {
     position: fixed;
@@ -168,6 +154,7 @@
     top: 16px;
     right: 16px;
     left: auto;
+    z-index: 1;
     width: auto;
     height: auto;
     padding: 6px;
@@ -250,17 +237,6 @@
     resize: vertical;
 }
 
-.IG_LEGACY_CONTROL {
-    box-sizing: border-box;
-    border: 0;
-    background: transparent;
-    color: inherit;
-}
-
-.IG_LEGACY_CONTROL svg {
-    width: 20px;
-    height: 20px;
-}
 
 /* Authoritative app-shell rules. Keep these after legacy compatibility CSS. */
 .ig-helper-ui {
@@ -273,9 +249,6 @@
     --ring: #0095f6;
 }
 
-.button_wrapper.IG_CONTROL_BAR {
-    flex-flow: row;
-}
 
 #ig-helper-image-viewer-root {
     position: fixed;

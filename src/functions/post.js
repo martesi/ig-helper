@@ -663,10 +663,9 @@ async function downloadPostResource(target) {
 
                 const $popupBody = $(getLegacyPopupBody());
                 const $targetLink = $popupBody.find('a[data-globalindex="' + (index + 1) + '"]');
-                const href = $targetLink.data('href');
 
-                if ($targetLink.length > 0 && href) {
-                    $targetLink.trigger("click");
+                if ($targetLink.length > 0 && $targetLink.data('href')) {
+                    await triggerLinkElement($targetLink.first()[0], false);
                 }
                 else {
                     alert('Cannot find download URL.');

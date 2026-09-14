@@ -1,5 +1,5 @@
 import legacyStyles from '../style.css?inline';
-import uiStyles from './ui.css?inline';
+import lightDomStyles from './light-dom.css?inline';
 
 GM_addStyle(legacyStyles);
-GM_addStyle(uiStyles);
+GM_addStyle(lightDomStyles);
