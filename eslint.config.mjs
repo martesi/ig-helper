@@ -5,12 +5,13 @@ import importPlugin from "eslint-plugin-import";
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
-    files: ["**/*.{js,mjs}"],
+    files: ["**/*.{js,mjs,jsx}"],
     plugins: {
       import: importPlugin,
     },
     languageOptions: {
       sourceType: "module",
+      parserOptions: { ecmaFeatures: { jsx: true } },
       globals: {
         // **
         ...globals.browser,

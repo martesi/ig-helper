@@ -5,6 +5,7 @@ import { _i18n } from "./i18n";
 import { getPostOwner, getMediaInfo, getUserId } from "./api";
 import { getImageFromCache } from "./image_cache";
 import { registerPostClickHandlers } from "../functions/post";
+import { appendCounter, appendDownloadProgress, appendVolumeSlider } from "../ui/status.jsx";
 
 /**
  * getStoryId
@@ -296,8 +297,7 @@ export function setStoryProgressIndexText($element, $header, className) {
         .replace('%TOTAL%', progress.total);
 
     if ($counter.length === 0) {
-        $counter = $('<div>').addClass(className);
-        $element.append($counter);
+        $counter = $(appendCounter($element[0], className));
     }
 
     if ($counter.text() !== text) {
@@ -352,7 +352,7 @@ export function setDownloadProgress(now, total) {
         }
     }
     else {
-        $body.append(`<div class="circle_wrapper"><circle></circle><span>${now}/${total}</span></div>`);
+        appendDownloadProgress(document.body, now, total);
     }
 }
 
@@ -1392,9 +1392,8 @@ export function toggleVolumeSilder($videos, $buttonParent, loggerType, customCla
     // OPTIMIZATION: cache the volume_slider lookup
     let $existingSlider = $buttonParent.find('div.volume_slider');
     if ($existingSlider.length === 0) {
-        $buttonParent.append(`<div class="volume_slider ${customClass}" />`);
-        const $newSlider = $buttonParent.find('div.volume_slider');
-        $newSlider.append(`<div><input type="range" max="1" min="0" step="0.05" value="${state.videoVolume}" /></div>`);
+        const slider = appendVolumeSlider($buttonParent[0], Number(state.videoVolume), customClass);
+        const $newSlider = $(slider);
         const $sliderInput = $newSlider.find('input');
         $sliderInput.attr('style', `--ig-track-progress: ${(state.videoVolume * 100) + '%'}`);
         $sliderInput.on('input', function () {

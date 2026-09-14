@@ -10,11 +10,11 @@ import { onStory, onStoryAll, onStoryThumbnail } from "./functions/story";
 import { onProfileAvatar } from "./functions/profile";
 import { onHighlightsStory, onHighlightsStoryAll, onHighlightsStoryThumbnail } from "./functions/highlight";
 import { onReels } from "./functions/reel";
-import { _i18n, getTranslationText, repaintingTranslations } from "./utils/i18n";
+import { _i18n } from "./utils/i18n";
 import { getImageFromCache, registerPerformanceObserver } from "./utils/image_cache";
 import { batchDownloadPostFiles, createDownloadButton } from "./functions/post";
-import { registerMenuCommand, showDebugDOM, showHotkeySetting, showSetting } from "./utils/dialog";
-import { closeSettingsDialog } from './utils/settings_dialog';
+import { showDebugDOM, showHotkeySetting, showSetting } from "./utils/dialog";
+import { closeSettingsDialog } from './utils/settings_dialog.jsx';
 
 // Running if document is ready
 $(function () {
@@ -93,15 +93,7 @@ $(function () {
 
     // Close the download dialog if user click the close icon
     $body.on('click', '.IG_POPUP_DIG_BTN, .IG_POPUP_DIG_BG', function () {
-        const $this = $(this);
-        if ($this.parent('#tempWrapper').length > 0) {
-            $this.parent('#tempWrapper').fadeOut(250, function () {
-                $(this).remove();
-            });
-        }
-        else {
-            $('.IG_POPUP_DIG').remove();
-        }
+        $('.IG_POPUP_DIG').remove();
     });
 
     $(window).on('keydown', function (e) {
@@ -121,8 +113,8 @@ $(function () {
         let keySettingsHotkeyKeyCode = state.keySettingsHotkeyKeyCode || 67;
         if (e.altKey && e.which == keySettingsHotkeyKeyCode) {
             const $popup = $('.IG_POPUP_DIG');
-            if ($popup.length > 0 && $popup.find('#post_info').text() === 'Hotkey Settings') {
-                $popup.remove();
+            if ($popup.is('.IG_SETTINGS_DIALOG[data-settings-tab="keyboard"]')) {
+                closeSettingsDialog();
             } else {
                 showHotkeySetting();
             }
@@ -153,70 +145,6 @@ $(function () {
             }
             e.preventDefault();
         }
-    });
-
-    $body.on('change', '.IG_POPUP_DIG input', function () {
-        const $this = $(this);
-        var name = $this.attr('id');
-
-        if (name && USER_SETTING[name] !== undefined) {
-            let isChecked = $this.prop('checked');
-            GM_setValue(name, isChecked);
-            USER_SETTING[name] = isChecked;
-
-            console.log('user settings', name, isChecked);
-        }
-    });
-
-    $body.on('click', '.IG_POPUP_DIG .globalSettings', function (e) {
-        if ($(this).find('#tempWrapper').length > 0) {
-            e.preventDefault();
-        }
-    });
-
-    $body.on('change', '.IG_POPUP_DIG #tempWrapper input:not(#date_format)', function () {
-        const $this = $(this);
-        let value = $this.val();
-
-        if ($this.attr('type') == 'range') {
-            $this.next().val(value);
-        }
-        else {
-            $this.prev().val(value);
-        }
-
-        if (value >= 0 && value <= 1) {
-            state.videoVolume = value;
-            GM_setValue('G_VIDEO_VOLUME', value);
-        }
-    });
-
-    $body.on('input', '.IG_POPUP_DIG #tempWrapper input:not(#date_format)', function () {
-        const $this = $(this);
-        if ($this.attr('type') == 'range') {
-            let value = $this.val();
-            $this.next().val(value);
-        }
-        else {
-            let value = $this.val();
-            if (value >= 0 && value <= 1) {
-                $this.prev().val(value);
-            }
-            else {
-                if (value < 0) {
-                    $this.val(0);
-                }
-                else {
-                    $this.val(1);
-                }
-            }
-        }
-    });
-
-    $body.on('input', '.IG_POPUP_DIG #tempWrapper input#date_format', function () {
-        const val = $(this).val();
-        GM_setValue('G_RENAME_FORMAT', val);
-        state.fileRenameFormat = val;
     });
 
     $body.on('click', 'a[data-needed="direct"]', function (e) {
@@ -398,27 +326,6 @@ $(function () {
         }
         else {
             batchDownloadPostFiles(links);
-        }
-    });
-
-    $body.on('change', '.IG_POPUP_DIG_TITLE #langSelect', function () {
-        const $this = $(this);
-        const val = $this.val();
-        GM_setValue('UI_LANGUAGE', val);
-        state.lang = val;
-
-        if (state.lang?.startsWith('en') || state.locale[state.lang] != null) {
-            repaintingTranslations();
-            registerMenuCommand();
-        }
-        else {
-            getTranslationText(state.lang).then((res) => {
-                state.locale[state.lang] = res;
-                repaintingTranslations();
-                registerMenuCommand();
-            }).catch((err) => {
-                console.error('getTranslationText catch error:', err);
-            });
         }
     });
 

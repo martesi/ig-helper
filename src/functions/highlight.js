@@ -1,5 +1,6 @@
 import $ from 'jquery';
 import { USER_SETTING, SVG, state } from "../settings";
+import { appendLegacyControl } from "../ui/legacy_controls.jsx";
 import {
     updateLoadingBar, openNewTab, logger,
     setDownloadProgress, saveFiles, getStoryProgress,
@@ -314,12 +315,12 @@ export async function onHighlightsStory(isDownload, isPreview) {
 
             if ($element != null) {
                 //$element.css('position','relative');
-                $element.append(`<div data-ih-locale-title="DW" title="${_i18n("DW")}" class="IG_DWHISTORY">${SVG.DOWNLOAD}</div>`);
-                $element.append(`<div data-ih-locale-title="NEW_TAB" title="${_i18n("NEW_TAB")}" class="IG_DWHINEWTAB">${SVG.NEW_TAB}</div>`);
+                appendLegacyControl($element[0], { className: "IG_DWHISTORY", labelKey: "DW", label: _i18n("DW"), icon: SVG.DOWNLOAD });
+                appendLegacyControl($element[0], { className: "IG_DWHINEWTAB", labelKey: "NEW_TAB", label: _i18n("NEW_TAB"), icon: SVG.NEW_TAB });
 
                 let $header = getStoryProgress(username);
                 if ($header.length > 1) {
-                    $element.append(`<div data-ih-locale-title="DW_ALL" title="${_i18n("DW_ALL")}" class="IG_DWHISTORY_ALL">${SVG.DOWNLOAD_ALL}</div>`);
+                    appendLegacyControl($element[0], { className: "IG_DWHISTORY_ALL", labelKey: "DW_ALL", label: _i18n("DW_ALL"), icon: SVG.DOWNLOAD_ALL });
                 }
 
                 setStoryProgressIndexText($element, $header, 'IG_DWHISTORY_POSITION');
@@ -534,7 +535,7 @@ export async function onHighlightsStoryThumbnail(isDownload) {
                 }
 
                 if ($element != null) {
-                    $element.append(`<div data-ih-locale-title="VIDEO_THUMBNAIL" title="${_i18n("VIDEO_THUMBNAIL")}" class="IG_DWHISTORY_THUMBNAIL">${SVG.THUMBNAIL}</div>`);
+                    appendLegacyControl($element[0], { className: "IG_DWHISTORY_THUMBNAIL", labelKey: "VIDEO_THUMBNAIL", label: _i18n("VIDEO_THUMBNAIL"), icon: SVG.THUMBNAIL });
                 }
             }
         }

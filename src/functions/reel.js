@@ -1,5 +1,6 @@
 import $ from 'jquery';
 import { USER_SETTING, SVG, state } from "../settings";
+import { appendLegacyControl, appendReelScrollControls } from "../ui/legacy_controls.jsx";
 import { updateLoadingBar, saveFiles, openNewTab, logger, toggleVolumeSilder, triggerReactClickHandler } from "../utils/general";
 import { getBlobMedia } from "../utils/api";
 import { filterResourceData } from "./post";
@@ -112,10 +113,8 @@ export async function onReels(isDownload, isVideo, isPreview) {
                         $('#scrollWrapper').remove();
                         // OPTIMIZATION: cache reels main element (used 5 times below)
                         const $reelsMain = $('section > main[role="main"]');
-                        $reelsMain.append('<section id="scrollWrapper"></section>');
-                        const $scrollWrapper = $reelsMain.find('> #scrollWrapper');
-                        $scrollWrapper.append('<div class="button-up"><div></div></div>');
-                        $scrollWrapper.append('<div class="button-down"><div></div></div>');
+                        const scrollWrapper = appendReelScrollControls($reelsMain[0]);
+                        const $scrollWrapper = $(scrollWrapper);
 
                         $scrollWrapper.find('> .button-up').on('click', function () {
                             $reelsMain.find('> div')[0].scrollBy({ top: -30, behavior: "smooth" });
@@ -151,9 +150,9 @@ function appendReelsButton($main) {
     if (!$mainChildren.find('.IG_REELS').length) {
         $mainChildren.css('position', 'relative');
 
-        $mainChildren.append(`<div data-ih-locale-title="DW" title="${_i18n("DW")}" class="IG_REELS">${SVG.DOWNLOAD}</div>`);
-        $mainChildren.append(`<div data-ih-locale-title="NEW_TAB" title="${_i18n("NEW_TAB")}" class="IG_REELS_NEWTAB">${SVG.NEW_TAB}</div>`);
-        $mainChildren.append(`<div data-ih-locale-title="VIDEO_THUMBNAIL" title="${_i18n("VIDEO_THUMBNAIL")}" class="IG_REELS_THUMBNAIL">${SVG.THUMBNAIL}</div>`);
+        appendLegacyControl($mainChildren[0], { className: "IG_REELS", labelKey: "DW", label: _i18n("DW"), icon: SVG.DOWNLOAD });
+        appendLegacyControl($mainChildren[0], { className: "IG_REELS_NEWTAB", labelKey: "NEW_TAB", label: _i18n("NEW_TAB"), icon: SVG.NEW_TAB });
+        appendLegacyControl($mainChildren[0], { className: "IG_REELS_THUMBNAIL", labelKey: "VIDEO_THUMBNAIL", label: _i18n("VIDEO_THUMBNAIL"), icon: SVG.THUMBNAIL });
 
         const $videos = $main.find('video');
 

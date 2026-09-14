@@ -10,7 +10,9 @@ import {
 } from "../utils/general";
 import { getBlobMedia, getMediaInfo } from "../utils/api";
 import { _i18n } from "../utils/i18n";
-import { openImageViewer } from "../utils/image_viewer";
+import { openImageViewer } from "../utils/image_viewer.jsx";
+import { mountPostControls } from "../ui/post_controls.jsx";
+import { appendLoadingMessage, appendMediaResource, decorateMediaResource, renderPostIdLink } from "../ui/media_resource.jsx";
 import { mediaIdFromURL } from "../utils/image_cache";
 import { IG_createDM, IG_setDM } from "../utils/dialog";
 
@@ -316,25 +318,15 @@ export function createDownloadButton() {
                     return;
                 }
 
-                $resourceLayout.append(`<div class="button_wrapper">`);
-
-                // Add icons
-                const DownloadElement = `<div data-ih-locale-title="DW" title="${_i18n("DW")}" class="IG_DW_MAIN">${SVG.DOWNLOAD}</div>`;
-                const NewTabElement = `<div data-ih-locale-title="NEW_TAB" title="${_i18n("NEW_TAB")}" class="IG_NEWTAB_MAIN">${SVG.NEW_TAB}</div>`;
-                const ThumbnailElement = `<div data-ih-locale-title="VIDEO_THUMBNAIL" title="${_i18n("VIDEO_THUMBNAIL")}" class="IG_THUMBNAIL_MAIN">${SVG.THUMBNAIL}</div>`;
-                const ViewerElement = `<div data-ih-locale-title="IMAGE_VIEWER" title="${_i18n("IMAGE_VIEWER")}" class="IG_IMAGE_VIEWER">${SVG.FULLSCREEN}</div>`;
-
-                const $buttonWrapper = $resourceLayout.children(".button_wrapper");
-                $buttonWrapper.append(DownloadElement);
+                const controlsMount = document.createElement('div');
+                controlsMount.className = 'button_wrapper IG_CONTROL_BAR ig-helper-ui';
+                $resourceLayout[0].append(controlsMount);
 
                 const resource_count = $mainElement.find(resourceCountSelector).length;
+                const showDownloadAll = resource_count > 1 && USER_SETTING.DIRECT_DOWNLOAD_VISIBLE_RESOURCE && !USER_SETTING.DIRECT_DOWNLOAD_ALL;
+                mountPostControls(controlsMount, { showDownloadAll, mediaType: 'image' });
 
-                if (resource_count > 1 && USER_SETTING.DIRECT_DOWNLOAD_VISIBLE_RESOURCE && !USER_SETTING.DIRECT_DOWNLOAD_ALL) {
-                    const DownloadAllElement = `<div data-ih-locale-title="DW_ALL" title="${_i18n("DW_ALL")}" class="IG_DW_ALL_MAIN">${SVG.DOWNLOAD_ALL}</div>`;
-                    $buttonWrapper.append(DownloadAllElement);
-                }
-
-                $buttonWrapper.append(NewTabElement);
+                const $buttonWrapper = $(controlsMount);
 
                 let $isNewPostStyleLayout = $resourceLayout.find(`a[role="link"][tabindex="0"][href^="/"]`).filter(function () {
                     const href = $(this).attr('href');
@@ -352,26 +344,16 @@ export function createDownloadButton() {
                         entries.forEach((entry) => {
                             if (entry.isIntersecting) {
                                 var $targetNode = $(entry.target);
-                                // OPTIMIZATION: combined remove selector instead of 2 separate
-                                $childElement.find('.IG_THUMBNAIL_MAIN, .IG_IMAGE_VIEWER').remove();
-
                                 // Check if video?
                                 if ($targetNode.find('video').length > 0) {
-                                    // FIX: clear any stale image URL when the visible item is a video
                                     $mainElement.removeData('igHelper_displayResourceURL');
-
-                                    if ($childElement.find('.IG_THUMBNAIL_MAIN').length === 0) {
-                                        $childElement.find(".button_wrapper").append(ThumbnailElement);
-                                    }
-
+                                    mountPostControls(controlsMount, { showDownloadAll, mediaType: 'video' });
                                     initPostVideoFunction($mainElement);
                                 }
-                                // is Image
                                 else {
                                     const imgSrc = $targetNode.find('img').attr('src');
                                     $mainElement.data('igHelper_displayResourceURL', imgSrc);
-
-                                    $childElement.find(".button_wrapper").append(ViewerElement);
+                                    mountPostControls(controlsMount, { showDownloadAll, mediaType: 'image' });
                                 }
                             }
                         });
@@ -618,7 +600,7 @@ export function registerPostClickHandlers() {
             state.GL_postPath = postPath;
 
             IG_createDM(USER_SETTING.DIRECT_DOWNLOAD_ALL, true);
-            $("#article-id").html(`<a href="https://www.instagram.com/p/${state.GL_postPath}">${state.GL_postPath}</a>`);
+            renderPostIdLink(document.getElementById('article-id'), state.GL_postPath);
 
             const totalInserted = await createMediaListDOM(
                 state.GL_postPath,
@@ -658,7 +640,7 @@ export function registerPostClickHandlers() {
             state.GL_postPath = postPath;
 
             IG_createDM(USER_SETTING.DIRECT_DOWNLOAD_ALL, true);
-            $("#article-id").html(`<a href="https://www.instagram.com/p/${state.GL_postPath}">${state.GL_postPath}</a>`);
+            renderPostIdLink(document.getElementById('article-id'), state.GL_postPath);
 
             if (USER_SETTING.DIRECT_DOWNLOAD_VISIBLE_RESOURCE) {
                 updateLoadingBar(true);
@@ -741,7 +723,7 @@ export function registerPostClickHandlers() {
                                 blob = true;
                             }
                             if (element_images && imgLink) {
-                                $popupBody.append(`<a datetime="${publish_time}" data-needed="direct" data-path="${state.GL_postPath}" data-name="photo" data-type="jpg" data-username="${state.GL_username || ''}" data-globalIndex="${s}" href="javascript:;" data-href="${imgLink}"><img width="100" src="${imgLink}" /><br/>- <span data-ih-locale="IMG">${_i18n("IMG")}</span> ${s} -</a>`);
+                                appendMediaResource($popupBody[0], { datetime: publish_time, name: 'photo', type: 'jpg', username: state.GL_username, path: state.GL_postPath, index: s, href: imgLink, preview: imgLink, labelKey: 'IMG', label: _i18n('IMG') });
                             }
                         });
 
@@ -776,25 +758,19 @@ export function registerPostClickHandlers() {
                             );
                         }
                         if (element_images && imgLink) {
-                            $('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY').append(`<a datetime="${publish_time}" data-needed="direct" data-path="${state.GL_postPath}" data-name="photo" data-type="jpg" data-username="${state.GL_username || ''}" data-globalIndex="${s}" href="javascript:;" data-href="${imgLink}"><img width="100" src="${imgLink}" /><br/>- <span data-ih-locale="IMG">${_i18n("IMG")}</span> ${s} -</a>`);
+                            appendMediaResource(document.querySelector('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY'), { datetime: publish_time, name: 'photo', type: 'jpg', username: state.GL_username, path: state.GL_postPath, index: s, href: imgLink, preview: imgLink, labelKey: 'IMG', label: _i18n('IMG') });
                         }
                     }
                 }
             }
 
-            $('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY a').each(function () {
-                const $a = $(this);
-                if ($a.parent().is('div') && $a.prev('.inner_box_wrapper').length > 0) {
-                    return;
-                }
-
-                $a.wrap('<div></div>');
-                $a.before('<label class="inner_box_wrapper"><input class="inner_box" type="checkbox"><span></span></label>');
-                $a.after(`<div data-ih-locale-title="NEW_TAB" title="${_i18n("NEW_TAB")}" class="newTab">${SVG.NEW_TAB}</div>`);
-
-                if ($a.data('name') == 'video') {
-                    $a.after(`<div data-ih-locale-title="VIDEO_THUMBNAIL" title="${_i18n("VIDEO_THUMBNAIL")}" class="videoThumbnail">${SVG.THUMBNAIL}</div>`);
-                }
+            document.querySelectorAll('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY a').forEach(anchor => {
+                if (anchor.parentElement?.querySelector(':scope > .inner_box_wrapper')) return;
+                decorateMediaResource(anchor, {
+                    icons: { newTab: SVG.NEW_TAB, thumbnail: SVG.THUMBNAIL },
+                    labels: { newTab: _i18n('NEW_TAB'), thumbnail: _i18n('VIDEO_THUMBNAIL') },
+                    includeThumbnail: anchor.dataset.name === 'video',
+                });
             });
 
             if (USER_SETTING.DIRECT_DOWNLOAD_ALL) {
@@ -862,7 +838,7 @@ export async function createMediaListDOM(postURL, selector, message) {
         // OPTIMIZATION: cache the popup body selection used many times below
         const $target = $(selector);
         $target.find('a').remove();
-        $target.append('<p id="_SNLOAD">' + message + '</p>');
+        appendLoadingMessage($target[0], message);
         $('.IG_POPUP_DIG #batch_download_selected, .IG_POPUP_DIG #batch_download_direct').prop('disabled', true);
         let result = await getBlobMedia(postURL);
         let resource = filterResourceData(result.data);
@@ -872,7 +848,7 @@ export async function createMediaListDOM(postURL, selector, message) {
 
             // GraphVideo
             if (resource.__typename == "GraphVideo" && resource.video_url) {
-                $target.append(`<a media-id="${resource.id}" datetime="${resource.taken_at_timestamp}" data-blob="true" data-needed="direct" data-path="${resource.shortcode}" data-name="video" data-type="mp4" data-username="${resource.owner.username}" data-globalIndex="${idx}" href="javascript:;" data-href="${resource.video_url}"><img width="100" src="${resource.display_resources[1].src}" /><br/>- <span data-ih-locale="VID">${_i18n("VID")}</span> ${idx} -</a>`);
+                appendMediaResource($target[0], { mediaId: resource.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'video', type: 'mp4', username: resource.owner.username, index: idx, href: resource.video_url, preview: resource.display_resources[1].src, labelKey: 'VID', label: _i18n('VID') });
                 idx++;
 
                 if (resource.video_dash_manifest) {
@@ -881,21 +857,21 @@ export async function createMediaListDOM(postURL, selector, message) {
             }
             // GraphImage
             if (resource.__typename == "GraphImage") {
-                $target.append(`<a media-id="${resource.id}" datetime="${resource.taken_at_timestamp}" data-blob="true" data-needed="direct" data-path="${resource.shortcode}" data-name="photo" data-type="jpg" data-username="${resource.owner.username}" data-globalIndex="${idx}" href="javascript:;" data-href="${resource.display_resources[resource.display_resources.length - 1].src}"><img width="100" src="${resource.display_resources[1].src}" /><br/>- <span data-ih-locale="IMG">${_i18n("IMG")}</span> ${idx} -</a>`);
+                appendMediaResource($target[0], { mediaId: resource.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'photo', type: 'jpg', username: resource.owner.username, index: idx, href: resource.display_resources[resource.display_resources.length - 1].src, preview: resource.display_resources[1].src, labelKey: 'IMG', label: _i18n('IMG') });
                 idx++;
             }
             // GraphSidecar
             if (resource.__typename == "GraphSidecar" && resource.edge_sidecar_to_children) {
                 for (let e of resource.edge_sidecar_to_children.edges) {
                     if (e.node.__typename == "GraphVideo") {
-                        $target.append(`<a media-id="${e.node.id}" datetime="${resource.taken_at_timestamp}" data-blob="true" data-needed="direct" data-path="${resource.shortcode}" data-name="video" data-type="mp4" data-username="${resource.owner.username}" data-globalIndex="${idx}" href="javascript:;" data-href="${e.node.video_url}"><img width="100" src="${e.node.display_resources[1].src}" /><br/>- <span data-ih-locale-title="VID">${_i18n("VID")}</span> ${idx} -</a>`);
+                        appendMediaResource($target[0], { mediaId: e.node.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'video', type: 'mp4', username: resource.owner.username, index: idx, href: e.node.video_url, preview: e.node.display_resources[1].src, labelKey: 'VID', label: _i18n('VID') });
                         if (e.node.video_dash_manifest) {
                             state.GL_mediaDataCache[e.node.id] = e.node;
                         }
                     }
 
                     if (e.node.__typename == "GraphImage") {
-                        $target.append(`<a media-id="${e.node.id}" datetime="${resource.taken_at_timestamp}" data-blob="true" data-needed="direct" data-path="${resource.shortcode}" data-name="photo" data-type="jpg" data-username="${resource.owner.username}" data-globalIndex="${idx}" href="javascript:;" data-href="${e.node.display_resources[e.node.display_resources.length - 1].src}"><img width="100" src="${e.node.display_resources[1].src}" /><br/>- <span data-ih-locale="IMG">${_i18n("IMG")}</span> ${idx} -</a>`);
+                        appendMediaResource($target[0], { mediaId: e.node.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'photo', type: 'jpg', username: resource.owner.username, index: idx, href: e.node.display_resources[e.node.display_resources.length - 1].src, preview: e.node.display_resources[1].src, labelKey: 'IMG', label: _i18n('IMG') });
                     }
                     idx++;
                 }
@@ -925,11 +901,11 @@ export async function createMediaListDOM(postURL, selector, message) {
                             return 0;
                         });
 
-                        $target.append(`<a media-id="${mda.pk}" datetime="${mda.taken_at}" data-blob="true" data-needed="direct" data-path="${resource.code}" data-name="photo" data-type="jpg" data-username="${resource.owner.username}" data-globalIndex="${idx}" href="javascript:;" data-href="${mda.image_versions2.candidates[0].url}"><img width="100" src="${mda.image_versions2.candidates[0].url}" /><br/>- <span data-ih-locale="IMG">${_i18n("IMG")}</span> ${idx} -</a>`);
+                        appendMediaResource($target[0], { mediaId: mda.pk, datetime: mda.taken_at, blob: true, path: resource.code, name: 'photo', type: 'jpg', username: resource.owner.username, index: idx, href: mda.image_versions2.candidates[0].url, preview: mda.image_versions2.candidates[0].url, labelKey: 'IMG', label: _i18n('IMG') });
                     }
                     // Video
                     else {
-                        $target.append(`<a media-id="${mda.pk}" datetime="${mda.taken_at}" data-blob="true" data-needed="direct" data-path="${resource.code}" data-name="video" data-type="mp4" data-username="${resource.owner.username}" data-globalIndex="${idx}" href="javascript:;" data-href="${mda.video_versions[0].url}"><img width="100" src="${mda.image_versions2.candidates[0].url}" /><br/>- <span data-ih-locale="VID">${_i18n("VID")}</span> ${idx} -</a>`);
+                        appendMediaResource($target[0], { mediaId: mda.pk, datetime: mda.taken_at, blob: true, path: resource.code, name: 'video', type: 'mp4', username: resource.owner.username, index: idx, href: mda.video_versions[0].url, preview: mda.image_versions2.candidates[0].url, labelKey: 'VID', label: _i18n('VID') });
                         if (mda.video_dash_manifest) {
                             state.GL_mediaDataCache[mda.pk] = mda;
                         }
@@ -956,29 +932,26 @@ export async function createMediaListDOM(postURL, selector, message) {
                         return 0;
                     });
 
-                    $target.append(`<a media-id="${resource.pk}" datetime="${resource.taken_at}" data-blob="true" data-needed="direct" data-path="${resource.code}" data-name="photo" data-type="jpg" data-username="${resource.owner.username}" data-globalIndex="${idx}" href="javascript:;" data-href="${resource.image_versions2.candidates[0].url}"><img width="100" src="${resource.image_versions2.candidates[0].url}" /><br/>- <span data-ih-locale="IMG">${_i18n("IMG")}</span> ${idx} -</a>`);
+                    appendMediaResource($target[0], { mediaId: resource.pk, datetime: resource.taken_at, blob: true, path: resource.code, name: 'photo', type: 'jpg', username: resource.owner.username, index: idx, href: resource.image_versions2.candidates[0].url, preview: resource.image_versions2.candidates[0].url, labelKey: 'IMG', label: _i18n('IMG') });
                 }
                 // Video
                 else {
                     if (resource.video_dash_manifest) {
                         state.GL_mediaDataCache[resource.pk] = resource;
                     }
-                    $target.append(`<a media-id="${resource.pk}" datetime="${resource.taken_at}" data-blob="true" data-needed="direct" data-path="${resource.code}" data-name="video" data-type="mp4" data-username="${resource.owner.username}" data-globalIndex="${idx}" href="javascript:;" data-href="${resource.video_versions[0].url}"><img width="100" src="${resource.image_versions2.candidates[0].url}" /><br/>- <span data-ih-locale="VID">${_i18n("VID")}</span> ${idx} -</a>`);
+                    appendMediaResource($target[0], { mediaId: resource.pk, datetime: resource.taken_at, blob: true, path: resource.code, name: 'video', type: 'mp4', username: resource.owner.username, index: idx, href: resource.video_versions[0].url, preview: resource.image_versions2.candidates[0].url, labelKey: 'VID', label: _i18n('VID') });
                 }
             }
         }
 
         $("#_SNLOAD").remove();
         $('.IG_POPUP_DIG #batch_download_selected, .IG_POPUP_DIG #batch_download_direct').prop('disabled', false);
-        $('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY a').each(function () {
-            const $a = $(this);
-            $a.wrap('<div></div>');
-            $a.before('<label class="inner_box_wrapper"><input class="inner_box" type="checkbox"><span></span></label>');
-            $a.after(`<div data-ih-locale-title="NEW_TAB" title="${_i18n("NEW_TAB")}" class="newTab">${SVG.NEW_TAB}</div>`);
-
-            if ($a.data('name') == 'video') {
-                $a.after(`<div data-ih-locale-title="VIDEO_THUMBNAIL" title="${_i18n("VIDEO_THUMBNAIL")}" class="videoThumbnail">${SVG.THUMBNAIL}</div>`);
-            }
+        document.querySelectorAll('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_BODY a').forEach(anchor => {
+            decorateMediaResource(anchor, {
+                icons: { newTab: SVG.NEW_TAB, thumbnail: SVG.THUMBNAIL },
+                labels: { newTab: _i18n('NEW_TAB'), thumbnail: _i18n('VIDEO_THUMBNAIL') },
+                includeThumbnail: anchor.dataset.name === 'video',
+            });
         });
         updatePopupSelectionSummary();
 

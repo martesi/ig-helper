@@ -1,4 +1,3 @@
-import $ from 'jquery';
 import { state } from "../settings";
 import { logger } from "./general";
 
@@ -43,7 +42,18 @@ export function translateText() {
             "NO_CHECK_RESOURCE": "You need to select a resource to download.",
             "NO_VID_URL": "Cannot find video URL.",
             "SETTING": "Settings",
+            "SETTINGS_DESCRIPTION": "Control downloads, media behavior, and keyboard shortcuts.",
+            "SETTINGS_SECTIONS": "Settings sections",
+            "SETTINGS_PREFERENCES": "Preferences",
+            "SETTINGS_KEYBOARD": "Keyboard shortcuts",
+            "SETTINGS_LANGUAGE": "Language",
+            "SETTINGS_LANGUAGE_NOTE": "Some translations are machine-generated and may be inaccurate.",
+            "SETTINGS_VIDEO_VOLUME": "Video volume",
+            "SETTINGS_VIDEO_VOLUME_VALUE": "Video volume value",
+            "SETTINGS_FILE_NAME_FORMAT": "File name format",
+            "SETTINGS_SHORTCUT_NOTE": "Choose the key used with",
             "AUTO_RENAME": "Automatically Rename Files (Right-Click to Set)",
+            "AUTO_RENAME_SETTINGS_LABEL": "Automatically Rename Files",
             "RENAME_PUBLISH_DATE": "Set Renamed File Timestamp to Resource Publish Date",
             "RENAME_LOCATE_DATE": "Modify Renamed File Timestamp Date Format (Right-Click to Set)",
             "DISABLE_VIDEO_LOOPING": "Disable Video Auto-looping",
@@ -54,6 +64,7 @@ export function translateText() {
             "DIRECT_DOWNLOAD_ALL": "Directly Download All Resources in the Post",
             "DIRECT_DOWNLOAD_STORY": "Directly Download All Resources in the Story/Highlight",
             "MODIFY_VIDEO_VOLUME": "Modify Video Volume (Right-Click to Set)",
+            "MODIFY_VIDEO_VOLUME_SETTINGS_LABEL": "Modify Video Volume",
             "MODIFY_RESOURCE_EXIF": "Modify Resource EXIF Properties",
             "SCROLL_BUTTON": "Enable Scroll Buttons for Reels Page",
             "FORCE_RESOURCE_VIA_MEDIA": "Force Fetch Resource via Media API",
@@ -194,12 +205,10 @@ export function _i18n(text) {
  * @return {void}
  */
 export function repaintingTranslations() {
-    $('[data-ih-locale]').each(function () {
-        const $this = $(this);
-        $this.text(_i18n($this.data('ih-locale')));
+    document.querySelectorAll('[data-ih-locale]').forEach(element => {
+        element.textContent = _i18n(element.dataset.ihLocale);
     });
-    $('[data-ih-locale-title]').each(function () {
-        const $this = $(this);
-        $this.attr('title', _i18n($this.data('ih-locale-title')));
+    document.querySelectorAll('[data-ih-locale-title]').forEach(element => {
+        element.title = _i18n(element.dataset.ihLocaleTitle);
     });
 }

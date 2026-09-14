@@ -1,5 +1,7 @@
 import $ from 'jquery';
 import { USER_SETTING, SVG, state } from "../settings";
+import { appendLegacyControl } from "../ui/legacy_controls.jsx";
+import { appendMediaResource, decorateMediaResource } from "../ui/media_resource.jsx";
 import {
     updateLoadingBar, setDownloadProgress,
     saveFiles, getStoryProgress, openNewTab, logger,
@@ -47,22 +49,19 @@ export async function createStoryListDOM(obj, type) {
             });
 
             if (item.is_video) {
-                $selector.append(`<a media-id="${item.id}" datetime="${timestamp}" data-blob="true" data-needed="direct" data-name="${type}" data-type="mp4" data-username="${username}" data-path="${item.id}" data-globalIndex="${idx + 1}" href="javascript:;" data-href="${item.video_resources[0].src}"><img width="100" src="${item.display_resources[0].src}" /><br/>- <span data-ih-locale-title="VID">${_i18n("VID")}</span> ${idx} -</a>`);
+                appendMediaResource($selector[0], { mediaId: item.id, datetime: timestamp, blob: true, name: type, type: 'mp4', username, path: item.id, index: idx + 1, displayIndex: idx, href: item.video_resources[0].src, preview: item.display_resources[0].src, labelKey: 'VID', label: _i18n('VID') });
             }
             else {
-                $selector.append(`<a media-id="${item.id}" datetime="${timestamp}" data-blob="true" data-needed="direct" data-name="${type}" data-type="jpg" data-username="${username}" data-path="${item.id}" data-globalIndex="${idx + 1}" href="javascript:;" data-href="${item.display_resources[0].src}"><img width="100" src="${item.display_resources[0].src}" /><br/>- <span data-ih-locale-title="IMG">${_i18n("IMG")}</span> ${idx} -</a>`);
+                appendMediaResource($selector[0], { mediaId: item.id, datetime: timestamp, blob: true, name: type, type: 'jpg', username, path: item.id, index: idx + 1, displayIndex: idx, href: item.display_resources[0].src, preview: item.display_resources[0].src, labelKey: 'IMG', label: _i18n('IMG') });
             }
         });
 
         $selector.find('a').each(function () {
-            const $a = $(this);
-            $a.wrap('<div></div>');
-            $a.before('<label class="inner_box_wrapper"><input class="inner_box" type="checkbox"><span></span></label>');
-            $a.after(`<div data-ih-locale-title="NEW_TAB" title="${_i18n("NEW_TAB")}" class="newTab">${SVG.NEW_TAB}</div>`);
-
-            if ($a.data('type') == 'mp4') {
-                $a.after(`<div data-ih-locale-title="VIDEO_THUMBNAIL" title="${_i18n("VIDEO_THUMBNAIL")}" class="videoThumbnail">${SVG.THUMBNAIL}</div>`);
-            }
+            decorateMediaResource(this, {
+                icons: { newTab: SVG.NEW_TAB, thumbnail: SVG.THUMBNAIL },
+                labels: { newTab: _i18n('NEW_TAB'), thumbnail: _i18n('VIDEO_THUMBNAIL') },
+                includeThumbnail: this.dataset.type === 'mp4',
+            });
         });
 
         updatePopupSelectionSummary();
@@ -566,12 +565,12 @@ export async function onStory(isDownload, isForce, isPreview) {
                 // OPTIMIZATION: cache .first() once
                 const $firstEl = $element.first();
                 $firstEl.css('position', 'relative');
-                $firstEl.append(`<div data-ih-locale-title="DW" title="${_i18n("DW")}" class="IG_DWSTORY">${SVG.DOWNLOAD}</div>`);
-                $firstEl.append(`<div data-ih-locale-title="NEW_TAB" title="${_i18n("NEW_TAB")}" class="IG_DWNEWTAB">${SVG.NEW_TAB}</div>`);
+                appendLegacyControl($firstEl[0], { className: "IG_DWSTORY", labelKey: "DW", label: _i18n("DW"), icon: SVG.DOWNLOAD });
+                appendLegacyControl($firstEl[0], { className: "IG_DWNEWTAB", labelKey: "NEW_TAB", label: _i18n("NEW_TAB"), icon: SVG.NEW_TAB });
 
                 let $header = getStoryProgress(username);
                 if ($header.length > 1) {
-                    $firstEl.append(`<div data-ih-locale-title="DW_ALL" title="${_i18n("DW_ALL")}" class="IG_DWSTORY_ALL">${SVG.DOWNLOAD_ALL}</div>`);
+                    appendLegacyControl($firstEl[0], { className: "IG_DWSTORY_ALL", labelKey: "DW_ALL", label: _i18n("DW_ALL"), icon: SVG.DOWNLOAD_ALL });
                 }
 
                 setStoryProgressIndexText($firstEl, $header, 'IG_DWSTORY_POSITION');
@@ -909,7 +908,7 @@ export async function onStoryThumbnail(isDownload, isForce) {
             if ($element != null) {
                 const $firstEl = $element.first();
                 $firstEl.css('position', 'relative');
-                $firstEl.append(`<div data-ih-locale-title="VIDEO_THUMBNAIL" title="${_i18n("VIDEO_THUMBNAIL")}" class="IG_DWSTORY_THUMBNAIL">${SVG.THUMBNAIL}</div>`);
+                appendLegacyControl($firstEl[0], { className: "IG_DWSTORY_THUMBNAIL", labelKey: "VIDEO_THUMBNAIL", label: _i18n("VIDEO_THUMBNAIL"), icon: SVG.THUMBNAIL });
             }
 
         }

@@ -1,0 +1,572 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "basecoat-css/components/button";
+@import "basecoat-css/components/field";
+@import "basecoat-css/components/input";
+@import "basecoat-css/components/switch";
+@import "basecoat-css/components/native-select";
+@import "basecoat-css/components/tabs";
+@import "basecoat-css/components/kbd";
+
+@theme {
+    --color-background: #fff;
+    --color-foreground: #111;
+    --color-card: #fff;
+    --color-card-foreground: #111;
+    --color-popover: #fff;
+    --color-popover-foreground: #111;
+    --color-primary: #0095f6;
+    --color-primary-foreground: #fff;
+    --color-secondary: #efefef;
+    --color-secondary-foreground: #111;
+    --color-muted: #efefef;
+    --color-muted-foreground: #737373;
+    --color-accent: #efefef;
+    --color-accent-foreground: #111;
+    --color-destructive: #ed4956;
+    --color-border: #dbdbdb;
+    --color-input: #dbdbdb;
+    --color-ring: #0095f6;
+}
+
+@layer components {
+    .btn {
+        @apply rounded-md border border-transparent bg-clip-padding text-sm font-medium focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] active:translate-y-px [&_svg]:size-4;
+    }
+
+    .btn:not([data-size]), .btn[data-size='default'] { @apply h-9 gap-1.5 px-2.5; }
+    .btn[data-size='sm'] { @apply h-8 gap-1 px-2.5; }
+    .btn[data-size='icon-sm'] { @apply size-8; }
+    .btn[data-variant='primary'] { @apply bg-primary text-primary-foreground hover:bg-primary/80; }
+    .btn[data-variant='secondary'] { @apply bg-secondary text-secondary-foreground hover:bg-muted; }
+    .btn[data-variant='outline'] { @apply border-border bg-background shadow-xs hover:bg-muted; }
+    .btn[data-variant='ghost'] { @apply hover:bg-muted hover:text-foreground; }
+
+    .tabs { @apply gap-2; }
+    .tabs > [role='tablist'] { @apply rounded-lg p-[3px]; }
+    .tabs > [role='tablist'][data-variant='line'] { @apply gap-1 rounded-none bg-transparent; }
+    .tabs > [role='tablist'] > [role='tab'] {
+        @apply text-foreground/60 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 relative inline-flex items-center gap-1.5 rounded-md border border-transparent px-2 py-2 text-sm font-medium focus-visible:ring-[3px];
+    }
+    .tabs > [role='tablist'][aria-orientation='vertical'] > [role='tab'] { @apply w-full justify-start; }
+    .tabs > [role='tablist'][data-variant='line'] > [role='tab'][aria-selected='true'] { @apply bg-muted text-foreground; }
+
+    .field { @apply gap-3; }
+    .field > section { @apply gap-1; }
+    .field > label, .field > section > label { @apply text-sm font-medium leading-snug; }
+    .field > p, .field section > p { @apply text-muted-foreground text-sm leading-normal; }
+    .field [role='alert'] { @apply text-destructive text-sm; }
+
+    .field > input[type='text'], .field > input[type='number'], .input[type='text'], .input[type='number'], .input:not([type]) {
+        @apply border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-md border bg-transparent px-2.5 py-1 text-sm shadow-xs focus-visible:ring-3;
+    }
+
+    .field > select, select.select {
+        @apply border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-fit rounded-md border bg-transparent py-1 ps-2.5 pe-8 text-sm shadow-xs focus-visible:ring-3;
+    }
+
+    .field > input[type='checkbox'][role='switch'], .input[type='checkbox'][role='switch'] {
+        @apply checked:bg-primary not-checked:bg-input focus-visible:border-ring focus-visible:ring-ring/50 h-[18px] w-8 rounded-full border border-transparent shadow-xs focus-visible:ring-3;
+    }
+    :is(.field > input[type='checkbox'][role='switch'], .input[type='checkbox'][role='switch']):before {
+        @apply bg-background size-4 rounded-full;
+    }
+    :is(.field > input[type='checkbox'][role='switch'], .input[type='checkbox'][role='switch']):checked:before {
+        @apply translate-x-[calc(100%-2px)];
+    }
+
+    .kbd { @apply bg-muted text-muted-foreground h-5 min-w-5 rounded-sm px-1 text-xs font-medium; }
+}
+
+.ig-helper-ui {
+    --color-background: rgb(var(--ig-primary-background));
+    --color-foreground: rgb(var(--ig-primary-text));
+    --color-card: rgb(var(--ig-primary-background));
+    --color-card-foreground: rgb(var(--ig-primary-text));
+    --color-popover: rgb(var(--ig-primary-background));
+    --color-popover-foreground: rgb(var(--ig-primary-text));
+    --color-primary: #0095f6;
+    --color-primary-foreground: #fff;
+    --color-secondary: rgb(var(--ig-secondary-background));
+    --color-secondary-foreground: rgb(var(--ig-primary-text));
+    --color-muted: rgb(var(--ig-secondary-background));
+    --color-muted-foreground: rgb(var(--ig-secondary-text));
+    --color-accent: rgb(var(--ig-hover-overlay));
+    --color-accent-foreground: rgb(var(--ig-primary-text));
+    --color-destructive: #ed4956;
+    --color-border: rgb(var(--ig-separator));
+    --color-input: rgb(var(--ig-separator));
+    --color-ring: #0095f6;
+    color: var(--color-foreground);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.IG_CONTROL_BAR {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.IG_CONTROL_BAR .btn[data-variant='ghost'] {
+    color: inherit;
+    background: transparent;
+}
+
+.IG_CONTROL_BAR .btn[data-variant='ghost']:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: inherit;
+}
+
+.IG_CONTROL_BAR svg {
+    width: 18px;
+    height: 18px;
+}
+
+.button_wrapper.IG_CONTROL_BAR {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 1;
+    line-height: 0;
+}
+
+.IG_POST_CONTROL {
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+    border-radius: 8px;
+}
+
+#imageViewer {
+    position: fixed;
+    inset: 0;
+    z-index: 600001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ig-helper-modal-backdrop);
+    backdrop-filter: var(--ig-helper-modal-backdrop-filter);
+    -webkit-backdrop-filter: var(--ig-helper-modal-backdrop-filter);
+}
+
+#imageViewer #iv_header.IG_CONTROL_BAR {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    left: auto;
+    width: auto;
+    height: auto;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 12px;
+}
+
+#imageViewer > section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+}
+
+#imageViewer #iv_image {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    border-radius: 4px;
+    user-select: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+.IG_SETTINGS_DIALOG {
+    inset: 0;
+    width: min(760px, calc(100vw - 32px));
+    max-width: none;
+    max-height: min(760px, calc(100vh - 48px));
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-foreground);
+}
+
+.IG_SETTINGS_DIALOG::backdrop {
+    background: var(--ig-helper-modal-backdrop);
+    backdrop-filter: var(--ig-helper-modal-backdrop-filter);
+    -webkit-backdrop-filter: var(--ig-helper-modal-backdrop-filter);
+}
+
+.IG_SETTINGS_PANEL {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-background);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+}
+
+.IG_SETTINGS_HEADER {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.IG_SETTINGS_HEADER h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 24px;
+}
+
+.IG_SETTINGS_HEADER p {
+    margin: 3px 0 0;
+    color: var(--color-muted-foreground);
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.IG_SETTINGS_CLOSE {
+    flex: 0 0 auto;
+}
+
+.IG_SETTINGS_LAYOUT {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    min-height: 0;
+    gap: 0;
+}
+
+.IG_SETTINGS_TABS {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+    border-right: 1px solid var(--color-border);
+}
+
+.IG_SETTINGS_CONTENT {
+    min-width: 0;
+    max-height: calc(min(760px, 100vh - 48px) - 82px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.IG_SETTINGS_LANGUAGE {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 16px;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.IG_SETTINGS_LANGUAGE > p {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
+.IG_SETTINGS_LANGUAGE select {
+    min-width: 170px;
+}
+
+.IG_SETTINGS_LIST {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+}
+
+.IG_SETTINGS_LIST .globalSettings {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 16px;
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 14px 14px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.IG_SETTINGS_LIST .globalSettings:hover {
+    border-color: var(--color-border);
+    background: var(--color-muted);
+}
+
+.IG_SETTINGS_LIST .globalSettings.child {
+    margin-left: 18px;
+    color: inherit;
+}
+
+.IG_SETTINGS_LIST .globalSettings.disabled {
+    opacity: 0.5;
+}
+
+.IG_SETTINGS_LIST .globalSettings > section {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.IG_SETTINGS_LIST .globalSettings > section > label {
+    cursor: pointer;
+}
+
+.IG_SETTINGS_LIST .globalSettings > section > p {
+    margin: 2px 0 0;
+    color: var(--color-muted-foreground);
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.IG_SETTINGS_EDITOR {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-background);
+}
+
+.IG_SETTINGS_EDITOR > label {
+    color: var(--color-muted-foreground);
+    font-size: 12px;
+}
+
+.IG_SETTINGS_EDITOR input[type='range'] {
+    width: 100%;
+    accent-color: var(--color-primary);
+}
+
+.IG_SETTINGS_EDITOR input[type='number'] {
+    width: 64px;
+}
+
+.IG_SETTINGS_EDITOR:has(#date_format) {
+    grid-template-columns: 1fr;
+}
+
+.IG_SETTINGS_SECTION_INTRO {
+    padding: 18px 20px 8px;
+    color: var(--color-muted-foreground);
+    font-size: 13px;
+}
+
+.IG_SETTINGS_HOTKEYS {
+    padding-top: 8px;
+}
+
+.IG_SETTINGS_HOTKEY {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+}
+
+.IG_SETTINGS_HOTKEY:hover {
+    border-color: var(--color-border);
+    background: var(--color-muted);
+}
+
+.IG_SETTINGS_HOTKEY select {
+    min-width: 108px;
+}
+
+.IG_SETTINGS_HOTKEY p {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
+@media (max-width: 640px) {
+    .IG_SETTINGS_DIALOG {
+        width: calc(100vw - 16px);
+        max-height: calc(100vh - 16px);
+    }
+
+    .IG_SETTINGS_LAYOUT {
+        grid-template-columns: 1fr;
+    }
+
+    .IG_SETTINGS_TABS {
+        flex-direction: row;
+        border-right: 0;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .IG_SETTINGS_TABS > button {
+        flex: 1;
+        justify-content: center !important;
+    }
+
+    .IG_SETTINGS_CONTENT {
+        max-height: calc(100vh - 150px);
+    }
+
+    .IG_SETTINGS_LANGUAGE {
+        grid-template-columns: 1fr;
+    }
+
+    .IG_SETTINGS_LANGUAGE select {
+        width: 100%;
+    }
+}
+
+.IG_SETTINGS_DIALOG:focus {
+    outline: none;
+}
+
+.IG_SETTINGS_TABS svg {
+    width: 16px !important;
+    height: 16px !important;
+    flex: 0 0 16px;
+}
+
+.IG_SETTINGS_CONTENT {
+    overflow-x: hidden;
+}
+
+.IG_SETTINGS_LIST .globalSettings.child::before {
+    display: none;
+}
+
+.IG_SETTINGS_LIST .globalSettings input[type='checkbox'][role='switch'] {
+    display: inline-flex !important;
+    position: static;
+    width: 32px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+.IG_SETTINGS_EDITOR input,
+.IG_SETTINGS_EDITOR #date_format {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.IG_SETTINGS_EDITOR:has(#date_format) #date_format {
+    width: 100%;
+}
+
+.IG_SETTINGS_LANGUAGE,
+.IG_SETTINGS_LIST,
+.IG_SETTINGS_HOTKEY,
+.IG_SETTINGS_LIST .globalSettings {
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+.IG_SETTINGS_LIST .globalSettings input[type='checkbox'][role='switch'] {
+    background: var(--color-input) !important;
+}
+
+.IG_SETTINGS_LIST .globalSettings input[type='checkbox'][role='switch']::before {
+    content: '';
+    display: block;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: var(--color-background);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+    transform: translateX(0);
+    transition: transform 150ms ease;
+}
+
+.IG_SETTINGS_LIST .globalSettings input[type='checkbox'][role='switch']:checked {
+    background: var(--color-primary) !important;
+}
+
+.IG_SETTINGS_LIST .globalSettings input[type='checkbox'][role='switch']:checked::before {
+    transform: translateX(14px);
+}
+
+#imageViewer #iv_header svg {
+    fill: none !important;
+    stroke: currentColor !important;
+}
+
+.IG_LEGACY_DIALOG_HEADING {
+    position: relative;
+    min-height: 40px;
+    text-align: center;
+}
+
+.IG_LEGACY_DIALOG_HEADING #post_info {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--color-muted-foreground);
+}
+
+.IG_LEGACY_DIALOG_HEADING .IG_POPUP_DIG_BTN {
+    position: absolute;
+    top: -4px;
+    right: 0;
+}
+
+.IG_LEGACY_DIALOG_ACTIONS {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.IG_LEGACY_SELECT_ALL {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.IG_LEGACY_PANEL {
+    display: grid;
+    gap: 12px;
+}
+
+.IG_DEBUG_TEXTAREA {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 300px;
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    resize: vertical;
+}
+
+.IG_LEGACY_CONTROL {
+    box-sizing: border-box;
+    border: 0;
+    background: transparent;
+    color: inherit;
+}
+
+.IG_LEGACY_CONTROL svg {
+    width: 20px;
+    height: 20px;
+}

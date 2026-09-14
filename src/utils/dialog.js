@@ -1,8 +1,8 @@
-import $ from 'jquery';
-import { state, SVG, $body } from "../settings";
+import { state } from "../settings";
 import { logger, reloadScript } from "./general";
 import { _i18n } from "./i18n";
-import { showSettingsDialog } from './settings_dialog';
+import { showSettingsDialog } from './settings_dialog.jsx';
+import { mountDebugPanel, mountFeedbackPanel, mountLegacyDialog } from '../ui/dialogs.jsx';
 
 /**
  * IG_createDM
@@ -13,19 +13,17 @@ import { showSettingsDialog } from './settings_dialog';
  * @return {void}
  */
 export function IG_createDM(hasHidden, hasCheckbox) {
-    let isHidden = (hasHidden) ? "hidden" : "";
-    $body.append('<div class="IG_POPUP_DIG ' + isHidden + '"><div class="IG_POPUP_DIG_BG"></div><div class="IG_POPUP_DIG_MAIN"><div class="IG_POPUP_DIG_TITLE"></div><div class="IG_POPUP_DIG_BODY"></div></div></div>');
-    // OPTIMIZATION: cache popup title element used 3+ times in this function
-    const $title = $('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_TITLE');
-    $title.append(`<div style="position:relative;min-height:36px;text-align:center;margin-bottom: 7px;"><div style="line-height: 18px;">IG Helper v${GM_info.script.version}</div><div id="post_info" style="line-height: 14px;font-size:14px;">Post ID: <span id="article-id"></span></div><button type="button" aria-label="${_i18n('CLOSE')}" class="IG_POPUP_DIG_BTN">${SVG.CLOSE}</button></div>`);
-
-    if (hasCheckbox) {
-        $title.append(`<div style="text-align: center;" id="button_group"></div>`);
-        const $btnGroup = $title.find('> div#button_group');
-        $btnGroup.append(`<button id="batch_download_selected" disabled data-ih-locale="BATCH_DOWNLOAD_SELECTED">${_i18n('BATCH_DOWNLOAD_SELECTED')}</button>`);
-        $btnGroup.append(`<button id="batch_download_direct" disabled data-ih-locale="BATCH_DOWNLOAD_DIRECT">${_i18n('BATCH_DOWNLOAD_DIRECT')}</button>`);
-        $title.append(`<label class="checkbox"><input value="yes" type="checkbox" /><span data-ih-locale="ALL_CHECK">${_i18n('ALL_CHECK')}</span><span class="item-count"></span></label>`);
-    }
+    mountLegacyDialog({
+        hidden: Boolean(hasHidden),
+        hasCheckbox: Boolean(hasCheckbox),
+        version: GM_info.script.version,
+        labels: {
+            close: _i18n('CLOSE'),
+            downloadSelected: _i18n('BATCH_DOWNLOAD_SELECTED'),
+            downloadAll: _i18n('BATCH_DOWNLOAD_DIRECT'),
+            selectAll: _i18n('ALL_CHECK'),
+        },
+    });
 }
 
 /**
@@ -36,15 +34,9 @@ export function IG_createDM(hasHidden, hasCheckbox) {
  * @return {void}
  */
 export function IG_setDM(hasHidden) {
-    const $popup = $('.IG_POPUP_DIG');
-    if ($popup.length) {
-        if (hasHidden) {
-            $popup.addClass("hidden");
-        }
-        else {
-            $popup.removeClass("hidden");
-        }
-    }
+    document.querySelectorAll('.IG_POPUP_DIG').forEach(popup => {
+        popup.classList.toggle('hidden', Boolean(hasHidden));
+    });
 }
 
 
@@ -98,104 +90,7 @@ export function registerMenuCommand() {
 }
 
 export function showHotkeySetting() {
-    $('.IG_POPUP_DIG').remove();
-    IG_createDM();
-
-    $('.IG_POPUP_DIG #post_info').text('Hotkey Settings');
-
-    const $popupBody = $('.IG_POPUP_DIG .IG_POPUP_DIG_BODY');
-
-    const hotkeyOptions = [
-        { value: '87', label: 'Alt+W' },
-        { value: '90', label: 'Alt+Z' },
-        { value: '88', label: 'Alt+X' },
-        { value: '68', label: 'Alt+D' },
-        { value: '75', label: 'Alt+K' },
-        { value: '67', label: 'Alt+C' },
-        { value: '83', label: 'Alt+S' },
-        { value: '192', label: 'Alt+~' },
-        { value: '49', label: 'Alt+1' },
-        { value: '50', label: 'Alt+2' },
-        { value: '51', label: 'Alt+3' },
-        { value: '52', label: 'Alt+4' },
-        { value: '53', label: 'Alt+5' }
-    ];
-
-    const hotkeyConfigs = [
-        { name: 'HOTKEY_SETTINGS', key: 'HOTKEY_SETTINGS_KEY', stateKey: 'settingsHotkeyKeyCode', storageKey: 'G_HOTKEY_SETTINGS_KEYCODE', defaultKeyCode: 87 },
-        { name: 'HOTKEY_KEY_SETTINGS', key: 'HOTKEY_KEY_SETTINGS_KEY', stateKey: 'keySettingsHotkeyKeyCode', storageKey: 'G_HOTKEY_KEY_SETTINGS_KEYCODE', defaultKeyCode: 67 },
-        { name: 'HOTKEY_DEBUG', key: 'HOTKEY_DEBUG_KEY', stateKey: 'debugHotkeyKeyCode', storageKey: 'G_HOTKEY_DEBUG_KEYCODE', defaultKeyCode: 90 },
-        { name: 'HOTKEY_DOWNLOAD_STORY', key: 'HOTKEY_DOWNLOAD_STORY_KEY', stateKey: 'downloadStoryHotkeyKeyCode', storageKey: 'G_HOTKEY_DOWNLOAD_STORY_KEYCODE', defaultKeyCode: 83 },
-    ];
-
-    function checkHotkeyConflict(keyCode, excludeStateKey) {
-        for (const config of hotkeyConfigs) {
-            if (config.stateKey !== excludeStateKey && state[config.stateKey] === keyCode) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function createHotkeySetting(name, key, stateKey, storageKey, defaultKeyCode) {
-        const currentKeyCode = state[stateKey];
-        const $container = $(`
-            <label class="globalSettings hotkey-setting-item" data-hotkey="${name}" style="position: relative;display: flex; align-items: center; padding-right: 5px;">
-                <span>${_i18n(key)}</span>
-                <div class="hotkey-select-wrapper" style="display: flex; align-items: center; gap: 8px; justify-content: flex-end; flex: 1;">
-                    <select class="hotkey-preset" data-storage="${storageKey}" data-state="${stateKey}" data-default="${defaultKeyCode}" style="padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
-                        ${hotkeyOptions.filter(o => o.value != defaultKeyCode.toString()).map(o => `<option value="${o.value}" ${o.value == currentKeyCode ? 'selected' : ''}>${o.label}</option>`).join('')}
-                        <option value="${defaultKeyCode}" ${currentKeyCode == defaultKeyCode ? 'selected' : ''}>Alt+${String.fromCharCode(defaultKeyCode)}</option>
-                    </select>
-                    <button class="hotkey-reset" title="${_i18n('HOTKEY_RESET')}" style="padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; color: #1f1f1f; background: #fff; cursor: pointer;">${_i18n('HOTKEY_RESET')}</button>
-                </div>
-                <div class="hotkey-conflict-warning" style="pointer-events: none; position: absolute; bottom: -10px; display: none; font-size: 11px; color: #e74c3c;">▲ ${_i18n('HOTKEY_CONFLICT_WARNING')}</div>
-            </label>
-        `);
-
-        $container.find('.hotkey-reset').on('click', function () {
-            const $preset = $container.find('.hotkey-preset');
-            const defaultCode = parseInt($preset.data('default'));
-            const stateKeyName = $preset.data('state');
-            const storage = $preset.data('storage');
-
-            state[stateKeyName] = defaultCode;
-            GM_setValue(storage, defaultCode);
-            $preset.val(defaultCode);
-            $container.find('.hotkey-conflict-warning').hide();
-        });
-
-        $container.find('.hotkey-preset').on('change', function () {
-            const $this = $(this);
-            const val = $this.val();
-            const storage = $this.data('storage');
-            const stateKeyName = $this.data('state');
-            const defaultCode = parseInt($this.data('default'));
-            const keyCode = parseInt(val);
-
-            if (checkHotkeyConflict(keyCode, stateKeyName)) {
-                state[stateKeyName] = defaultCode;
-                GM_setValue(storage, defaultCode);
-                $this.val(defaultCode);
-                $container.find('.hotkey-conflict-warning').show().delay(2000).fadeOut(500);
-            } else {
-                state[stateKeyName] = keyCode;
-                GM_setValue(storage, keyCode);
-                $container.find('.hotkey-conflict-warning').hide();
-            }
-        });
-
-        return $container;
-    }
-
-    $popupBody.append('<span style="display: block; margin-bottom: 15px;" class="hotkey-settings-container"></span>');
-    const $container = $popupBody.find('.hotkey-settings-container');
-
-    hotkeyConfigs.forEach((config) => {
-        $container.append(
-            createHotkeySetting(config.name, config.key, config.stateKey, config.storageKey, config.defaultKeyCode)
-        );
-    });
+    showSettingsDialog('keyboard', registerMenuCommand);
 }
 
 /**
@@ -205,7 +100,7 @@ export function showHotkeySetting() {
  * @return {void}
  */
 export function showSetting() {
-    showSettingsDialog();
+    showSettingsDialog('preferences', registerMenuCommand);
 }
 
 /**
@@ -215,20 +110,16 @@ export function showSetting() {
  * @return {void}
  */
 export function showDebugDOM() {
-    $('.IG_POPUP_DIG').remove();
+    removeLegacyDialogs();
     IG_createDM();
-    $('.IG_POPUP_DIG #post_info').text('IG Debug DOM Tree');
-
-    // OPTIMIZATION: cache popup body
-    const $popupBody = $('.IG_POPUP_DIG .IG_POPUP_DIG_BODY');
-    $popupBody.append(`<textarea style="font-family: monospace;width:100%;box-sizing: border-box;height:300px;background: transparent;" readonly></textarea>`);
-    $popupBody.append(`<span style="display:block;text-align:center;">`);
-    const $span = $popupBody.find('span').last();
-    $span.append(`<button style="margin: 3px;" class="IG_DISPLAY_DOM_TREE"><a>${_i18n('SHOW_DOM_TREE')}</a></button>`);
-    $span.append(`<button style="margin: 3px;" class="IG_SELECT_DOM_TREE"><a>${_i18n('SELECT_AND_COPY')}</a></button>`);
-    $span.append(`<button style="margin: 3px;" class="IG_DOWNLOAD_DOM_TREE"><a>${_i18n('DOWNLOAD_DOM_TREE')}</a></button><br/>`);
-    $span.append(`<button style="margin: 3px;" class="IG_REPORT_GITHUB"><a href="https://github.com/SN-Koarashi/ig-helper/issues" target="_blank">${_i18n('REPORT_GITHUB')}</a></button>`);
-    $span.append(`<button style="margin: 3px;" class="IG_REPORT_DISCORD"><a href="https://discord.gg/q3KT4hdq8x" target="_blank">${_i18n('REPORT_DISCORD')}</a></button>`);
+    document.querySelector('.IG_POPUP_DIG #post_info').textContent = 'IG Debug DOM Tree';
+    mountDebugPanel(document.querySelector('.IG_POPUP_DIG .IG_POPUP_DIG_BODY'), {
+        showTree: _i18n('SHOW_DOM_TREE'),
+        copyTree: _i18n('SELECT_AND_COPY'),
+        downloadTree: _i18n('DOWNLOAD_DOM_TREE'),
+        github: _i18n('REPORT_GITHUB'),
+        discord: _i18n('REPORT_DISCORD'),
+    });
 }
 
 /**
@@ -238,14 +129,16 @@ export function showDebugDOM() {
  * @return {void}
  */
 export function showFeedbackDOM() {
-    $('.IG_POPUP_DIG').remove();
+    removeLegacyDialogs();
     IG_createDM();
-    $('.IG_POPUP_DIG #post_info').text('Feedback Options');
+    document.querySelector('.IG_POPUP_DIG #post_info').textContent = 'Feedback Options';
+    mountFeedbackPanel(document.querySelector('.IG_POPUP_DIG .IG_POPUP_DIG_BODY'), {
+        fork: _i18n('REPORT_FORK'),
+        github: _i18n('REPORT_GITHUB'),
+        discord: _i18n('REPORT_DISCORD'),
+    });
+}
 
-    const $popupBody = $('.IG_POPUP_DIG .IG_POPUP_DIG_BODY');
-    $popupBody.append(`<span style="display:block;text-align:center;">`);
-    const $span = $popupBody.find('span').last();
-    $span.append(`<button style="margin: 3px;" class="IG_REPORT_FORK"><a href="https://greasyfork.org/en/scripts/404535-ig-helper/feedback" target="_blank">${_i18n('REPORT_FORK')}</a></button>`);
-    $span.append(`<button style="margin: 3px;" class="IG_REPORT_GITHUB"><a href="https://github.com/SN-Koarashi/ig-helper/issues" target="_blank">${_i18n('REPORT_GITHUB')}</a></button>`);
-    $span.append(`<button style="margin: 3px;" class="IG_REPORT_DISCORD"><a href="https://discord.gg/q3KT4hdq8x" target="_blank">${_i18n('REPORT_DISCORD')}</a></button>`);
+function removeLegacyDialogs() {
+    document.querySelectorAll('.IG_POPUP_DIG').forEach(dialog => dialog.remove());
 }

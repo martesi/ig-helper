@@ -1,5 +1,6 @@
 import $ from 'jquery';
 import { SVG, USER_SETTING } from "../settings";
+import { appendLegacyControl } from "../ui/legacy_controls.jsx";
 import { updateLoadingBar, saveFiles, logger } from "../utils/general";
 import { _i18n } from "../utils/i18n";
 import { getUserId, getUserHighSizeProfile } from "../utils/api";
@@ -54,9 +55,9 @@ export async function onProfileAvatar(isDownload) {
                 const selector = 'header > *[class]:first-child > *[class]:first-child img[alt]';
                 const $draggableElements = $(`${selector}[draggable]`).parent().parent();
                 const $nonDraggableElements = $(`${selector}:not([draggable])`).parent().parent().parent();
-                $draggableElements.append(`<div data-ih-locale-title="DW" title="${_i18n("DW")}" class="IG_DWPROFILE">${SVG.DOWNLOAD}</div>`);
+                $draggableElements.each((_, element) => appendLegacyControl(element, { className: "IG_DWPROFILE", labelKey: "DW", label: _i18n("DW"), icon: SVG.DOWNLOAD }));
                 $draggableElements.css('position', 'relative');
-                $nonDraggableElements.append(`<div data-ih-locale-title="DW" title="${_i18n("DW")}" class="IG_DWPROFILE">${SVG.DOWNLOAD}</div>`);
+                $nonDraggableElements.each((_, element) => appendLegacyControl(element, { className: "IG_DWPROFILE", labelKey: "DW", label: _i18n("DW"), icon: SVG.DOWNLOAD }));
                 $nonDraggableElements.css('position', 'relative');
             }, 150);
         }

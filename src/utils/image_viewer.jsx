@@ -1,17 +1,16 @@
-import htm from 'htm';
 import { h, render } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { SVG } from '../settings';
+import { ControlBar, IconButton } from '../ui/components.jsx';
+import { RotateCcwIcon, RotateCwIcon, XIcon } from '../ui/icons.jsx';
 
 const VIEWER_ROOT_ID = 'ig-helper-image-viewer-root';
-const html = htm.bind(h);
 
 export function openImageViewer(imageUrl) {
     removeImageViewer();
     const root = document.createElement('div');
     root.id = VIEWER_ROOT_ID;
     document.body.append(root);
-    render(html`<${ImageViewer} imageUrl=${imageUrl} />`, root);
+    render(<ImageViewer imageUrl={imageUrl} />, root);
 }
 
 export function removeImageViewer() {
@@ -28,6 +27,9 @@ function ImageViewer({ imageUrl }) {
     const [transform, setTransform] = useState({ rotate: 0, scale: 1, x: 0, y: 0 });
 
     useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
         function moveImage(event) {
             const drag = dragRef.current;
             if (!drag) return;
@@ -48,6 +50,7 @@ function ImageViewer({ imageUrl }) {
         document.addEventListener('mousemove', moveImage);
         document.addEventListener('mouseup', stopDragging);
         return () => {
+            document.body.style.overflow = previousOverflow;
             document.removeEventListener('mousemove', moveImage);
             document.removeEventListener('mouseup', stopDragging);
         };
@@ -107,32 +110,27 @@ function ImageViewer({ imageUrl }) {
         transition: 'transform 0.15s ease',
         willChange: 'transform',
     };
-    return html`
-        <div id="imageViewer" onClick=${removeImageViewer} onWheel=${event => event.preventDefault()}>
-            <div id="iv_header" onClick=${event => event.stopPropagation()}>
-                <div style="flex:1;">Image Viewer</div>
-                <div style="display:flex;filter:invert(1);gap:8px;margin-right:8px;">
-                    <button id="rotate_left" type="button" style="cursor:pointer;" aria-label="Rotate left"
-                        dangerouslySetInnerHTML=${{ __html: SVG.TURN_DEG }}
-                        onClick=${() => setTransform(current => ({ ...current, rotate: current.rotate - 90 }))} />
-                    <button id="rotate_right" type="button" style="transform:scaleX(-1);cursor:pointer;"
-                        aria-label="Rotate right" dangerouslySetInnerHTML=${{ __html: SVG.TURN_DEG }}
-                        onClick=${() => setTransform(current => ({ ...current, rotate: current.rotate + 90 }))} />
-                </div>
-                <button id="iv_close" type="button" aria-label="Close image viewer"
-                    dangerouslySetInnerHTML=${{ __html: SVG.CLOSE }} onClick=${removeImageViewer} />
-            </div>
-            <section ref=${sectionRef} onWheel=${zoomAt}>
-                <div id="iv_transform" style=${translateStyle}>
-                    <div id="iv_rotate" style=${rotateStyle}>
-                        <img id="iv_image" src=${imageUrl} alt="" draggable=${false}
-                            style=${`cursor:${transform.scale === 1 ? 'zoom-in' : 'grab'};`}
-                            onClick=${toggleZoom} onMouseDown=${startDragging}
-                            onDragStart=${event => event.preventDefault()}
-                            onDrop=${event => event.preventDefault()} />
+
+    return (
+        <div id="imageViewer" class="ig-helper-ui" onClick={removeImageViewer} onWheel={event => event.preventDefault()}>
+            <ControlBar id="iv_header" onClick={event => event.stopPropagation()}>
+                <IconButton id="rotate_left" icon={RotateCcwIcon} label="Rotate left"
+                    onClick={() => setTransform(current => ({ ...current, rotate: current.rotate - 90 }))} />
+                <IconButton id="rotate_right" icon={RotateCwIcon} label="Rotate right"
+                    onClick={() => setTransform(current => ({ ...current, rotate: current.rotate + 90 }))} />
+                <IconButton id="iv_close" icon={XIcon} label="Close image viewer" onClick={removeImageViewer} />
+            </ControlBar>
+            <section ref={sectionRef} onWheel={zoomAt}>
+                <div id="iv_transform" style={translateStyle}>
+                    <div id="iv_rotate" style={rotateStyle}>
+                        <img id="iv_image" src={imageUrl} alt="" draggable={false}
+                            style={{ cursor: transform.scale === 1 ? 'zoom-in' : 'grab' }}
+                            onClick={toggleZoom} onMouseDown={startDragging}
+                            onDragStart={event => event.preventDefault()}
+                            onDrop={event => event.preventDefault()} />
                     </div>
                 </div>
             </section>
         </div>
-    `;
+    );
 }
