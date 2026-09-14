@@ -353,9 +353,16 @@ dialog.IG_SETTINGS_DIALOG {
     color: rgb(var(--ig-primary-text));
 }
 
+:root {
+    --ig-helper-modal-backdrop: rgba(0, 0, 0, 0.65);
+    --ig-helper-modal-backdrop-filter: blur(2px);
+    --ig-helper-floating-control-bg: rgba(38, 38, 38, 0.78);
+}
+
 dialog.IG_SETTINGS_DIALOG::backdrop {
-    background: rgba(0, 0, 0, 0.65);
-    backdrop-filter: blur(2px);
+    background: var(--ig-helper-modal-backdrop);
+    backdrop-filter: var(--ig-helper-modal-backdrop-filter);
+    -webkit-backdrop-filter: var(--ig-helper-modal-backdrop-filter);
 }
 
 .IG_SETTINGS_DIALOG .IG_SETTINGS_PANEL {
@@ -981,4 +988,361 @@ div[class]:hover+.volume_slider>div,
 
 #iv_close {
     filter: invert(1);
+}
+
+/* Instagram-style helper surfaces */
+#imageViewer {
+    background: var(--ig-helper-modal-backdrop);
+    backdrop-filter: var(--ig-helper-modal-backdrop-filter);
+    -webkit-backdrop-filter: var(--ig-helper-modal-backdrop-filter);
+}
+
+#imageViewer #iv_header {
+    top: 16px;
+    left: auto;
+    right: 16px;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    height: 44px;
+    box-sizing: border-box;
+    gap: 8px;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: var(--ig-helper-floating-control-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+#imageViewer #iv_header > div:first-child {
+    display: none !important;
+}
+
+#imageViewer #iv_header > div:nth-child(2) {
+    display: flex !important;
+    gap: 8px !important;
+    margin-right: 0 !important;
+    filter: none !important;
+}
+
+#imageViewer #iv_header button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+}
+
+#imageViewer #iv_header button:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+#imageViewer #iv_header button svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    stroke: currentColor;
+}
+
+#imageViewer #iv_close {
+    filter: none;
+}
+
+#imageViewer > section {
+    display: flex;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    align-items: center;
+    justify-content: center;
+}
+
+#imageViewer #iv_image {
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    border-radius: 4px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_PANEL {
+    display: flex;
+    flex-direction: column;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_LAYOUT {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+}
+
+.IG_SETTINGS_TABS {
+    display: flex;
+    flex: 0 0 156px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 8px;
+    border-right: 1px solid rgb(var(--ig-separator));
+}
+
+.IG_SETTINGS_TABS button {
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+}
+
+.IG_SETTINGS_TABS button:hover,
+.IG_SETTINGS_TABS button.selected {
+    background: rgb(var(--ig-hover-overlay));
+}
+
+.IG_SETTINGS_TABS button.selected {
+    font-weight: 700;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_CONTENT {
+    flex: 1;
+    max-height: calc(min(760px, 100vh - 48px) - 45px);
+    padding: 0;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_CONTENT > div {
+    margin: 0;
+    border: 0;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_CONTENT > div:hover {
+    background: transparent;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_LANGUAGE {
+    padding: 16px;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_LIST {
+    max-height: none;
+    padding: 8px;
+}
+
+.IG_SETTINGS_DIALOG .globalSettings {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 16px;
+    min-height: 0;
+    margin: 0 0 4px;
+    padding: 12px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+}
+
+.IG_SETTINGS_DIALOG .globalSettings:hover {
+    background: rgb(var(--ig-secondary-background));
+    border-color: rgb(var(--ig-separator));
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_TOGGLE {
+    min-width: 0;
+    cursor: pointer;
+}
+
+.IG_SETTINGS_DIALOG .globalSettings input[type="checkbox"] {
+    display: none;
+}
+
+.IG_SETTINGS_DIALOG .globalSettings .chbtn {
+    position: static;
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    cursor: pointer;
+}
+
+.IG_SETTINGS_DIALOG .globalSettings #tempWrapper.IG_SETTINGS_EDITOR {
+    position: static;
+    top: auto;
+    right: auto;
+    left: auto;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    width: auto;
+    height: auto;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgb(var(--ig-separator));
+    border-radius: 8px;
+    background: rgb(var(--ig-secondary-background));
+    color: rgb(var(--ig-secondary-text));
+    font-size: 12px;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input {
+    display: block;
+    min-width: 0;
+    width: 100%;
+    margin: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input[type="number"] {
+    width: 48px;
+    padding: 5px 7px;
+    border: 1px solid rgb(var(--ig-separator));
+    border-radius: 6px;
+    appearance: textfield;
+    background: rgb(var(--ig-primary-background)) !important;
+    text-align: right;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input[type="number"]::-webkit-inner-spin-button,
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input[type="number"]::-webkit-outer-spin-button {
+    margin: 0;
+    appearance: none;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input[type="range"] {
+    accent-color: #0095f6;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input#date_format,
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input#video_volume,
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input[type="number"] {
+    position: static;
+    top: auto;
+    transform: none;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input#date_format,
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input#video_volume {
+    width: 100%;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input#date_format {
+    padding: 7px 9px;
+    border: 1px solid rgb(var(--ig-separator));
+    border-radius: 6px;
+    background: rgb(var(--ig-primary-background));
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR input:focus,
+.IG_SETTINGS_DIALOG .IG_SETTINGS_HOTKEY select:focus,
+.IG_SETTINGS_DIALOG .IG_SETTINGS_LANGUAGE select:focus {
+    border-color: #0095f6;
+    box-shadow: 0 0 0 3px rgba(0, 149, 246, 0.16);
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_SECTION_INTRO {
+    padding: 18px 16px 10px;
+    color: rgb(var(--ig-secondary-text));
+    font-size: 13px;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_SECTION_INTRO kbd {
+    padding: 1px 4px;
+    font-size: 11px;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_HOTKEYS {
+    padding: 0 8px 8px;
+}
+
+.IG_SETTINGS_HOTKEY {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: center;
+    margin: 0 0 4px;
+    padding: 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+.IG_SETTINGS_HOTKEY:hover {
+    background: rgb(var(--ig-secondary-background));
+    border-color: rgb(var(--ig-separator));
+}
+
+.IG_SETTINGS_HOTKEY select,
+.IG_SETTINGS_HOTKEY button {
+    min-height: 34px;
+    padding: 7px 10px;
+    border: 1px solid rgb(var(--ig-separator));
+    border-radius: 8px;
+    background: rgb(var(--ig-primary-background));
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.IG_SETTINGS_HOTKEY select,
+.IG_SETTINGS_LANGUAGE select {
+    appearance: none;
+    padding-right: 34px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231c1e21' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-position: right 10px center !important;
+    background-repeat: no-repeat !important;
+}
+
+.IG_SETTINGS_HOTKEY select:hover,
+.IG_SETTINGS_HOTKEY button:hover,
+.IG_SETTINGS_LANGUAGE select:hover {
+    border-color: rgb(var(--ig-primary-text));
+    background-color: rgb(var(--ig-secondary-background)) !important;
+}
+
+.IG_SETTINGS_HOTKEY button {
+    color: #0095f6;
+    font-weight: 600;
+}
+
+.IG_SETTINGS_HOTKEY button:hover {
+    background-color: rgba(0, 149, 246, 0.12) !important;
+    border-color: #0095f6;
+}
+
+.IG_SETTINGS_HOTKEY p {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: #ed4956;
+    font-size: 12px;
+}
+
+@media (max-width: 540px) {
+    .IG_SETTINGS_DIALOG .IG_SETTINGS_LAYOUT {
+        display: block;
+    }
+
+    .IG_SETTINGS_TABS {
+        flex-direction: row;
+        padding: 8px;
+        border-right: 0;
+        border-bottom: 1px solid rgb(var(--ig-separator));
+    }
+
+    .IG_SETTINGS_TABS button {
+        flex: 1;
+        text-align: center;
+    }
+
+    .IG_SETTINGS_DIALOG .IG_SETTINGS_CONTENT {
+        max-height: calc(100vh - 120px);
+    }
 }
