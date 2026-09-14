@@ -108,6 +108,19 @@
     color: inherit;
 }
 
+.ig-helper-ui .btn[data-variant='ghost'] {
+    background-color: transparent;
+}
+
+.ig-helper-ui .btn[data-variant='ghost']:hover {
+    background-color: var(--color-muted);
+}
+
+.IG_CONTROL_BAR .btn[data-variant='ghost']:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    color: inherit;
+}
+
 .IG_CONTROL_BAR {
     display: flex;
     align-items: center;
