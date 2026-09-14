@@ -68,15 +68,9 @@ function SettingsDialog({ initialTab, onLanguageChange }) {
 
     useEffect(() => {
         const dialog = dialogRef.current;
-        const previousBodyOverflow = document.body.style.overflow;
-        const previousHtmlOverflow = document.documentElement.style.overflow;
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
         dialog.showModal();
         dialog.focus({ preventScroll: true });
         return () => {
-            document.body.style.overflow = previousBodyOverflow;
-            document.documentElement.style.overflow = previousHtmlOverflow;
             if (dialog.open) dialog.close();
         };
     }, []);

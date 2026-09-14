@@ -97,11 +97,17 @@ $(function () {
     });
 
     $(window).on('keydown', function (e) {
+        // Hot key [Alt+Q] to close legacy download/debug dialogs.
+        if (e.altKey && e.which == 81) {
+            $('.IG_POPUP_DIG:not(.IG_SETTINGS_DIALOG)').remove();
+            e.preventDefault();
+        }
+
         // Hot key [Alt+W] to open/close the settings dialog - use custom keycode if enabled, fallback to default Alt+W(87)
         let settingsKeyCode = state.settingsHotkeyKeyCode || 87;
         if (e.altKey && e.which == settingsKeyCode) {
-            const $popup = $('.IG_POPUP_DIG');
-            if ($popup.length > 0 && $popup.find('#post_info').text() === 'Preference Settings') {
+            const $popup = $('.IG_SETTINGS_DIALOG[data-settings-tab="preferences"]');
+            if ($popup.length > 0) {
                 closeSettingsDialog();
             } else {
                 showSetting();

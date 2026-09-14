@@ -22,16 +22,12 @@ export function removeImageViewer() {
 
 function ImageViewer({ imageUrl }) {
     const sectionRef = useRef(null);
+    const transformRef = useRef(null);
     const dragRef = useRef(null);
     const didDragRef = useRef(false);
     const [transform, setTransform] = useState({ rotate: 0, scale: 1, x: 0, y: 0 });
 
     useEffect(() => {
-        const previousBodyOverflow = document.body.style.overflow;
-        const previousHtmlOverflow = document.documentElement.style.overflow;
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
-
         function moveImage(event) {
             const drag = dragRef.current;
             if (!drag) return;
@@ -52,8 +48,6 @@ function ImageViewer({ imageUrl }) {
         document.addEventListener('mousemove', moveImage);
         document.addEventListener('mouseup', stopDragging);
         return () => {
-            document.body.style.overflow = previousBodyOverflow;
-            document.documentElement.style.overflow = previousHtmlOverflow;
             document.removeEventListener('mousemove', moveImage);
             document.removeEventListener('mouseup', stopDragging);
         };
@@ -61,19 +55,18 @@ function ImageViewer({ imageUrl }) {
 
     function zoomAt(event, requestedScale) {
         event.preventDefault();
-        const rect = sectionRef.current.getBoundingClientRect();
+        const rect = transformRef.current.getBoundingClientRect();
         setTransform(current => {
             const scale = requestedScale ?? Math.min(5, Math.max(1,
                 current.scale + (event.deltaY < 0 ? 0.1 : -0.1) * current.scale));
             const mouseX = event.clientX - rect.left;
             const mouseY = event.clientY - rect.top;
-            const targetX = (mouseX - current.x) / current.scale;
-            const targetY = (mouseY - current.y) / current.scale;
+            const ratio = scale / current.scale;
             return {
                 ...current,
                 scale,
-                x: -targetX * scale + mouseX,
-                y: -targetY * scale + mouseY,
+                x: current.x + mouseX * (1 - ratio),
+                y: current.y + mouseY * (1 - ratio),
             };
         });
     }
@@ -124,7 +117,7 @@ function ImageViewer({ imageUrl }) {
                 <IconButton id="iv_close" icon={XIcon} label="Close image viewer" onClick={removeImageViewer} />
             </ControlBar>
             <section ref={sectionRef} onWheel={zoomAt}>
-                <div id="iv_transform" style={translateStyle}>
+                <div ref={transformRef} id="iv_transform" style={translateStyle}>
                     <div id="iv_rotate" style={rotateStyle}>
                         <img id="iv_image" src={imageUrl} alt="" draggable={false}
                             style={{ cursor: transform.scale === 1 ? 'zoom-in' : 'grab' }}
