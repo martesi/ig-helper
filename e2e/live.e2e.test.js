@@ -9,6 +9,8 @@ import {
     IgHelperE2E,
 } from './webview-harness.js';
 
+const HOTKEY_OPTIONS_COUNT = 13;
+
 const FEATURE_MATRIX = [
     ['userscript bootstrap', true],
     ['settings preferences and persistence', true],
@@ -93,10 +95,24 @@ describe('IG Helper live browser E2E', () => {
 
         const keyboard = await e2e.shadowJson(SETTINGS_ROOT_ID, `({
             tab: root.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab,
-            selects: root.querySelectorAll('.IG_HOTKEY_ROW select').length,
+            selects: root.querySelectorAll('.IG_HOTKEY_ROW .select').length,
+            nativeSelects: root.querySelectorAll('.IG_HOTKEY_ROW select').length,
         })`);
         expect(keyboard.tab).toBe('keyboard');
         expect(keyboard.selects).toBe(4);
+        expect(keyboard.nativeSelects).toBe(0);
+
+        await e2e.clickShadow(SETTINGS_ROOT_ID, '#settingsHotkeyKeyCode-trigger');
+        const customSelect = await e2e.shadowJson(SETTINGS_ROOT_ID, `({
+            expanded: root.querySelector('#settingsHotkeyKeyCode-trigger')?.getAttribute('aria-expanded'),
+            options: root.querySelectorAll('#settingsHotkeyKeyCode-listbox [role="option"]').length,
+            popoverHidden: root.querySelector('#settingsHotkeyKeyCode [data-popover]')?.getAttribute('aria-hidden'),
+        })`);
+        expect(customSelect.expanded).toBe('true');
+        expect(customSelect.popoverHidden).toBe('false');
+        expect(customSelect.options).toBe(HOTKEY_OPTIONS_COUNT);
+        await e2e.clickShadow(SETTINGS_ROOT_ID, '#settingsHotkeyKeyCode [role="option"][aria-selected="true"]');
+
         expect(hotkeys.settings).toBeGreaterThan(0);
         expect(hotkeys.debug).toBeGreaterThan(0);
 

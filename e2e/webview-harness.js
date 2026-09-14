@@ -99,7 +99,11 @@ export class IgHelperE2E {
     async installUserscript() {
         const installView = await this.createView();
         try {
-            await installView.navigate(`${VITE_URL}/__vite-plugin-monkey.install.user.js`);
+            try {
+                await installView.navigate(`${VITE_URL}/__vite-plugin-monkey.install.user.js`);
+            } catch (error) {
+                if (!String(error).includes('ERR_ABORTED')) throw error;
+            }
             await this.waitForOn(installView, `location.protocol === 'chrome-extension:' && !!document.querySelector('#confirm')`, 5000);
             await installView.evaluate(`document.querySelector('#confirm')?.click()`);
             await Bun.sleep(250);
@@ -244,10 +248,10 @@ export class IgHelperE2E {
     async readHotkeys() {
         await this.showKeyboardTab();
         return this.shadowJson(SETTINGS_ROOT_ID, `({
-            settings: Number(root.querySelector('#settingsHotkeyKeyCode')?.value),
-            keyboard: Number(root.querySelector('#keySettingsHotkeyKeyCode')?.value),
-            debug: Number(root.querySelector('#debugHotkeyKeyCode')?.value),
-            story: Number(root.querySelector('#downloadStoryHotkeyKeyCode')?.value),
+            settings: Number(root.querySelector('#settingsHotkeyKeyCode-value')?.value),
+            keyboard: Number(root.querySelector('#keySettingsHotkeyKeyCode-value')?.value),
+            debug: Number(root.querySelector('#debugHotkeyKeyCode-value')?.value),
+            story: Number(root.querySelector('#downloadStoryHotkeyKeyCode-value')?.value),
         })`);
     }
 

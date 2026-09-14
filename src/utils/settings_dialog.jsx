@@ -7,6 +7,8 @@ import settingsStyles from '../ui/settings.css?inline';
 import { createOwnedUiRoot, getOwnedUiMount, LEGACY_DIALOG_ROOT_ID, removeOwnedUiRoot, SETTINGS_ROOT_ID } from '../ui/shadow.js';
 import { _i18n, getTranslationText, repaintingTranslations } from './i18n';
 
+const COMPACT_SETTINGS_QUERY = '(max-width: 800px)';
+
 const HOTKEY_OPTIONS = [87, 90, 88, 68, 75, 67, 83, 192, 49, 50, 51, 52, 53];
 const HOTKEY_SETTINGS = [
     { key: 'HOTKEY_SETTINGS_KEY', stateKey: 'settingsHotkeyKeyCode', storageKey: 'G_HOTKEY_SETTINGS_KEYCODE', defaultKeyCode: 87 },
@@ -69,6 +71,7 @@ function SettingsDialog({ initialTab, onLanguageChange }) {
     const [tab, setTab] = useState(initialTab);
     const [language, setLanguage] = useState(state.lang);
     const [conflict, setConflict] = useState(null);
+    const [tabOrientation, setTabOrientation] = useState(() => window.matchMedia(COMPACT_SETTINGS_QUERY).matches ? 'horizontal' : 'vertical');
     const [, refresh] = useState(0);
 
     useEffect(() => {
@@ -78,6 +81,14 @@ function SettingsDialog({ initialTab, onLanguageChange }) {
         return () => {
             if (dialog.open) dialog.close();
         };
+    }, []);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia(COMPACT_SETTINGS_QUERY);
+        const updateOrientation = () => setTabOrientation(mediaQuery.matches ? 'horizontal' : 'vertical');
+        updateOrientation();
+        mediaQuery.addEventListener('change', updateOrientation);
+        return () => mediaQuery.removeEventListener('change', updateOrientation);
     }, []);
 
     function closeFromBackdrop(event) {
@@ -140,7 +151,7 @@ function SettingsDialog({ initialTab, onLanguageChange }) {
                 </header>
 
                 <div class="tabs IG_SETTINGS_LAYOUT">
-                    <nav class="IG_SETTINGS_TABS" aria-label={_i18n('SETTINGS_SECTIONS')} role="tablist" aria-orientation="vertical">
+                    <nav class="IG_SETTINGS_TABS" aria-label={_i18n('SETTINGS_SECTIONS')} role="tablist" aria-orientation={tabOrientation} data-variant="line">
                         <button type="button" role="tab" aria-selected={tab === 'preferences'}
                             onClick={() => setTab('preferences')}>
                             <SlidersHorizontalIcon />
@@ -172,10 +183,10 @@ function Preferences({ language, onLanguageChange, onSettingChange }) {
             <SettingsSection titleKey="SETTINGS_GENERAL" descriptionKey="SETTINGS_GENERAL_DESCRIPTION">
                 <div class="IG_SETTING_ROW IG_SETTINGS_LANGUAGE">
                     <div class="IG_SETTING_COPY">
-                        <label for="langSelect">{_i18n('SETTINGS_LANGUAGE')}</label>
+                        <label for="langSelect-trigger">{_i18n('SETTINGS_LANGUAGE')}</label>
                         <p>{_i18n('SETTINGS_LANGUAGE_NOTE')}</p>
                     </div>
-                    <Select id="langSelect" value={language} onValueChange={onLanguageChange}>
+                    <Select id="langSelect" value={language} onValueChange={onLanguageChange} popoverAlign="end">
                         {Object.entries(locale_manifest).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </Select>
                 </div>
@@ -194,7 +205,7 @@ function Preferences({ language, onLanguageChange, onSettingChange }) {
 
 function SettingsSection({ titleKey, descriptionKey, children }) {
     return (
-        <section class="card IG_SETTINGS_SECTION" data-size="sm">
+        <section class="IG_SETTINGS_SECTION">
             <header>
                 <h3>{_i18n(titleKey)}</h3>
                 <p>{_i18n(descriptionKey)}</p>
@@ -273,7 +284,7 @@ function KeyboardSettings({ conflict, onSave, onReset }) {
                 </div>
                 {HOTKEY_SETTINGS.map(config => (
                     <div key={config.stateKey} class="IG_HOTKEY_ROW">
-                        <label for={config.stateKey}>{_i18n(config.key)}</label>
+                        <label for={`${config.stateKey}-trigger`}>{_i18n(config.key)}</label>
                         <div class="IG_HOTKEY_ACTIONS">
                             <Select id={config.stateKey} value={state[config.stateKey]} onValueChange={value => onSave(value, config)}>
                                 {HOTKEY_OPTIONS.map(keyCode => <option key={keyCode} value={keyCode}>{hotkeyLabel(keyCode)}</option>)}

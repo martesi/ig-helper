@@ -22,8 +22,11 @@ export function removeImageViewer() {
     const root = document.getElementById(VIEWER_ROOT_ID);
     const mount = getOwnedUiMount(VIEWER_ROOT_ID);
     if (!root || !mount) return;
-    render(null, mount);
-    root.remove();
+    try {
+        render(null, mount);
+    } finally {
+        root.remove();
+    }
 }
 
 function ImageViewer({ imageUrl }) {

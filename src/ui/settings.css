@@ -77,7 +77,6 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
     min-width: 0;
     padding: 16px 12px;
     overflow: hidden;
-    border-right: 1px solid var(--color-border);
     background: transparent;
 }
 
@@ -97,12 +96,40 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
     box-sizing: border-box;
     display: grid;
     width: 100%;
-    gap: 20px;
-    padding: 24px;
+    gap: 30px;
+    padding: 28px 32px 36px;
+}
+
+.IG_SETTINGS_SECTION {
+    display: grid;
+    min-width: 0;
+    gap: 10px;
+}
+
+.IG_SETTINGS_SECTION > header {
+    display: grid;
+    gap: 3px;
+    padding: 0 4px;
+}
+
+.IG_SETTINGS_SECTION > header h3 {
+    margin: 0;
+    color: var(--color-foreground);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+}
+
+.IG_SETTINGS_SECTION > header p {
+    margin: 0;
+    color: var(--color-muted-foreground);
+    font-size: 12px;
+    line-height: 17px;
 }
 
 .IG_SETTINGS_SECTION_BODY {
-    display: block;
+    display: grid;
+    gap: 2px;
     overflow: visible;
 }
 
@@ -114,19 +141,13 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
     gap: 12px 24px;
     width: 100%;
     min-width: 0;
-    padding: 15px 20px;
-    border-top: 1px solid var(--color-border);
-}
-
-.IG_SETTINGS_SECTION_BODY > .IG_SETTING_ROW:first-child,
-.IG_SETTINGS_SECTION_BODY > .IG_SETTINGS_SHORTCUT_NOTE:first-child {
-    border-top: 0;
+    padding: 12px 4px;
 }
 
 .IG_SETTING_ROW_CHILD {
-    padding-left: 36px;
-    background: transparent;
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--color-primary) 32%, transparent);
+    width: auto;
+    margin-left: 20px;
+    padding-left: 16px;
 }
 
 .IG_SETTING_ROW_DISABLED {
@@ -147,7 +168,7 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
 }
 
 .IG_SETTING_COPY p {
-    margin: 4px 0 0;
+    margin: 3px 0 0;
     color: var(--color-muted-foreground);
     font-size: 12px;
     line-height: 17px;
@@ -159,8 +180,12 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
 }
 
 .IG_SETTINGS_LANGUAGE .select {
-    width: min(300px, 100%);
-    min-width: 220px;
+    max-width: 100%;
+}
+
+.IG_SETTINGS_DIALOG .select [data-popover] {
+    max-height: min(320px, 42vh);
+    overscroll-behavior: contain;
 }
 
 .IG_SETTING_EDITOR {
@@ -203,8 +228,7 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
 }
 
 .IG_SETTINGS_SHORTCUT_NOTE {
-    padding: 13px 20px;
-    border-top: 1px solid var(--color-border);
+    padding: 4px 4px 10px;
     color: var(--color-muted-foreground);
     font-size: 12px;
     line-height: 18px;
@@ -215,8 +239,7 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 10px 20px;
-    padding: 14px 20px;
-    border-top: 1px solid var(--color-border);
+    padding: 12px 4px;
 }
 
 .IG_HOTKEY_ROW > label {
@@ -232,6 +255,11 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
 
 .IG_HOTKEY_ACTIONS .select {
     min-width: 112px;
+}
+
+.IG_HOTKEY_ACTIONS .select [data-popover] {
+    width: 100%;
+    min-width: 100%;
 }
 
 .IG_HOTKEY_ROW [role='alert'] {
@@ -285,16 +313,16 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
     }
 
     .IG_SETTINGS_DIALOG .IG_SETTINGS_TABS {
+        height: auto;
         flex-direction: row;
         overflow-x: auto;
         padding: 8px;
-        border-right: 0;
-        border-bottom: 1px solid var(--color-border);
     }
 
     .IG_SETTINGS_DIALOG .IG_SETTINGS_TABS > [role='tab'] {
         width: auto;
-        flex: 1 0 auto;
+        flex: 1 1 auto;
+        min-width: 0;
         justify-content: center;
     }
 
@@ -313,11 +341,12 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
     .IG_HOTKEY_ROW {
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 10px 14px;
-        padding: 14px 16px;
+        padding: 12px 4px;
     }
 
     .IG_SETTING_ROW_CHILD {
-        padding-left: 28px;
+        margin-left: 12px;
+        padding-left: 12px;
     }
 
     .IG_SETTINGS_LANGUAGE {
@@ -328,6 +357,12 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
         grid-column: 1 / -1;
         width: 100%;
         min-width: 0;
+    }
+
+    .IG_SETTINGS_LANGUAGE .select > button,
+    .IG_SETTINGS_LANGUAGE .select [data-popover] {
+        width: 100%;
+        max-width: 100%;
     }
 
     .IG_SETTING_EDITOR {
