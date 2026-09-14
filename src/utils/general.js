@@ -1522,7 +1522,7 @@ export function updatePopupSelectionSummary(root = '.IG_POPUP_DIG') {
     const $root = (typeof root === 'string') ? $(root) : root;
     if (!$root || $root.length === 0) return;
 
-    const $titleCheckbox = $root.find('.IG_POPUP_DIG_TITLE .checkbox');
+    const $titleCheckbox = $root.find('.IG_POPUP_DIG_TITLE .IG_SELECT_ALL');
     const $countSpan = $titleCheckbox.find('.item-count');
     if ($titleCheckbox.length === 0 || $countSpan.length === 0) return;
 

@@ -27,8 +27,10 @@ function ImageViewer({ imageUrl }) {
     const [transform, setTransform] = useState({ rotate: 0, scale: 1, x: 0, y: 0 });
 
     useEffect(() => {
-        const previousOverflow = document.body.style.overflow;
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
         document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
 
         function moveImage(event) {
             const drag = dragRef.current;
@@ -50,7 +52,8 @@ function ImageViewer({ imageUrl }) {
         document.addEventListener('mousemove', moveImage);
         document.addEventListener('mouseup', stopDragging);
         return () => {
-            document.body.style.overflow = previousOverflow;
+            document.body.style.overflow = previousBodyOverflow;
+            document.documentElement.style.overflow = previousHtmlOverflow;
             document.removeEventListener('mousemove', moveImage);
             document.removeEventListener('mouseup', stopDragging);
         };

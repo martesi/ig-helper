@@ -17,6 +17,14 @@ export function ControlBar({ class: className = '', children, ...props }) {
     return <div class={`IG_CONTROL_BAR ig-helper-ui ${className}`.trim()} {...props}>{children}</div>;
 }
 
+export function Input({ class: className = '', type = 'text', ...props }) {
+    return <input type={type} class={`input ${className}`.trim()} {...props} />;
+}
+
+export function Checkbox({ class: className = '', ...props }) {
+    return <input type="checkbox" class={`input ${className}`.trim()} {...props} />;
+}
+
 export function Switch({ class: className = '', ...props }) {
     return <input type="checkbox" role="switch" class={`input ${className}`.trim()} {...props} />;
 }

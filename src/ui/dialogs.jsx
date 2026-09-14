@@ -1,5 +1,5 @@
 import { Fragment, h, render } from 'preact';
-import { Button, IconButton } from './components.jsx';
+import { Button, Checkbox, IconButton } from './components.jsx';
 import { XIcon } from './icons.jsx';
 
 export function mountLegacyDialog({ hidden = false, hasCheckbox = false, labels, version }) {
@@ -39,8 +39,8 @@ function LegacyDialog({ hasCheckbox, labels, version }) {
                                     {labels.downloadAll}
                                 </Button>
                             </div>
-                            <label class="checkbox IG_LEGACY_SELECT_ALL">
-                                <input value="yes" type="checkbox" />
+                            <label class="IG_SELECT_ALL IG_LEGACY_SELECT_ALL">
+                                <Checkbox value="yes" aria-label={labels.selectAll} />
                                 <span data-ih-locale="ALL_CHECK">{labels.selectAll}</span>
                                 <span class="item-count" />
                             </label>

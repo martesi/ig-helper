@@ -296,7 +296,7 @@ $(function () {
         }
     });
 
-    $body.on('change', '.IG_POPUP_DIG_TITLE .checkbox', function () {
+    $body.on('change', '.IG_POPUP_DIG_TITLE .IG_SELECT_ALL', function () {
         const isChecked = $(this).find('input').prop('checked');
         $('.IG_POPUP_DIG_BODY .inner_box').each(function () {
             $(this).prop('checked', isChecked);
