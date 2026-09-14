@@ -314,27 +314,11 @@ function settingLabelKey(name) {
 }
 
 function preferenceSections() {
-    const assigned = new Set();
-    const sections = PREFERENCE_SECTIONS.map(section => ({
+    return PREFERENCE_SECTIONS.map(section => ({
         ...section,
-        settings: section.settings.flatMap(name => {
-            if (!(name in USER_SETTING)) return [];
-            assigned.add(name);
-            const children = (PARENT_CHILD_MAPPING[name] ?? []).filter(child => child in USER_SETTING);
-            children.forEach(child => assigned.add(child));
-            return [
-                { name, isChild: false, parentName: null },
-                ...children.map(child => ({ name: child, isChild: true, parentName: name })),
-            ];
-        }),
-    })).filter(section => section.settings.length > 0);
-
-    const remaining = Object.keys(USER_SETTING)
-        .filter(name => !assigned.has(name))
-        .map(name => ({ name, isChild: false, parentName: null }));
-
-    if (remaining.length > 0) {
-        sections.push({ key: 'SETTINGS_OTHER', descriptionKey: 'SETTINGS_OTHER_DESCRIPTION', settings: remaining });
-    }
-    return sections;
+        settings: section.settings.flatMap(name => [
+            { name, isChild: false, parentName: null },
+            ...(PARENT_CHILD_MAPPING[name] ?? []).map(child => ({ name: child, isChild: true, parentName: name })),
+        ]),
+    }));
 }

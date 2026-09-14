@@ -55,41 +55,17 @@ export function registerMenuCommand() {
     }
     state.registerMenuIds.length = 0;
 
-    state.registerMenuIds.push(GM_registerMenuCommand(_i18n('SETTING'), () => {
-        showSetting();
-    }, {
-        accessKey: "w"
-    }));
-
-    state.registerMenuIds.push(GM_registerMenuCommand(_i18n('HOTKEY_KEY_SETTINGS_KEY'), () => {
-        showHotkeySetting();
-    }, {
-        accessKey: "q"
-    }));
-
-    state.registerMenuIds.push(GM_registerMenuCommand(_i18n('DONATE'), () => {
-        GM_openInTab("https://ko-fi.com/snkoarashi", { active: true });
-    }, {
-        accessKey: "d"
-    }));
-
-    state.registerMenuIds.push(GM_registerMenuCommand(_i18n('DEBUG'), () => {
-        showDebugDOM();
-    }, {
-        accessKey: "z"
-    }));
-
-    state.registerMenuIds.push(GM_registerMenuCommand(_i18n('FEEDBACK'), () => {
-        showFeedbackDOM();
-    }, {
-        accessKey: "f"
-    }));
-
-    state.registerMenuIds.push(GM_registerMenuCommand(_i18n('RELOAD_SCRIPT'), () => {
-        reloadScript();
-    }, {
-        accessKey: "r"
-    }));
+    const commands = [
+        ['SETTING', showSetting, 'w'],
+        ['HOTKEY_KEY_SETTINGS_KEY', showHotkeySetting, 'q'],
+        ['DONATE', () => GM_openInTab("https://ko-fi.com/snkoarashi", { active: true }), 'd'],
+        ['DEBUG', showDebugDOM, 'z'],
+        ['FEEDBACK', showFeedbackDOM, 'f'],
+        ['RELOAD_SCRIPT', reloadScript, 'r'],
+    ];
+    state.registerMenuIds.push(...commands.map(([label, action, accessKey]) =>
+        GM_registerMenuCommand(_i18n(label), action, { accessKey })
+    ));
 }
 
 export function showHotkeySetting() {

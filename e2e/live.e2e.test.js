@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import {
-    CDP_HTTP,
     IMAGE_VIEWER_ROOT_ID,
     INSTAGRAM_HOME,
     LEGACY_DIALOG_ROOT_ID,
@@ -10,24 +9,6 @@ import {
 } from './webview-harness.js';
 
 const HOTKEY_OPTIONS_COUNT = 13;
-
-const FEATURE_MATRIX = [
-    ['userscript bootstrap', true],
-    ['settings preferences and persistence', true],
-    ['keyboard shortcut configuration', true],
-    ['debug dialog and DOM capture', true],
-    ['feed post controls', true],
-    ['image viewer interactions', true],
-    ['open resource in new tab', true],
-    ['legacy resource picker and selection', true],
-    ['real media download', true],
-    ['profile avatar control', true],
-    ['reels controls', false],
-    ['story/highlight controls', false],
-];
-
-const automatedFeatureCount = FEATURE_MATRIX.filter(([, covered]) => covered).length;
-const functionalCoverage = automatedFeatureCount / FEATURE_MATRIX.length;
 
 const e2e = new IgHelperE2E();
 let hotkeys;
@@ -39,12 +20,6 @@ describe('IG Helper live browser E2E', () => {
 
     afterAll(async () => {
         await e2e.stop();
-    });
-
-    test('coverage target stays at or above 80% of defined major surfaces', () => {
-        expect(functionalCoverage).toBeGreaterThanOrEqual(0.8);
-        expect(automatedFeatureCount).toBe(10);
-        expect(FEATURE_MATRIX.length).toBe(12);
     });
 
     test('boots in the existing Instagram session and detects feed posts', async () => {
@@ -286,9 +261,4 @@ describe('IG Helper live browser E2E', () => {
         expect(profile.visible).toBe(true);
     }, 20000);
 
-    test('documents the currently uncovered live-route families instead of pretending they passed', () => {
-        const uncovered = FEATURE_MATRIX.filter(([, covered]) => !covered).map(([name]) => name);
-        expect(uncovered).toEqual(['reels controls', 'story/highlight controls']);
-        expect(CDP_HTTP.startsWith('http')).toBe(true);
-    });
 });

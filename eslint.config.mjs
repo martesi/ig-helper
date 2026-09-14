@@ -26,7 +26,6 @@ export default [
         GM_unregisterMenuCommand: 'readable',
         GM_getResourceText: 'readable',
         GM_openInTab: 'readable',
-        GM_getResourceURL: 'readable',
         GM_download: 'readable'
       }
     },

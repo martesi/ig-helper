@@ -2,7 +2,6 @@
 @import "tailwindcss/preflight.css" layer(base);
 @import "basecoat-css/base/base.css";
 @import "basecoat-css/components/button";
-@import "basecoat-css/components/card";
 @import "basecoat-css/components/checkbox";
 @import "basecoat-css/components/dialog";
 @import "basecoat-css/components/input";
