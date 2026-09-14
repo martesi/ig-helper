@@ -122,16 +122,16 @@ function SettingsDialog({ initialTab, onLanguageChange }) {
     }
 
     return (
-        <dialog ref={dialogRef} class="IG_POPUP_DIG IG_SETTINGS_DIALOG IG_MODAL_DIALOG ig-helper-ui"
+        <dialog ref={dialogRef} class="dialog IG_POPUP_DIG IG_SETTINGS_DIALOG IG_MODAL_DIALOG ig-helper-ui"
             data-settings-tab={tab} aria-labelledby="ig-settings-title" tabIndex={-1} onClick={closeFromBackdrop}
             onCancel={event => { event.preventDefault(); closeSettingsDialog(); }}>
             <div class="IG_SETTINGS_PANEL" onClick={event => event.stopPropagation()}>
+                <IconButton class="IG_SETTINGS_CLOSE" icon={XIcon} label={_i18n('CLOSE')} onClick={closeSettingsDialog} />
                 <header class="IG_SETTINGS_HEADER">
                     <div>
                         <h2 id="ig-settings-title">{_i18n('SETTING')}</h2>
                         <p>{_i18n('SETTINGS_DESCRIPTION')}</p>
                     </div>
-                    <IconButton class="IG_SETTINGS_CLOSE" icon={XIcon} label={_i18n('CLOSE')} onClick={closeSettingsDialog} />
                 </header>
 
                 <div class="tabs IG_SETTINGS_LAYOUT">

@@ -1,8 +1,8 @@
 dialog.IG_SETTINGS_DIALOG {
     box-sizing: border-box;
-    width: clamp(720px, 82vw, 1280px);
-    height: min(88dvh, 860px);
-    max-width: calc(100vw - 32px);
+    width: auto;
+    height: auto;
+    max-width: none;
     max-height: none;
     margin: auto;
     padding: 0;
@@ -25,8 +25,9 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
     box-sizing: border-box;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    width: 100%;
-    height: 100%;
+    width: clamp(720px, 82vw, 1280px);
+    height: min(88dvh, 860px);
+    max-width: calc(100vw - 32px);
     max-height: none;
     overflow: hidden;
     padding: 0;
@@ -57,12 +58,6 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
     color: var(--color-muted-foreground);
     font-size: 13px;
     line-height: 18px;
-}
-
-.IG_SETTINGS_DIALOG .IG_SETTINGS_CLOSE {
-    position: static;
-    flex: 0 0 auto;
-    transform: none;
 }
 
 .IG_SETTINGS_DIALOG .IG_SETTINGS_LAYOUT {
@@ -264,7 +259,7 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
 }
 
 @media (min-width: 1440px) {
-    dialog.IG_SETTINGS_DIALOG {
+    .IG_SETTINGS_DIALOG .IG_SETTINGS_PANEL {
         width: min(86vw, 1320px);
     }
 
@@ -278,7 +273,7 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
 }
 
 @media (max-width: 800px) {
-    dialog.IG_SETTINGS_DIALOG {
+    .IG_SETTINGS_DIALOG .IG_SETTINGS_PANEL {
         width: calc(100vw - 16px);
         height: calc(100dvh - 16px);
         max-width: none;
@@ -347,27 +342,4 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
         grid-column: 1 / -1;
         justify-content: flex-start;
     }
-}
-
-
-.IG_SETTINGS_DIALOG .IG_SELECT {
-    position: relative;
-}
-
-.IG_SETTINGS_DIALOG .IG_SELECT > button {
-    width: 100%;
-}
-
-.IG_SETTINGS_DIALOG .IG_SELECT > [data-popover] {
-    position: absolute;
-    z-index: 20;
-    top: calc(100% + 4px);
-    inset-inline: 0;
-    width: 100%;
-    max-height: min(320px, 42vh);
-    overflow: auto;
-}
-
-.IG_SETTINGS_DIALOG .IG_SELECT > [data-popover][aria-hidden='true'] {
-    display: none;
 }

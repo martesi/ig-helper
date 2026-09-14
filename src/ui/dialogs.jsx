@@ -1,5 +1,5 @@
 import { Fragment, h, render } from 'preact';
-import { Button, Checkbox, IconButton } from './components.jsx';
+import { Button, Checkbox, IconButton, Textarea } from './components.jsx';
 import { XIcon } from './icons.jsx';
 
 export function mountLegacyDialog({ hidden = false, hasCheckbox = false, labels, version }) {
@@ -56,7 +56,7 @@ function LegacyDialog({ hasCheckbox, labels, version }) {
 function DebugPanel({ labels }) {
     return (
         <div class="IG_LEGACY_PANEL">
-            <textarea class="IG_DEBUG_TEXTAREA" readOnly />
+            <Textarea class="IG_DEBUG_TEXTAREA" readOnly />
             <div class="IG_LEGACY_DIALOG_ACTIONS">
                 <Button class="IG_DISPLAY_DOM_TREE">{labels.showTree}</Button>
                 <Button class="IG_SELECT_DOM_TREE">{labels.copyTree}</Button>

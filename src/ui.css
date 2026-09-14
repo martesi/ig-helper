@@ -2,13 +2,14 @@
 @import "basecoat-css/components/button";
 @import "basecoat-css/components/card";
 @import "basecoat-css/components/checkbox";
-@import "basecoat-css/components/field";
+@import "basecoat-css/components/dialog";
 @import "basecoat-css/components/input";
 @import "basecoat-css/components/kbd";
-@import "basecoat-css/components/select";
+@import "basecoat-css/components/native-select";
 @import "basecoat-css/components/range";
 @import "basecoat-css/components/switch";
 @import "basecoat-css/components/tabs";
+@import "basecoat-css/components/textarea";
 @import "basecoat-css/styles/vega";
 
 @theme {
@@ -82,14 +83,29 @@
 .ig-helper-ui .btn,
 .ig-helper-ui .card,
 .ig-helper-ui .input,
-.ig-helper-ui .select > button,
-.ig-helper-ui .select [data-popover],
+.ig-helper-ui .kbd,
+.ig-helper-ui .select,
+.ig-helper-ui .textarea,
 .ig-helper-ui .tabs > [role='tablist'] > [role='tab'] {
+    all: revert-layer;
+}
+
+.ig-helper-ui.dialog > * {
     all: revert-layer;
 }
 
 .ig-helper-ui .input[role='switch']::before {
     all: revert-layer;
+}
+
+/* Basecoat expects Tailwind Preflight's form inheritance; keep that reset inside the userscript UI. */
+.ig-helper-ui :is(.btn, .input, .select, .textarea) {
+    box-sizing: border-box;
+    font: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
 }
 
 .IG_CONTROL_BAR {
@@ -121,7 +137,7 @@
     line-height: 0;
 }
 
-.IG_POST_CONTROL {
+.ig-helper-ui .IG_POST_CONTROL {
     width: 28px;
     height: 28px;
     padding: 5px;
@@ -214,7 +230,7 @@
     gap: 12px;
 }
 
-.IG_DEBUG_TEXTAREA {
+.ig-helper-ui .IG_DEBUG_TEXTAREA {
     box-sizing: border-box;
     width: 100%;
     min-height: 300px;

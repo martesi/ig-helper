@@ -335,14 +335,6 @@
     margin: 0px 7px;
 }
 
-kbd {
-    font-weight: bold;
-    padding: 4px 5px;
-    background: rgb(var(--ig-primary-background));
-    border-radius: 3px;
-    border: 1px solid rgb(var(--ig-primary-text));
-}
-
 #scrollWrapper {
     position: fixed;
     right: 15px;
@@ -593,4 +585,3 @@ div[class]:hover+.volume_slider>div,
         transform: rotate(360deg);
     }
 }
-
