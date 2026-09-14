@@ -62,16 +62,7 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
 .IG_SETTINGS_DIALOG .IG_SETTINGS_CLOSE {
     position: static;
     flex: 0 0 auto;
-    width: 32px;
-    height: 32px;
-    padding: 0;
     transform: none;
-    border-radius: 8px;
-}
-
-.IG_SETTINGS_DIALOG .IG_SETTINGS_CLOSE svg {
-    width: 18px;
-    height: 18px;
 }
 
 .IG_SETTINGS_DIALOG .IG_SETTINGS_LAYOUT {
@@ -95,41 +86,6 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
     background: transparent;
 }
 
-.IG_SETTINGS_DIALOG .IG_SETTINGS_TABS > [role='tab'] {
-    position: relative;
-    display: inline-flex;
-    width: 100%;
-    height: auto;
-    min-height: 38px;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 9px;
-    padding: 9px 10px;
-    border: 0;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--color-muted-foreground);
-    font-size: 14px;
-    font-weight: 500;
-    text-align: left;
-    cursor: pointer;
-}
-
-.IG_SETTINGS_DIALOG .IG_SETTINGS_TABS > [role='tab']:hover {
-    background: var(--color-muted);
-    color: var(--color-foreground);
-}
-
-.IG_SETTINGS_DIALOG .IG_SETTINGS_TABS > [role='tab'][aria-selected='true'] {
-    background: var(--color-muted);
-    color: var(--color-foreground);
-}
-
-.IG_SETTINGS_DIALOG .IG_SETTINGS_TABS svg {
-    width: 16px !important;
-    height: 16px !important;
-    flex: 0 0 16px;
-}
 
 .IG_SETTINGS_DIALOG .IG_SETTINGS_CONTENT {
     min-width: 0;
@@ -150,43 +106,9 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
     padding: 24px;
 }
 
-.IG_SETTINGS_SECTION.card {
-    gap: 0;
-    padding: 0;
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    --tw-ring-shadow: 0 0 #0000;
-}
-
-.IG_SETTINGS_SECTION.card > header {
-    gap: 3px;
-    padding: 0 4px 10px;
-    border: 0;
-}
-
-.IG_SETTINGS_SECTION.card > header h3 {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 700;
-    line-height: 20px;
-}
-
-.IG_SETTINGS_SECTION.card > header p {
-    margin: 0;
-    color: var(--color-muted-foreground);
-    font-size: 12px;
-    line-height: 17px;
-}
-
 .IG_SETTINGS_SECTION_BODY {
     display: block;
     overflow: visible;
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    background: var(--color-card);
 }
 
 .IG_SETTING_ROW {
@@ -236,48 +158,9 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
     line-height: 17px;
 }
 
-/* Instagram applies aggressive native-input rules, so switches need an explicit local reset. */
 .IG_SETTINGS_DIALOG .IG_SETTING_ROW > .input[role='switch'] {
-    box-sizing: border-box !important;
-    display: inline-flex !important;
-    width: 36px !important;
-    height: 20px !important;
-    flex: 0 0 36px !important;
     justify-self: end;
     margin: 0;
-    padding: 1px !important;
-    border: 1px solid color-mix(in srgb, var(--color-foreground) 18%, transparent) !important;
-    border-radius: 999px !important;
-    appearance: none !important;
-    background: color-mix(in srgb, var(--color-foreground) 14%, var(--color-background)) !important;
-    box-shadow: none !important;
-    cursor: pointer !important;
-}
-
-.IG_SETTINGS_DIALOG .IG_SETTING_ROW > .input[role='switch']::before {
-    display: block !important;
-    width: 16px !important;
-    height: 16px !important;
-    border-radius: 50% !important;
-    background: var(--color-background) !important;
-    box-shadow: 0 1px 3px rgb(0 0 0 / 28%) !important;
-    content: '' !important;
-    transform: translateX(0) !important;
-    transition: transform 140ms ease !important;
-}
-
-.IG_SETTINGS_DIALOG .IG_SETTING_ROW > .input[role='switch']:checked {
-    border-color: var(--color-primary) !important;
-    background: var(--color-primary) !important;
-}
-
-.IG_SETTINGS_DIALOG .IG_SETTING_ROW > .input[role='switch']:checked::before {
-    transform: translateX(16px) !important;
-}
-
-.IG_SETTINGS_DIALOG .IG_SETTING_ROW > .input[role='switch']:focus-visible {
-    outline: 2px solid var(--color-ring) !important;
-    outline-offset: 2px !important;
 }
 
 .IG_SETTINGS_LANGUAGE .select {
@@ -469,36 +352,22 @@ dialog.IG_SETTINGS_DIALOG::backdrop {
 
 .IG_SETTINGS_DIALOG .IG_SELECT {
     position: relative;
-    min-width: 220px;
 }
 
 .IG_SETTINGS_DIALOG .IG_SELECT > button {
     width: 100%;
-    justify-content: space-between;
-    color: var(--color-foreground);
 }
 
 .IG_SETTINGS_DIALOG .IG_SELECT > [data-popover] {
     position: absolute;
     z-index: 20;
-    top: calc(100% + 6px);
-    right: 0;
-    width: max(100%, 220px);
+    top: calc(100% + 4px);
+    inset-inline: 0;
+    width: 100%;
     max-height: min(320px, 42vh);
     overflow: auto;
-    border: 1px solid var(--color-border);
-    background: var(--color-popover);
 }
 
 .IG_SETTINGS_DIALOG .IG_SELECT > [data-popover][aria-hidden='true'] {
     display: none;
-}
-
-.IG_SETTINGS_DIALOG .IG_SELECT [role='option'] {
-    cursor: pointer;
-}
-
-.IG_SETTINGS_DIALOG .IG_SELECT [role='option'][aria-selected='true'] {
-    background: var(--color-muted);
-    font-weight: 600;
 }

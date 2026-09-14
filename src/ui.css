@@ -78,6 +78,20 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* Host pages use unlayered author CSS, which otherwise outranks Basecoat's component layer. */
+.ig-helper-ui .btn,
+.ig-helper-ui .card,
+.ig-helper-ui .input,
+.ig-helper-ui .select > button,
+.ig-helper-ui .select [data-popover],
+.ig-helper-ui .tabs > [role='tablist'] > [role='tab'] {
+    all: revert-layer;
+}
+
+.ig-helper-ui .input[role='switch']::before {
+    all: revert-layer;
+}
+
 .IG_CONTROL_BAR {
     display: flex;
     align-items: center;
@@ -90,16 +104,8 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-}
-
-.IG_CONTROL_BAR .btn[data-variant='ghost'] {
-    color: inherit;
-    background: transparent;
-}
-
-.IG_CONTROL_BAR .btn[data-variant='ghost']:hover {
-    background: rgba(255, 255, 255, 0.18);
-    color: inherit;
+    --color-foreground: #fff;
+    --color-muted: rgba(255, 255, 255, 0.18);
 }
 
 .IG_CONTROL_BAR svg {
