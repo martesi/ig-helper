@@ -1,5 +1,4 @@
-import '../style.css';
-import './ui.css';
+import './styles.js';
 import './initial.js';
 import './timer.js';
 import './events.js';
