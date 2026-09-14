@@ -2,10 +2,11 @@ import $ from 'jquery';
 import { state, USER_SETTING, $body } from "./settings";
 import {
     reloadScript,
-    triggerLinkElement, openNewTab, saveFiles, logger, toggleVolumeSilder, updatePopupSelectionSummary,
+    triggerLinkElement, openNewTab, saveFiles, toggleVolumeSilder, updatePopupSelectionSummary,
     replaceSameOriginHost, setTimeElementDateAndLocaleTime, getHighlightCurrentTimeElement,
     triggerReactClickHandler
 } from "./utils/general";
+import { logger } from "./utils/logger";
 import { onStory, onStoryAll, onStoryThumbnail } from "./functions/story";
 import { onProfileAvatar } from "./functions/profile";
 import { onHighlightsStory, onHighlightsStoryAll, onHighlightsStoryThumbnail } from "./functions/highlight";

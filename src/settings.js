@@ -1,5 +1,4 @@
 import $ from 'jquery';
-import { onReadyMyDW } from "./functions/post";
 
 /******** USER SETTINGS ********/
 // !!! DO NOT CHANGE THIS AREA !!!
@@ -55,10 +54,7 @@ export const SVG = {
 
 /*******************************/
 
-// FIX: resourceCountSelector moved to module scope — was previously re-declared
-// inside every createDownloadButton() invocation, and also referenced from the
-// body-level delegated handlers added below.
-
+// Shared post-resource selector used by rendering and download actions.
 // Improve the selector by using the value from the getVisibleNodeIndex function in 'const $viewport'.
 export const resourceCountSelector = '*:not([data-pagelet])>*:not([role]):not([data-pagelet])>*>*>*[role]>*>ul[class] li[class]';
 
@@ -92,9 +88,7 @@ export var state = {
         stories: {},
         highlights: {}
     },
-    GL_observer: new MutationObserver(function () {
-        onReadyMyDW();
-    }),
+    GL_observer: null,
     GL_imageCache: GM_getValue(IMAGE_CACHE_KEY, {}),
     GL_mediaDataCache: {},
     GL_weakCache: {

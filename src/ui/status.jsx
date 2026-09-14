@@ -1,5 +1,12 @@
 import { h, render } from 'preact';
 
+export function updateLoadingBar(isLoading) {
+    const mount = document.querySelector('div[id^="mount"] > div > div > div');
+    if (!mount) return;
+    mount.classList.toggle('x1s85apg', !isLoading);
+    mount.style.zIndex = isLoading ? '20000' : '';
+}
+
 export function appendCounter(parent, className) {
     const fragment = document.createDocumentFragment();
     render(<div class={className} />, fragment);

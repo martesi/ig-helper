@@ -3,14 +3,16 @@ import { USER_SETTING, SVG, state } from "../settings";
 import { appendLegacyControl } from "../ui/legacy_controls.jsx";
 import { appendMediaResource, decorateMediaResource } from "../ui/media_resource.jsx";
 import {
-    updateLoadingBar, setDownloadProgress,
-    saveFiles, getStoryProgress, openNewTab, logger,
+    setDownloadProgress,
+    saveFiles, getStoryProgress, openNewTab,
     getStoryId,
     tryHandleDashFromMediaItem,
     updatePopupSelectionSummary,
     setStoryProgressIndexText,
     setStoryProgressIndexByUsername
 } from "../utils/general";
+import { updateLoadingBar } from "../ui/status.jsx";
+import { logger } from "../utils/logger";
 import { getUserId, getStories, getMediaInfo } from "../utils/api";
 import { _i18n } from "../utils/i18n";
 import { getImageFromCache } from "../utils/image_cache";

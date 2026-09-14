@@ -4,8 +4,9 @@ import { USER_SETTING, state, userIdCache, $body } from "../settings";
 import { _i18n } from "./i18n";
 import { getPostOwner, getMediaInfo, getUserId } from "./api";
 import { getImageFromCache } from "./image_cache";
-import { registerPostClickHandlers } from "../functions/post";
-import { appendCounter, appendDownloadProgress, appendVolumeSlider } from "../ui/status.jsx";
+import { appendCounter, appendDownloadProgress, appendVolumeSlider, updateLoadingBar } from "../ui/status.jsx";
+import { logger } from "./logger";
+
 
 /**
  * getStoryId
@@ -23,27 +24,6 @@ export function getStoryId(url) {
     else {
         return null;
     }
-}
-
-/**
- * getAppID
- * @description Get Instagram App ID.
- *
- * @return {?string}
- */
-export function getAppID() {
-    let result = null;
-    $('script[type="application/json"]').each(function () {
-        const regexp = /"APP_ID":"([0-9]+)"/ig;
-        const $this = $(this);
-        const text = $this.text();
-        const matcher = text.match(regexp);
-        if (matcher != null && result == null) {
-            result = [...text.matchAll(regexp)];
-        }
-    })
-
-    return (result) ? result.at(0).at(-1) : null;
 }
 
 /**
@@ -188,26 +168,6 @@ export function getHighlightCurrentTimeElement($element) {
     }
 
     return $times.first();
-}
-
-/**
- * updateLoadingBar
- * @description Update loading state.
- *
- * @param  {Boolean}  isLoading - Check if loading state
- * @return {void}
- */
-export function updateLoadingBar(isLoading) {
-    // OPTIMIZATION: cache the mount root selection (called every time)
-    const $mountDiv = $('div[id^="mount"] > div > div > div:first');
-    if (isLoading) {
-        $mountDiv.removeClass('x1s85apg');
-        $mountDiv.css('z-index', '20000');
-    }
-    else {
-        $mountDiv.addClass('x1s85apg');
-        $mountDiv.css('z-index', '');
-    }
 }
 
 /**
@@ -1317,10 +1277,6 @@ export function openNewTab(link) {
 export function reloadScript() {
     clearInterval(state.GL_repeat);
 
-    // OPTIMIZATION: use cached $body and combine .off() calls
-    $body.off('.igHelperPost');
-    state.bodyEventsRegistered = false;
-
     $('.button_wrapper').remove();
     $('.IG_DWPROFILE, .IG_DWPROFILE, .IG_DWSTORY, .IG_DWSTORY_ALL, .IG_DWSTORY_THUMBNAIL, .IG_DWSTORY_POSITION, .IG_DWNEWTAB, .IG_DWHISTORY, .IG_DWHISTORY_ALL, .IG_DWHINEWTAB, .IG_DWHISTORY_THUMBNAIL, .IG_DWHISTORY_POSITION, .IG_REELS, .IG_REELS_NEWTAB, .IG_REELS_THUMBNAIL').remove();
     $('[data-snig]').removeAttr('data-snig');
@@ -1330,33 +1286,7 @@ export function reloadScript() {
     state.currentURL = location.href;
     state.GL_observer?.disconnect();
 
-    // Re-register delegated click handlers
-    registerPostClickHandlers();
-
     logger('main timer re-register completed');
-}
-
-/**
- * logger
- * @description Event record.
- *
- * @return {void}
- */
-export function logger(...messages) {
-    var dd = new Date();
-    state.GL_logger.push({
-        time: dd.getTime(),
-        content: [...messages]
-    });
-
-    if (state.GL_logger.length > 1000) {
-        state.GL_logger = [{
-            time: dd.getTime(),
-            content: ['logger sliced']
-        }, ...state.GL_logger.slice(-999)];
-    }
-
-    console.log(`[${dd.toISOString()}]`, ...messages);
 }
 
 /**
@@ -1389,6 +1319,8 @@ export function initSettings() {
  * @return {void}
  */
 export function toggleVolumeSilder($videos, $buttonParent, loggerType, customClass = "") {
+    if (!$buttonParent?.length) return;
+
     // OPTIMIZATION: cache the volume_slider lookup
     let $existingSlider = $buttonParent.find('div.volume_slider');
     if ($existingSlider.length === 0) {

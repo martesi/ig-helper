@@ -1,5 +1,14 @@
 import { userIdCache } from "../settings";
-import { logger, getAppID, updateLoadingBar } from "./general";
+import { updateLoadingBar } from "../ui/status.jsx";
+import { logger } from "./logger";
+function getAppID() {
+    for (const script of document.querySelectorAll('script[type="application/json"]')) {
+        const match = script.textContent?.match(/"APP_ID":"([0-9]+)"/i);
+        if (match) return match[1];
+    }
+    return null;
+}
+
 
 /**
  * getHighlightStories

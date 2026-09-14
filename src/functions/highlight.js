@@ -2,12 +2,14 @@ import $ from 'jquery';
 import { USER_SETTING, SVG, state } from "../settings";
 import { appendLegacyControl } from "../ui/legacy_controls.jsx";
 import {
-    updateLoadingBar, openNewTab, logger,
+    openNewTab,
     setDownloadProgress, saveFiles, getStoryProgress,
     tryHandleDashFromMediaItem,
     getHighlightCurrentTimeElement, setTimeElementDateAndLocaleTime,
     setStoryProgressIndexText, setStoryProgressIndexByUsername
 } from "../utils/general";
+import { updateLoadingBar } from "../ui/status.jsx";
+import { logger } from "../utils/logger";
 import { _i18n } from "../utils/i18n";
 import { getHighlightStories, getMediaInfo } from "../utils/api";
 import { createStoryListDOM } from "./story";

@@ -1,11 +1,14 @@
 import $ from 'jquery';
 import { state, checkInterval, USER_SETTING } from "./settings";
-import { logger } from "./utils/general";
+import { logger } from "./utils/logger";
 import { onReadyMyDW } from "./functions/post";
 import { onReels } from "./functions/reel";
 import { onProfileAvatar, skipSharedWithYouDialog } from "./functions/profile";
 import { onHighlightsStory, onHighlightsStoryThumbnail } from "./functions/highlight";
 import { onStory } from "./functions/story";
+
+// Post-page observer belongs to the post/timer lifecycle, not the settings module.
+state.GL_observer = new MutationObserver(() => onReadyMyDW());
 
 // Main Timer
 export var timer = setInterval(function () {
@@ -27,7 +30,6 @@ export var timer = setInterval(function () {
         state.pageLoaded = false;
         state.firstStarted = true;
         state.currentURL = location.href;
-        clearTimeout(state.homepageObserverDebounce);
         if (!state.currentURL.includes('/stories/') || !location.pathname.startsWith('/stories/')) {
             state.GL_observer.disconnect();
         }

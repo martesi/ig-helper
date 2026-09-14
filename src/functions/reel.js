@@ -1,7 +1,9 @@
 import $ from 'jquery';
 import { USER_SETTING, SVG, state } from "../settings";
 import { appendLegacyControl, appendReelScrollControls } from "../ui/legacy_controls.jsx";
-import { updateLoadingBar, saveFiles, openNewTab, logger, toggleVolumeSilder, triggerReactClickHandler } from "../utils/general";
+import { saveFiles, openNewTab, toggleVolumeSilder, triggerReactClickHandler } from "../utils/general";
+import { updateLoadingBar } from "../ui/status.jsx";
+import { logger } from "../utils/logger";
 import { getBlobMedia } from "../utils/api";
 import { filterResourceData } from "./post";
 import { _i18n } from "../utils/i18n";
@@ -159,7 +161,7 @@ function appendReelsButton($main) {
         $videos.each(function () {
             $(this).off('fullscreenchange.IG_videoControl').on('fullscreenchange.IG_videoControl', function () {
                 const $vid = $(this);
-                if ($vid.attr('style').includes('object-fit')) {
+                if (($vid.attr('style') ?? '').includes('object-fit')) {
                     if (document.fullscreenElement == this) {
                         $vid.css('object-fit', 'contain');
                     }
@@ -170,24 +172,21 @@ function appendReelsButton($main) {
             });
         });
 
-        // Disable video autoplay
+        // Reloading the helper can revisit the same video node after controls are rebuilt.
+        $videos.off('ended.igHelperLoop');
         if (USER_SETTING.DISABLE_VIDEO_LOOPING) {
-            $videos.each(function () {
-                $(this).on('ended', function () {
-                    const $this = $(this);
+            $videos.on('ended.igHelperLoop', function () {
+                const $this = $(this);
+                const $element_play_button = $this.next().find('div[role="presentation"] > div svg > path[d^="M5.888"]').parents('button[role="button"], div[role="button"]');
+                if ($element_play_button.length > 0) {
+                    $element_play_button.trigger("click");
+                    logger('(reel) Stop video playing #loop, then paused click()');
+                    return;
+                }
 
-                    let $element_play_button = $this.next().find('div[role="presentation"] > div svg > path[d^="M5.888"]').parents('button[role="button"], div[role="button"]');
-                    if ($element_play_button.length > 0) {
-                        $element_play_button.trigger("click");
-                        logger('(reel) Stop video playing #loop, then paused click()');
-                    }
-                    else {
-                        $this.parent().find('.xpgaw4o').removeAttr('style');
-                        this.pause();
-                        logger('(reel) Stop video playing #loop, then paused pause()');
-                    }
-
-                });
+                $this.parent().find('.xpgaw4o').removeAttr('style');
+                this.pause();
+                logger('(reel) Stop video playing #loop, then paused pause()');
             });
         }
 

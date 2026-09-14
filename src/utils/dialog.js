@@ -1,5 +1,6 @@
 import { state } from "../settings";
-import { logger, reloadScript } from "./general";
+import { reloadScript } from "./general";
+import { logger } from "./logger";
 import { _i18n } from "./i18n";
 import { showSettingsDialog } from './settings_dialog.jsx';
 import { mountDebugPanel, mountFeedbackPanel, mountLegacyDialog } from '../ui/dialogs.jsx';
@@ -47,10 +48,11 @@ export function IG_setDM(hasHidden) {
  * @return {void}
  */
 export function registerMenuCommand() {
-    for (let id of state.registerMenuIds) {
+    for (const id of state.registerMenuIds) {
         logger('GM_unregisterMenuCommand', id);
         GM_unregisterMenuCommand(id);
     }
+    state.registerMenuIds.length = 0;
 
     state.registerMenuIds.push(GM_registerMenuCommand(_i18n('SETTING'), () => {
         showSetting();

@@ -1,5 +1,5 @@
 import { state } from "../settings";
-import { logger } from "./general";
+import { logger } from "./logger";
 
 /**
  * translateText
@@ -224,6 +224,8 @@ export function repaintingTranslations() {
         element.textContent = _i18n(element.dataset.ihLocale);
     });
     document.querySelectorAll('[data-ih-locale-title]').forEach(element => {
-        element.title = _i18n(element.dataset.ihLocaleTitle);
+        const label = _i18n(element.dataset.ihLocaleTitle);
+        element.title = label;
+        if (element.hasAttribute('aria-label')) element.setAttribute('aria-label', label);
     });
 }

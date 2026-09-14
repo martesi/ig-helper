@@ -85,8 +85,7 @@ function SettingsDialog({ initialTab, onLanguageChange }) {
         refresh(version => version + 1);
     }
 
-    async function saveLanguage(event) {
-        const value = event.currentTarget.value;
+    async function saveLanguage(value) {
         state.lang = value;
         GM_setValue('UI_LANGUAGE', value);
         setLanguage(value);
@@ -103,10 +102,9 @@ function SettingsDialog({ initialTab, onLanguageChange }) {
         }
     }
 
-    function saveHotkey(event, config) {
-        const keyCode = Number(event.currentTarget.value);
+    function saveHotkey(value, config) {
+        const keyCode = Number(value);
         if (HOTKEY_SETTINGS.some(setting => setting.stateKey !== config.stateKey && state[setting.stateKey] === keyCode)) {
-            event.currentTarget.value = state[config.stateKey];
             setConflict(config.stateKey);
             return;
         }
@@ -172,16 +170,16 @@ function Preferences({ language, onLanguageChange, onSettingChange }) {
                         <label for="langSelect">{_i18n('SETTINGS_LANGUAGE')}</label>
                         <p>{_i18n('SETTINGS_LANGUAGE_NOTE')}</p>
                     </div>
-                    <Select id="langSelect" value={language} onChange={onLanguageChange}>
-                        {Object.entries(locale_manifest).map(([value, label]) => <option value={value}>{label}</option>)}
+                    <Select id="langSelect" value={language} onValueChange={onLanguageChange}>
+                        {Object.entries(locale_manifest).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </Select>
                 </div>
             </SettingsSection>
 
             {preferenceSections().map(section => (
-                <SettingsSection titleKey={section.key} descriptionKey={section.descriptionKey}>
+                <SettingsSection key={section.key} titleKey={section.key} descriptionKey={section.descriptionKey}>
                     {section.settings.map(setting => (
-                        <PreferenceSetting {...setting} onSettingChange={onSettingChange} />
+                        <PreferenceSetting key={setting.name} {...setting} onSettingChange={onSettingChange} />
                     ))}
                 </SettingsSection>
             ))}
@@ -269,11 +267,11 @@ function KeyboardSettings({ conflict, onSave, onReset }) {
                     {_i18n('SETTINGS_SHORTCUT_NOTE')} <kbd class="kbd">Alt</kbd>
                 </div>
                 {HOTKEY_SETTINGS.map(config => (
-                    <div class="IG_HOTKEY_ROW">
+                    <div key={config.stateKey} class="IG_HOTKEY_ROW">
                         <label for={config.stateKey}>{_i18n(config.key)}</label>
                         <div class="IG_HOTKEY_ACTIONS">
-                            <Select id={config.stateKey} value={state[config.stateKey]} onChange={event => onSave(event, config)}>
-                                {HOTKEY_OPTIONS.map(keyCode => <option value={keyCode}>{hotkeyLabel(keyCode)}</option>)}
+                            <Select id={config.stateKey} value={state[config.stateKey]} onValueChange={value => onSave(value, config)}>
+                                {HOTKEY_OPTIONS.map(keyCode => <option key={keyCode} value={keyCode}>{hotkeyLabel(keyCode)}</option>)}
                             </Select>
                             <Button variant="ghost" size="sm" onClick={() => onReset(config)}>{_i18n('HOTKEY_RESET')}</Button>
                         </div>

@@ -1,7 +1,9 @@
 import $ from 'jquery';
 import { SVG, USER_SETTING } from "../settings";
 import { appendLegacyControl } from "../ui/legacy_controls.jsx";
-import { updateLoadingBar, saveFiles, logger } from "../utils/general";
+import { saveFiles } from "../utils/general";
+import { updateLoadingBar } from "../ui/status.jsx";
+import { logger } from "../utils/logger";
 import { _i18n } from "../utils/i18n";
 import { getUserId, getUserHighSizeProfile } from "../utils/api";
 

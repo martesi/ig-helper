@@ -1,19 +1,21 @@
 import globals from "globals";
 import pluginJs from "@eslint/js";
 import importPlugin from "eslint-plugin-import";
+import reactPlugin from "eslint-plugin-react";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+  { ignores: ["dist/**"] },
   {
     files: ["**/*.{js,mjs,jsx}"],
     plugins: {
       import: importPlugin,
+      react: reactPlugin,
     },
     languageOptions: {
       sourceType: "module",
       parserOptions: { ecmaFeatures: { jsx: true } },
       globals: {
-        // **
         ...globals.browser,
         GM_info: 'readable',
         GM_addStyle: 'readable',
@@ -29,10 +31,17 @@ export default [
       }
     },
     rules: {
-      "import/no-unresolved": "error",
+      ...pluginJs.configs.recommended.rules,
       "import/named": "error",
       "import/no-duplicates": "warn",
+      "import/no-cycle": "error",
+      "react/jsx-uses-vars": "error",
     },
   },
-  pluginJs.configs.recommended,
+  {
+    files: ["**/*.jsx"],
+    rules: {
+      "no-unused-vars": ["error", { "varsIgnorePattern": "^(h|Fragment)$" }],
+    },
+  },
 ];
