@@ -1,200 +1,138 @@
-import $ from 'jquery';
-import { $body, SVG } from "../settings";
+import htm from 'htm';
+import { h, render } from 'preact';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { SVG } from '../settings';
 
-var detectMovingViewerTimer = null;
+const VIEWER_ROOT_ID = 'ig-helper-image-viewer-root';
+const html = htm.bind(h);
 
 export function openImageViewer(imageUrl) {
     removeImageViewer();
-
-    $body.append(
-        `<div id="imageViewer">
-	<div id="iv_header">
-		<div style="flex:1;">Image Viewer</div>
-		<div style="display: flex;filter: invert(1);gap: 8px;margin-right: 8px;">
-            <div id="rotate_left" style="cursor: pointer;">${SVG.TURN_DEG}</div>
-            <div id="rotate_right" style="transform: scaleX(-1);cursor: pointer;">${SVG.TURN_DEG}</div>
-        </div>
-		<div id="iv_close">${SVG.CLOSE}</div>
-	</div>
-    <section>
-        <div id="iv_transform">
-            <div id="iv_rotate">
-                <img id="iv_image" src="" />
-            </div>
-        </div>
-    </section>
-</div>`);
-
-    const $container = $('#imageViewer');
-    const $section = $('#imageViewer > section');
-    const $wrapT = $('#iv_transform');
-    const $wrapR = $('#iv_rotate');
-    const $header = $('#iv_header');
-    const $closeIcon = $('#iv_close');
-    const $image = $('#iv_image');
-    const $rotateLeft = $('#rotate_left');
-    const $rotateRight = $('#rotate_right');
-
-    $image.attr('src', imageUrl);
-    $container.css('display', 'flex');
-    $wrapT.css('transform-origin', '0 0');
-    $wrapT.css('transition', `transform 0.15s ease`);
-    $wrapR.css('transform-origin', 'center');
-    $wrapR.css('transition', `transform 0.15s ease`);
-    $wrapT.css('will-change', 'transform');
-    $wrapR.css('will-change', 'transform');
-
-    let rotate = 0;
-    let scale = 1;
-    let posX = 0, posY = 0;
-    let isDragging = false;
-    let isMovingPhoto = false;
-    let startX, startY;
-    var previousPosition = {
-        x: 0,
-        y: 0
-    };
-
-    detectMovingViewerTimer = setInterval(() => {
-        const currentPosition = {
-            x: posX,
-            y: posY
-        };
-        if (currentPosition.x !== previousPosition.x || currentPosition.y !== previousPosition.y) {
-            isMovingPhoto = true;
-        } else {
-            isMovingPhoto = false;
-        }
-        previousPosition = currentPosition;
-    }, 100);
-
-    $image.on('dragstart drop', (e) => {
-        e.preventDefault();
-    });
-
-    $image.on('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!isMovingPhoto) {
-            if (scale <= 1) {
-                makeZoomAction(e, Math.min(Math.max(1, scale + 1.25), 5));
-            }
-            else {
-                scale = 1;
-                posX = 0;
-                posY = 0;
-            }
-
-            updateImageStyle();
-        }
-    });
-
-    $section.on('wheel', (e) => {
-        e.preventDefault();
-        makeZoomAction(e);
-    });
-
-    $container.on('wheel', (e) => {
-        e.preventDefault();
-    });
-
-    $image.on('mousedown', (e) => {
-        if (scale == 1) return;
-
-        isDragging = true;
-
-        startX = e.pageX - posX;
-        startY = e.pageY - posY;
-        $image.css('cursor', 'grabbing');
-    });
-
-    $image.on('mouseup', () => {
-        if (scale == 1) return;
-
-        isDragging = false;
-        $image.css('cursor', 'grab');
-    });
-
-    $rotateLeft.on('click', function () {
-        rotate -= 90;
-        updateImageStyle();
-    });
-
-    $rotateRight.on('click', function () {
-        rotate += 90;
-        updateImageStyle();
-    });
-
-    $(document).on('mousemove.igHelper', (e) => {
-        if (!isDragging) return;
-        e.preventDefault();
-
-        posX = e.pageX - startX;
-        posY = e.pageY - startY;
-
-        updateImageStyle();
-    });
-
-    $container.on('click', () => {
-        removeImageViewer();
-    });
-
-    $closeIcon.on('click', () => {
-        removeImageViewer();
-    });
-
-    $header.on('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-    });
-
-    function updateImageStyle() {
-        $wrapT.css('transition', isMovingPhoto ? "none" : `transform 0.15s ease`);
-        $wrapT.css('transform', `translate(${posX}px, ${posY}px) scale(${scale})`);
-        $wrapR.css('transform', `rotate(${rotate}deg)`);
-
-        if (scale == 1) {
-            $image.css('cursor', 'zoom-in');
-        }
-        else {
-            $image.css('cursor', 'grabbing');
-        }
-    }
-
-
-    function makeZoomAction(e, newScale) {
-        e.preventDefault();
-
-        let prevScale = scale;
-
-        // newScale should be null when passing by wheel event
-        if (newScale == null) {
-            let factor = 0.1;
-            let delta = e.originalEvent.deltaY < 0 ? 1 : -1;
-            scale = Math.min(5, Math.max(1, scale + delta * factor * scale));
-        }
-        else {
-            scale = newScale;
-        }
-
-
-        let rect = $section[0].getBoundingClientRect();
-        let mx = e.clientX - rect.left;
-        let my = e.clientY - rect.top;
-
-        let zoomTargetX = (mx - posX) / prevScale;
-        let zoomTargetY = (my - posY) / prevScale;
-
-        posX = -zoomTargetX * scale + mx;
-        posY = -zoomTargetY * scale + my;
-
-        updateImageStyle();
-    }
+    const root = document.createElement('div');
+    root.id = VIEWER_ROOT_ID;
+    document.body.append(root);
+    render(html`<${ImageViewer} imageUrl=${imageUrl} />`, root);
 }
 
 export function removeImageViewer() {
-    clearInterval(detectMovingViewerTimer);
-    $('#imageViewer').remove();
-    $(document).off('mousemove.igHelper');
+    const root = document.getElementById(VIEWER_ROOT_ID);
+    if (!root) return;
+    render(null, root);
+    root.remove();
+}
+
+function ImageViewer({ imageUrl }) {
+    const sectionRef = useRef(null);
+    const dragRef = useRef(null);
+    const didDragRef = useRef(false);
+    const [transform, setTransform] = useState({ rotate: 0, scale: 1, x: 0, y: 0 });
+
+    useEffect(() => {
+        function moveImage(event) {
+            const drag = dragRef.current;
+            if (!drag) return;
+            event.preventDefault();
+            drag.moved = true;
+            setTransform(current => ({
+                ...current,
+                x: event.pageX - drag.startX,
+                y: event.pageY - drag.startY,
+            }));
+        }
+
+        function stopDragging() {
+            didDragRef.current = Boolean(dragRef.current?.moved);
+            dragRef.current = null;
+        }
+
+        document.addEventListener('mousemove', moveImage);
+        document.addEventListener('mouseup', stopDragging);
+        return () => {
+            document.removeEventListener('mousemove', moveImage);
+            document.removeEventListener('mouseup', stopDragging);
+        };
+    }, []);
+
+    function zoomAt(event, requestedScale) {
+        event.preventDefault();
+        const rect = sectionRef.current.getBoundingClientRect();
+        setTransform(current => {
+            const scale = requestedScale ?? Math.min(5, Math.max(1,
+                current.scale + (event.deltaY < 0 ? 0.1 : -0.1) * current.scale));
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            const targetX = (mouseX - current.x) / current.scale;
+            const targetY = (mouseY - current.y) / current.scale;
+            return {
+                ...current,
+                scale,
+                x: -targetX * scale + mouseX,
+                y: -targetY * scale + mouseY,
+            };
+        });
+    }
+
+    function toggleZoom(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (didDragRef.current) {
+            didDragRef.current = false;
+            return;
+        }
+        if (transform.scale > 1) {
+            setTransform(current => ({ ...current, scale: 1, x: 0, y: 0 }));
+            return;
+        }
+        zoomAt(event, 2.25);
+    }
+
+    function startDragging(event) {
+        if (transform.scale === 1) return;
+        dragRef.current = {
+            moved: false,
+            startX: event.pageX - transform.x,
+            startY: event.pageY - transform.y,
+        };
+    }
+
+    const translateStyle = {
+        transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+        transformOrigin: '0 0',
+        transition: dragRef.current?.moved ? 'none' : 'transform 0.15s ease',
+        willChange: 'transform',
+    };
+    const rotateStyle = {
+        transform: `rotate(${transform.rotate}deg)`,
+        transformOrigin: 'center',
+        transition: 'transform 0.15s ease',
+        willChange: 'transform',
+    };
+    return html`
+        <div id="imageViewer" onClick=${removeImageViewer} onWheel=${event => event.preventDefault()}>
+            <div id="iv_header" onClick=${event => event.stopPropagation()}>
+                <div style="flex:1;">Image Viewer</div>
+                <div style="display:flex;filter:invert(1);gap:8px;margin-right:8px;">
+                    <button id="rotate_left" type="button" style="cursor:pointer;" aria-label="Rotate left"
+                        dangerouslySetInnerHTML=${{ __html: SVG.TURN_DEG }}
+                        onClick=${() => setTransform(current => ({ ...current, rotate: current.rotate - 90 }))} />
+                    <button id="rotate_right" type="button" style="transform:scaleX(-1);cursor:pointer;"
+                        aria-label="Rotate right" dangerouslySetInnerHTML=${{ __html: SVG.TURN_DEG }}
+                        onClick=${() => setTransform(current => ({ ...current, rotate: current.rotate + 90 }))} />
+                </div>
+                <button id="iv_close" type="button" aria-label="Close image viewer"
+                    dangerouslySetInnerHTML=${{ __html: SVG.CLOSE }} onClick=${removeImageViewer} />
+            </div>
+            <section ref=${sectionRef} onWheel=${zoomAt}>
+                <div id="iv_transform" style=${translateStyle}>
+                    <div id="iv_rotate" style=${rotateStyle}>
+                        <img id="iv_image" src=${imageUrl} alt="" draggable=${false}
+                            style=${`cursor:${transform.scale === 1 ? 'zoom-in' : 'grab'};`}
+                            onClick=${toggleZoom} onMouseDown=${startDragging}
+                            onDragStart=${event => event.preventDefault()}
+                            onDrop=${event => event.preventDefault()} />
+                    </div>
+                </div>
+            </section>
+        </div>
+    `;
 }

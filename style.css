@@ -339,6 +339,208 @@
     background: #048aa4;
 }
 
+dialog.IG_SETTINGS_DIALOG {
+    inset: 0;
+    width: min(520px, calc(100vw - 32px));
+    max-width: none;
+    height: auto;
+    max-height: min(760px, calc(100vh - 48px));
+    margin: auto;
+    padding: 0;
+    border: 0;
+    overflow: visible;
+    background: transparent;
+    color: rgb(var(--ig-primary-text));
+}
+
+dialog.IG_SETTINGS_DIALOG::backdrop {
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_PANEL {
+    position: relative;
+    inset: auto;
+    transform: none;
+    width: 100%;
+    max-height: min(760px, calc(100vh - 48px));
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid rgb(var(--ig-separator));
+    border-radius: 12px;
+    background: #fff;
+    background: rgb(var(--ig-primary-background));
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+}
+
+.IG_SETTINGS_HEADER {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    padding: 0 12px 0 16px;
+    border-bottom: 1px solid rgb(var(--ig-separator));
+}
+
+.IG_SETTINGS_HEADER h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 20px;
+}
+
+.IG_SETTINGS_HEADER #post_info {
+    position: absolute;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.IG_SETTINGS_CLOSE,
+.IG_SETTINGS_INLINE_CLOSE {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 4px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+}
+
+.IG_SETTINGS_CLOSE:hover,
+.IG_SETTINGS_INLINE_CLOSE:hover {
+    background: rgb(var(--ig-hover-overlay));
+}
+
+.IG_SETTINGS_CLOSE svg,
+.IG_SETTINGS_INLINE_CLOSE svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.IG_SETTINGS_LANGUAGE {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgb(var(--ig-separator));
+}
+
+.IG_SETTINGS_LANGUAGE label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.IG_SETTINGS_LANGUAGE select {
+    min-width: 150px;
+    padding: 7px 30px 7px 10px;
+    border: 1px solid rgb(var(--ig-separator));
+    border-radius: 8px;
+    background: rgb(var(--ig-secondary-background));
+    color: inherit;
+    font: inherit;
+}
+
+.IG_SETTINGS_LANGUAGE p {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: rgb(var(--ig-secondary-text));
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_LIST {
+    min-height: 0;
+    max-height: calc(min(760px, 100vh - 48px) - 142px);
+    padding: 4px 0;
+    overscroll-behavior: contain;
+}
+
+.IG_SETTINGS_DIALOG .globalSettings {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    margin: 0;
+    padding: 10px 64px 10px 16px;
+    border-radius: 0;
+    font-size: 14px;
+    line-height: 18px;
+}
+
+.IG_SETTINGS_DIALOG .globalSettings.child {
+    width: 100%;
+    margin-left: 0;
+    padding-left: 32px;
+    color: rgb(var(--ig-secondary-text));
+}
+
+.IG_SETTINGS_DIALOG .globalSettings.child::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    width: 6px;
+    height: 6px;
+    border-bottom: 1px solid currentColor;
+    border-left: 1px solid currentColor;
+}
+
+.IG_SETTINGS_DIALOG .globalSettings .chbtn {
+    right: 16px;
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+}
+
+.IG_SETTINGS_DIALOG .globalSettings .chbtn .rounds {
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+}
+
+.IG_SETTINGS_DIALOG .globalSettings input:checked~.chbtn {
+    background: #0095f6;
+}
+
+.IG_SETTINGS_DIALOG .globalSettings input:checked~.chbtn .rounds {
+    left: 18px;
+    background: #fff;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_EDITOR {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px 0 12px;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_INLINE_CLOSE {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+}
+
+@media (max-width: 540px) {
+    dialog.IG_SETTINGS_DIALOG {
+        width: calc(100vw - 16px);
+        max-height: calc(100vh - 16px);
+    }
+
+    .IG_SETTINGS_DIALOG .IG_SETTINGS_PANEL {
+        max-height: calc(100vh - 16px);
+    }
+}
+
 .checkbox {
     font-size: 18px;
     vertical-align: middle;
@@ -559,6 +761,10 @@ kbd {
     position: absolute;
     right: 0px;
     top: 0px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
     line-height: 0;
 }
 
@@ -728,7 +934,7 @@ div[class]:hover+.volume_slider>div,
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.8);
-    display: none;
+    display: flex;
     justify-content: center;
     align-items: center;
     z-index: 600001;

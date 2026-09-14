@@ -14,6 +14,7 @@ import { _i18n, getTranslationText, repaintingTranslations } from "./utils/i18n"
 import { getImageFromCache, registerPerformanceObserver } from "./utils/image_cache";
 import { batchDownloadPostFiles, createDownloadButton } from "./functions/post";
 import { registerMenuCommand, showDebugDOM, showHotkeySetting, showSetting } from "./utils/dialog";
+import { closeSettingsDialog } from './utils/settings_dialog';
 
 // Running if document is ready
 $(function () {
@@ -104,17 +105,12 @@ $(function () {
     });
 
     $(window).on('keydown', function (e) {
-        // Hot key [Alt+Q] to close the download dialog - fixed
-        if (e.altKey && e.which == 81) {
-            $('.IG_POPUP_DIG').remove();
-            e.preventDefault();
-        }
         // Hot key [Alt+W] to open/close the settings dialog - use custom keycode if enabled, fallback to default Alt+W(87)
         let settingsKeyCode = state.settingsHotkeyKeyCode || 87;
         if (e.altKey && e.which == settingsKeyCode) {
             const $popup = $('.IG_POPUP_DIG');
             if ($popup.length > 0 && $popup.find('#post_info').text() === 'Preference Settings') {
-                $popup.remove();
+                closeSettingsDialog();
             } else {
                 showSetting();
             }

@@ -1,7 +1,8 @@
 import $ from 'jquery';
-import { locale_manifest, PARENT_CHILD_MAPPING, state, SVG, USER_SETTING, $body } from "../settings";
-import { getPlatformModifierKey, logger, reloadScript } from "./general";
+import { state, SVG, $body } from "../settings";
+import { logger, reloadScript } from "./general";
 import { _i18n } from "./i18n";
+import { showSettingsDialog } from './settings_dialog';
 
 /**
  * IG_createDM
@@ -16,7 +17,7 @@ export function IG_createDM(hasHidden, hasCheckbox) {
     $body.append('<div class="IG_POPUP_DIG ' + isHidden + '"><div class="IG_POPUP_DIG_BG"></div><div class="IG_POPUP_DIG_MAIN"><div class="IG_POPUP_DIG_TITLE"></div><div class="IG_POPUP_DIG_BODY"></div></div></div>');
     // OPTIMIZATION: cache popup title element used 3+ times in this function
     const $title = $('.IG_POPUP_DIG .IG_POPUP_DIG_MAIN .IG_POPUP_DIG_TITLE');
-    $title.append(`<div style="position:relative;min-height:36px;text-align:center;margin-bottom: 7px;"><div style="position:absolute;left:0px;line-height: 18px;"><kbd>${getPlatformModifierKey()}</kbd>+<kbd>Q</kbd> [<span data-ih-locale="CLOSE">${_i18n("CLOSE")}</span>]</div><div style="line-height: 18px;">IG Helper v${GM_info.script.version}</div><div id="post_info" style="line-height: 14px;font-size:14px;">Post ID: <span id="article-id"></span></div><div class="IG_POPUP_DIG_BTN">${SVG.CLOSE}</div></div>`);
+    $title.append(`<div style="position:relative;min-height:36px;text-align:center;margin-bottom: 7px;"><div style="line-height: 18px;">IG Helper v${GM_info.script.version}</div><div id="post_info" style="line-height: 14px;font-size:14px;">Post ID: <span id="article-id"></span></div><button type="button" aria-label="${_i18n('CLOSE')}" class="IG_POPUP_DIG_BTN">${SVG.CLOSE}</button></div>`);
 
     if (hasCheckbox) {
         $title.append(`<div style="text-align: center;" id="button_group"></div>`);
@@ -204,90 +205,7 @@ export function showHotkeySetting() {
  * @return {void}
  */
 export function showSetting() {
-    $('.IG_POPUP_DIG').remove();
-    IG_createDM();
-
-    $('.IG_POPUP_DIG #post_info').text('Preference Settings');
-    $('.IG_POPUP_DIG .IG_POPUP_DIG_TITLE > div')
-        .append(`
-            <select id="langSelect"></select>
-            <div style="font-size: 12px;">
-                Some texts are machine-translated and may be inaccurate; translation contributions are welcome on GitHub.
-            </div>
-        `);
-
-    // OPTIMIZATION: cache the lang select once
-    const $langSelect = $('#langSelect');
-    for (const o in locale_manifest) {
-        $langSelect.append(
-            `<option value="${o}" ${(state.lang === o) ? 'selected' : ''}>${locale_manifest[o]}</option>`
-        );
-    }
-
-    const $popupBody = $('.IG_POPUP_DIG .IG_POPUP_DIG_BODY');
-
-    for (const name in USER_SETTING) {
-        $popupBody.append(`
-            <label class="globalSettings"
-                   title="${_i18n(name + '_INTRO')}"
-                   data-ih-locale-title="${name + '_INTRO'}">
-
-                <span data-ih-locale="${name}">${_i18n(name)}</span>
-                <input id="${name}" value="box" type="checkbox"
-                       ${USER_SETTING[name] === true ? 'checked' : ''}>
-                <div class="chbtn"><div class="rounds"></div></div>
-            </label>`
-        );
-
-        if (name === 'MODIFY_VIDEO_VOLUME') {
-            $popupBody.find(`input[id="${name}"]`).parent('label').on('contextmenu', function (e) {
-                e.preventDefault();
-                const $this = $(this);
-                if (!$this.find('#tempWrapper').length) {
-                    $this.append('<div id="tempWrapper"></div>')
-                        .children('#tempWrapper')
-                        .append(`<input value="${state.videoVolume}" type="range" min="0" max="1" step="0.05" />`)
-                        .append(`<input value="${state.videoVolume}" step="0.05" type="number" />`)
-                        .append(`<div class="IG_POPUP_DIG_BTN">${SVG.CLOSE}</div>`);
-                }
-            });
-        }
-
-        if (name === 'AUTO_RENAME') {
-            $popupBody.find(`input[id="${name}"]`).parent('label').on('contextmenu', function (e) {
-                e.preventDefault();
-                const $this = $(this);
-                if (!$this.find('#tempWrapper').length) {
-                    $this.append('<div id="tempWrapper"></div>')
-                        .children('#tempWrapper')
-                        .append(`<input id="date_format" value="${state.fileRenameFormat}" />`)
-                        .append(`<div class="IG_POPUP_DIG_BTN">${SVG.CLOSE}</div>`);
-                }
-            });
-        }
-    }
-
-    arrangeSettingHierarchy();
-}
-
-/**
- * arrangeSettingHierarchy
- * @description Arrange specific settings under the corresponding setting. 
- *
- * @return {void}
- */
-export function arrangeSettingHierarchy() {
-    Object.entries(PARENT_CHILD_MAPPING).forEach(([parent, children]) => {
-
-        let $prev = $(`.IG_POPUP_DIG .IG_POPUP_DIG_BODY input#${parent}`).closest('label');
-
-        children.forEach(child => {
-            const $childLbl = $(`.IG_POPUP_DIG .IG_POPUP_DIG_BODY input#${child}`).closest('label').detach();
-            $childLbl.addClass("child");
-            $prev.after($childLbl);
-            $prev = $childLbl;
-        });
-    });
+    showSettingsDialog();
 }
 
 /**

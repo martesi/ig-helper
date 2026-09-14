@@ -3,6 +3,9 @@ import packageJson from './package.json' with { type: 'json' };
 
 const mediabunnyUrl = 'https://cdn.jsdelivr.net/npm/mediabunny@1.34.5/dist/bundles/mediabunny.min.cjs#sha256-wUFR+x2bDvpqgMAVGy2CvGvULyjTGvGy4UUAm8rae5U=';
 const jqueryUrl = 'https://code.jquery.com/jquery-4.0.0.min.js#sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=';
+const htmUrl = 'https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js#sha256-ejF3bgS9Sv3g1DCBd9JvN3cW/PfkvXC+WQdG1qpZTwg=';
+const preactUrl = 'https://cdn.jsdelivr.net/npm/preact@10.29.8/dist/preact.umd.js#sha256-E0t3vIA/o4Zh3BseROlusLtqGgDtu5bTTc3kIbLoCwY=';
+const preactHooksUrl = 'https://cdn.jsdelivr.net/npm/preact@10.29.8/hooks/dist/hooks.umd.js#sha256-XCkjjl3JnfMG1/f/8DhZGjl8/Pq7Wfgfve9D1nCqBWY=';
 
 export default {
     build: {
@@ -96,6 +99,9 @@ export default {
                 externalGlobals: {
                     mediabunny: ['Mediabunny', mediabunnyUrl],
                     jquery: ['jQuery', jqueryUrl],
+                    htm: ['htm', htmUrl],
+                    preact: ['preact', preactUrl],
+                    'preact/hooks': ['preactHooks', preactHooksUrl],
                 },
             },
         }),

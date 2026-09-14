@@ -6,14 +6,6 @@ import { getPostOwner, getMediaInfo, getUserId } from "./api";
 import { getImageFromCache } from "./image_cache";
 import { registerPostClickHandlers } from "../functions/post";
 
-export function isMacOS() {
-    return /Macintosh|Mac OS/i.test(navigator.userAgent);
-}
-
-export function getPlatformModifierKey() {
-    return isMacOS() ? '⌥' : 'Alt';
-}
-
 /**
  * getStoryId
  * @description Obtain the media id through the resource URL.
