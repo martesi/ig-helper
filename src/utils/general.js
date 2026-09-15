@@ -7,6 +7,12 @@ import { getImageFromCache } from "./image_cache";
 import { appendCounter, appendDownloadProgress, appendVolumeSlider, updateLoadingBar } from "../ui/status.jsx";
 import { logger } from "./logger";
 import { queryLegacyDialog } from '../ui/shadow.js';
+import {
+    DEFAULT_RENAME_FORMAT,
+    DEFAULT_VIDEO_VOLUME,
+    HOTKEY_SETTINGS,
+    SETTINGS_STORAGE_KEYS,
+} from '../settings-schema.js';
 
 
 /**
@@ -1297,14 +1303,19 @@ export function reloadScript() {
  * @return {void}
  */
 export function initSettings() {
-    for (let name in USER_SETTING) {
-        if (GM_getValue(name) != null && typeof GM_getValue(name) === 'boolean') {
-            USER_SETTING[name] = GM_getValue(name);
+    for (const name in USER_SETTING) {
+        const value = GM_getValue(name);
+        if (typeof value === 'boolean') USER_SETTING[name] = value;
+    }
 
-            if (name === "MODIFY_VIDEO_VOLUME" && GM_getValue(name) !== true) {
-                state.videoVolume = 1;
-            }
-        }
+    state.videoVolume = USER_SETTING.MODIFY_VIDEO_VOLUME
+        ? Number(GM_getValue(SETTINGS_STORAGE_KEYS.videoVolume, DEFAULT_VIDEO_VOLUME))
+        : DEFAULT_VIDEO_VOLUME;
+    state.fileRenameFormat = GM_getValue(SETTINGS_STORAGE_KEYS.renameFormat, DEFAULT_RENAME_FORMAT);
+    state.lang = GM_getValue(SETTINGS_STORAGE_KEYS.language, state.lang);
+
+    for (const config of HOTKEY_SETTINGS) {
+        state[config.stateKey] = Number(GM_getValue(config.storageKey, config.defaultKeyCode));
     }
 }
 

@@ -7,8 +7,12 @@
   "author": "SN-Koarashi",
   "license": "GPLv3",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "bun run --parallel dev:*",
+    "dev:script": "vite",
+    "dev:pages": "vite --config vite.pages.config.mjs",
+    "build": "bun run build:script && bun run build:pages",
+    "build:script": "vite build",
+    "build:pages": "vite build --config vite.pages.config.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test:e2e": "bun test e2e/live.e2e.test.js --timeout 90000"

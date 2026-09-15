@@ -32,7 +32,7 @@
 
 ## 📌 Hot keys
 - `ALT+Q` - Close pop-up window
-- `ALT+W` - Open the settings menu
+- `ALT+W` - Open the settings page
 - `ALT+Z` - Open the debug menu
 - `ALT+S` - Download resource in story page
 

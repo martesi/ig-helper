@@ -15,7 +15,6 @@ import { _i18n } from "./utils/i18n";
 import { getImageFromCache, registerPerformanceObserver } from "./utils/image_cache";
 import { batchDownloadPostFiles, createDownloadButton } from "./functions/post";
 import { showDebugDOM, showHotkeySetting, showSetting } from "./utils/dialog";
-import { closeSettingsDialog, isSettingsDialogOpen } from './utils/settings_dialog.jsx';
 import {
     LEGACY_DIALOG_MOUNTED_EVENT,
     LEGACY_DIALOG_ROOT_ID,
@@ -188,19 +187,17 @@ $(function () {
             e.preventDefault();
         }
 
-        // Hot key [Alt+W] to open/close the settings dialog - use custom keycode if enabled, fallback to default Alt+W(87)
+        // Hot key [Alt+W] to open settings - use custom keycode if enabled, fallback to default Alt+W(87)
         let settingsKeyCode = state.settingsHotkeyKeyCode || 87;
         if (e.altKey && e.which == settingsKeyCode) {
-            if (isSettingsDialogOpen('preferences')) closeSettingsDialog();
-            else showSetting();
+            showSetting();
             e.preventDefault();
         }
 
-        // Hot key [Alt+C] to open/close the key settings dialog - use custom keycode if enabled, fallback to default Alt+C(67)
+        // Hot key [Alt+C] to open hotkey settings - use custom keycode if enabled, fallback to default Alt+C(67)
         let keySettingsHotkeyKeyCode = state.keySettingsHotkeyKeyCode || 67;
         if (e.altKey && e.which == keySettingsHotkeyKeyCode) {
-            if (isSettingsDialogOpen('keyboard')) closeSettingsDialog();
-            else showHotkeySetting();
+            showHotkeySetting();
             e.preventDefault();
         }
 

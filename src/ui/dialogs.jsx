@@ -7,11 +7,9 @@ import {
     LEGACY_DIALOG_MOUNTED_EVENT,
     LEGACY_DIALOG_ROOT_ID,
     removeOwnedUiRoot,
-    SETTINGS_ROOT_ID,
 } from './shadow.js';
 
 export function mountLegacyDialog({ hidden = false, hasCheckbox = false, labels, version }) {
-    removeOwnedUiRoot(SETTINGS_ROOT_ID);
     removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
     const { mount, shadowRoot } = createOwnedUiRoot(LEGACY_DIALOG_ROOT_ID, legacyStyles);
     render(<LegacyDialog hidden={hidden} hasCheckbox={hasCheckbox} labels={labels} version={version} />, mount);

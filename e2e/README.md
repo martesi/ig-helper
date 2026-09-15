@@ -10,7 +10,7 @@ Run:
 bun run test:e2e
 ```
 
-The suite starts Vite when port 5173 is not already serving the vite-plugin-monkey install endpoint, reinstalls the development userscript through Violentmonkey, opens real Instagram pages in the existing browser profile, and restores any settings it temporarily changes.
+The suite starts both Vite dev servers when ports 9000 and 9100 are not already serving the userscript and settings app, reinstalls the development userscript through Violentmonkey, opens real Instagram pages in the existing browser profile, and restores any settings it temporarily changes.
 
 A real post media download uses Chrome's configured download directory. The test requires `Browser.downloadWillBegin`, a completed `Browser.downloadProgress` event, a concrete browser-reported file path, and matching non-zero received/total byte counts. The harness does not replace the browser download with a mock or container-side fetch.
 

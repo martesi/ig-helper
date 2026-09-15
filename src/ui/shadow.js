@@ -1,7 +1,6 @@
 import uiStyles from '../ui.css?inline';
 
 export const LEGACY_DIALOG_ROOT_ID = 'ig-helper-legacy-dialog-root';
-export const SETTINGS_ROOT_ID = 'ig-helper-settings-root';
 export const LEGACY_DIALOG_MOUNTED_EVENT = 'ig-helper:legacy-dialog-mounted';
 
 export function createOwnedUiRoot(id, extraStyles = '') {

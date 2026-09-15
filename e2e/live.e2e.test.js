@@ -3,8 +3,8 @@ import {
     IMAGE_VIEWER_ROOT_ID,
     INSTAGRAM_HOME,
     LEGACY_DIALOG_ROOT_ID,
+    OPTIONS_URL,
     PROFILE_URL,
-    SETTINGS_ROOT_ID,
     IgHelperE2E,
 } from './webview-harness.js';
 
@@ -40,53 +40,50 @@ describe('IG Helper live browser E2E', () => {
         expect(state.targets).toBeGreaterThan(0);
     }, 20000);
 
-    test('settings render in Shadow DOM, persist a real preference, and expose shortcut configuration', async () => {
-        await e2e.goto(INSTAGRAM_HOME);
+    test('settings render on the standalone page, persist a real preference, and expose shortcut configuration', async () => {
         await e2e.openSettings();
         await e2e.showPreferencesTab();
 
-        const initial = await e2e.shadowJson(SETTINGS_ROOT_ID, `({
-            tab: root.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab,
-            switches: root.querySelectorAll('input[role="switch"]').length,
-            directVisible: Boolean(root.querySelector('#DIRECT_DOWNLOAD_VISIBLE_RESOURCE')?.checked),
+        const initial = await e2e.json(`({
+            href: location.href,
+            tab: document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab,
+            switches: document.querySelectorAll('input[role="switch"]').length,
+            directVisible: Boolean(document.querySelector('#DIRECT_DOWNLOAD_VISIBLE_RESOURCE')?.checked),
         })`);
+        expect(initial.href).toStartWith(`${OPTIONS_URL}/settings/`);
         expect(initial.tab).toBe('preferences');
         expect(initial.switches).toBeGreaterThanOrEqual(15);
 
         await e2e.setSettings({ DIRECT_DOWNLOAD_VISIBLE_RESOURCE: !initial.directVisible });
-        await e2e.closeSettings();
-        await e2e.openSettings();
+        await e2e.reload();
         await e2e.showPreferencesTab();
 
-        const persisted = await e2e.shadowJson(
-            SETTINGS_ROOT_ID,
-            `Boolean(root.querySelector('#DIRECT_DOWNLOAD_VISIBLE_RESOURCE')?.checked)`,
-        );
+        const persisted = await e2e.evaluate(`Boolean(document.querySelector('#DIRECT_DOWNLOAD_VISIBLE_RESOURCE')?.checked)`);
         expect(persisted).toBe(!initial.directVisible);
 
         await e2e.setSettings({ DIRECT_DOWNLOAD_VISIBLE_RESOURCE: initial.directVisible });
         await e2e.showKeyboardTab();
         hotkeys = await e2e.readHotkeys();
 
-        const keyboard = await e2e.shadowJson(SETTINGS_ROOT_ID, `({
-            tab: root.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab,
-            selects: root.querySelectorAll('.IG_HOTKEY_ROW .select').length,
-            nativeSelects: root.querySelectorAll('.IG_HOTKEY_ROW select').length,
+        const keyboard = await e2e.json(`({
+            tab: document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab,
+            selects: document.querySelectorAll('.IG_HOTKEY_ROW .select').length,
+            nativeSelects: document.querySelectorAll('.IG_HOTKEY_ROW select').length,
         })`);
         expect(keyboard.tab).toBe('keyboard');
         expect(keyboard.selects).toBe(4);
         expect(keyboard.nativeSelects).toBe(0);
 
-        await e2e.clickShadow(SETTINGS_ROOT_ID, '#settingsHotkeyKeyCode-trigger');
-        const customSelect = await e2e.shadowJson(SETTINGS_ROOT_ID, `({
-            expanded: root.querySelector('#settingsHotkeyKeyCode-trigger')?.getAttribute('aria-expanded'),
-            options: root.querySelectorAll('#settingsHotkeyKeyCode-listbox [role="option"]').length,
-            popoverHidden: root.querySelector('#settingsHotkeyKeyCode [data-popover]')?.getAttribute('aria-hidden'),
+        await e2e.click('#settingsHotkeyKeyCode-trigger');
+        const customSelect = await e2e.json(`({
+            expanded: document.querySelector('#settingsHotkeyKeyCode-trigger')?.getAttribute('aria-expanded'),
+            options: document.querySelectorAll('#settingsHotkeyKeyCode-listbox [role="option"]').length,
+            popoverHidden: document.querySelector('#settingsHotkeyKeyCode [data-popover]')?.getAttribute('aria-hidden'),
         })`);
         expect(customSelect.expanded).toBe('true');
         expect(customSelect.popoverHidden).toBe('false');
         expect(customSelect.options).toBe(HOTKEY_OPTIONS_COUNT);
-        await e2e.clickShadow(SETTINGS_ROOT_ID, '#settingsHotkeyKeyCode [role="option"][aria-selected="true"]');
+        await e2e.click('#settingsHotkeyKeyCode [role="option"][aria-selected="true"]');
 
         expect(hotkeys.settings).toBeGreaterThan(0);
         expect(hotkeys.debug).toBeGreaterThan(0);

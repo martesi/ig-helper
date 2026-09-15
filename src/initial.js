@@ -21,6 +21,23 @@ getTranslationText(state.lang).then((res) => {
     }
 });
 
+let activeLanguage = state.lang;
+window.addEventListener('focus', async () => {
+    initSettings();
+    if (state.lang === activeLanguage) return;
+
+    activeLanguage = state.lang;
+    if (!state.lang.startsWith('en') && state.locale[state.lang] == null) {
+        try {
+            state.locale[state.lang] = await getTranslationText(state.lang);
+        } catch (err) {
+            console.error('getTranslationText focus sync failed:', err);
+        }
+    }
+    repaintingTranslations();
+    registerMenuCommand();
+});
+
 logger('Script Loaded', GM_info.script.name, 'version:', GM_info.script.version);
 purgeCache();
 /*******************************/

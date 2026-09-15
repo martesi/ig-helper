@@ -1,14 +1,14 @@
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const SETTINGS_ROOT_ID = 'ig-helper-settings-root';
 export const LEGACY_DIALOG_ROOT_ID = 'ig-helper-legacy-dialog-root';
 export const IMAGE_VIEWER_ROOT_ID = 'ig-helper-image-viewer-root';
 
 export const CDP_HTTP = process.env.IG_HELPER_E2E_CDP ?? 'http://169.254.1.2:9223';
 export const INSTAGRAM_HOME = process.env.IG_HELPER_E2E_HOME ?? 'https://www.instagram.com/';
 export const PROFILE_URL = process.env.IG_HELPER_E2E_PROFILE ?? 'https://www.instagram.com/instagram/';
-export const VITE_URL = process.env.IG_HELPER_E2E_VITE ?? 'http://127.0.0.1:5173';
+export const VITE_URL = process.env.IG_HELPER_E2E_VITE ?? 'http://127.0.0.1:9000';
+export const OPTIONS_URL = process.env.IG_HELPER_E2E_OPTIONS ?? 'http://127.0.0.1:9100';
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -45,9 +45,12 @@ export class IgHelperE2E {
     }
 
     async ensureDevServer() {
-        if (await this.isReachable(`${VITE_URL}/__vite-plugin-monkey.install.user.js`)) return;
+        const ready = async () =>
+            await this.isReachable(`${VITE_URL}/__vite-plugin-monkey.install.user.js`) &&
+            await this.isReachable(`${OPTIONS_URL}/settings/`);
+        if (await ready()) return;
 
-        this.viteProcess = Bun.spawn(['bun', 'run', 'dev', '--', '--host', '0.0.0.0'], {
+        this.viteProcess = Bun.spawn(['bun', 'run', 'dev'], {
             cwd: repoRoot,
             stdout: 'ignore',
             stderr: 'ignore',
@@ -55,10 +58,10 @@ export class IgHelperE2E {
 
         const deadline = Date.now() + 10000;
         while (Date.now() < deadline) {
-            if (await this.isReachable(`${VITE_URL}/__vite-plugin-monkey.install.user.js`)) return;
+            if (await ready()) return;
             await Bun.sleep(100);
         }
-        throw new Error(`Vite did not become ready at ${VITE_URL}`);
+        throw new Error(`Vite did not become ready at ${VITE_URL} and ${OPTIONS_URL}`);
     }
 
     async isReachable(url) {
@@ -104,9 +107,9 @@ export class IgHelperE2E {
             } catch (error) {
                 if (!String(error).includes('ERR_ABORTED')) throw error;
             }
-            await this.waitForOn(installView, `location.protocol === 'chrome-extension:' && !!document.querySelector('#confirm')`, 5000);
+            await this.waitForOn(installView, `location.protocol === 'chrome-extension:' && !!document.querySelector('#confirm') && !document.querySelector('#confirm').disabled`, 5000);
             await installView.evaluate(`document.querySelector('#confirm')?.click()`);
-            await Bun.sleep(250);
+            await this.waitForOn(installView, `document.body?.innerText.includes('Script installed.')`, 5000);
         } finally {
             try {
                 installView.close();
@@ -130,9 +133,14 @@ export class IgHelperE2E {
     }
 
     async reload() {
-        await this.view.reload();
-        await this.activatePage();
-        await Bun.sleep(1200);
+        const url = await this.evaluate('location.href');
+        try {
+            this.view.close();
+        } catch {
+            // The target may already be closing.
+        }
+        this.view = await this.createView();
+        await this.goto(url);
     }
 
     async evaluate(expression) {
@@ -191,6 +199,18 @@ export class IgHelperE2E {
         await this.view.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
     }
 
+    async click(selector, index = 0) {
+        const rect = await this.json(`(() => {
+            const element = document.querySelectorAll(${JSON.stringify(selector)})[${index}];
+            if (!element) return null;
+            element.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+            const value = element.getBoundingClientRect();
+            return { x: value.x, y: value.y, width: value.width, height: value.height };
+        })()`);
+        if (!rect || rect.width <= 0 || rect.height <= 0) throw new Error(`Element is not actionable: ${selector}[${index}]`);
+        await this.view.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    }
+
     async pressLegacyHotkey(keyCode) {
         const key = hotkeyKey(keyCode);
         const code = hotkeyCode(keyCode);
@@ -209,56 +229,50 @@ export class IgHelperE2E {
         })()`);
     }
 
-    async openSettings() {
-        const candidates = [87, 90, 88, 68, 75, 67, 83, 192, 49, 50, 51, 52, 53];
-        for (const keyCode of candidates) {
-            await this.pressLegacyHotkey(keyCode);
-            await Bun.sleep(100);
-            if (await this.evaluate(`!!document.getElementById(${JSON.stringify(SETTINGS_ROOT_ID)})?.shadowRoot`)) {
-                await this.waitFor(`document.getElementById(${JSON.stringify(SETTINGS_ROOT_ID)})?.shadowRoot?.querySelector('.IG_SETTINGS_DIALOG')?.open === true`, 3000);
-                return keyCode;
-            }
-            if (await this.evaluate(`!!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`)) {
-                await this.pressLegacyHotkey(81);
-            }
-        }
-        throw new Error('Could not open settings with any supported configured hotkey');
+    async openSettings(tab = 'preferences') {
+        await this.goto(`${OPTIONS_URL}/settings/#${tab}`);
+        await this.waitFor(`document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab === ${JSON.stringify(tab)}`, 5000);
+        await this.waitFor(`document.querySelectorAll('input[role="switch"]').length > 0 || ${JSON.stringify(tab)} === 'keyboard'`, 5000);
     }
 
     async closeSettings() {
-        if (!await this.evaluate(`!!document.getElementById(${JSON.stringify(SETTINGS_ROOT_ID)})?.shadowRoot`)) return;
-        await this.clickShadow(SETTINGS_ROOT_ID, '.IG_SETTINGS_CLOSE');
-        await this.waitFor(`!document.getElementById(${JSON.stringify(SETTINGS_ROOT_ID)})`, 3000);
+        await this.goto(INSTAGRAM_HOME);
     }
 
     async showPreferencesTab() {
-        const selected = await this.shadowJson(SETTINGS_ROOT_ID, `root.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab`);
-        if (selected === 'preferences') return;
-        await this.clickShadow(SETTINGS_ROOT_ID, '[role="tab"]', 0);
-        await this.waitFor(`document.getElementById(${JSON.stringify(SETTINGS_ROOT_ID)})?.shadowRoot?.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab === 'preferences'`, 3000);
+        await this.waitFor(`!!document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab`, 3000);
+        const selected = await this.evaluate(`document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab`);
+        if (selected !== 'preferences') {
+            await this.click('[role="tab"]', 0);
+            await this.waitFor(`document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab === 'preferences'`, 3000);
+        }
+        await this.waitFor(`document.querySelectorAll('input[role="switch"]').length > 0`, 5000);
     }
 
     async showKeyboardTab() {
-        const selected = await this.shadowJson(SETTINGS_ROOT_ID, `root.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab`);
-        if (selected === 'keyboard') return;
-        await this.clickShadow(SETTINGS_ROOT_ID, '[role="tab"]', 1);
-        await this.waitFor(`document.getElementById(${JSON.stringify(SETTINGS_ROOT_ID)})?.shadowRoot?.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab === 'keyboard'`, 3000);
+        await this.waitFor(`!!document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab`, 3000);
+        const selected = await this.evaluate(`document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab`);
+        if (selected !== 'keyboard') {
+            await this.click('[role="tab"]', 1);
+            await this.waitFor(`document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab === 'keyboard'`, 3000);
+        }
+        await this.waitFor(`document.querySelectorAll('.IG_HOTKEY_ROW .select').length > 0`, 5000);
     }
 
     async readHotkeys() {
         await this.showKeyboardTab();
-        return this.shadowJson(SETTINGS_ROOT_ID, `({
-            settings: Number(root.querySelector('#settingsHotkeyKeyCode-value')?.value),
-            keyboard: Number(root.querySelector('#keySettingsHotkeyKeyCode-value')?.value),
-            debug: Number(root.querySelector('#debugHotkeyKeyCode-value')?.value),
-            story: Number(root.querySelector('#downloadStoryHotkeyKeyCode-value')?.value),
+        return this.json(`({
+            settings: Number(document.querySelector('#settingsHotkeyKeyCode-value')?.value),
+            keyboard: Number(document.querySelector('#keySettingsHotkeyKeyCode-value')?.value),
+            debug: Number(document.querySelector('#debugHotkeyKeyCode-value')?.value),
+            story: Number(document.querySelector('#downloadStoryHotkeyKeyCode-value')?.value),
         })`);
     }
 
     async readSettings(names) {
         await this.showPreferencesTab();
-        return this.shadowJson(SETTINGS_ROOT_ID, `Object.fromEntries(${JSON.stringify(names)}.map(name => {
-            const element = root.querySelector('#' + name);
+        return this.json(`Object.fromEntries(${JSON.stringify(names)}.map(name => {
+            const element = document.querySelector('#' + name);
             return [name, Boolean(element?.checked)];
         }))`);
     }
@@ -266,10 +280,10 @@ export class IgHelperE2E {
     async setSettings(values) {
         await this.showPreferencesTab();
         for (const [name, desired] of Object.entries(values)) {
-            const current = await this.shadowJson(SETTINGS_ROOT_ID, `Boolean(root.querySelector('#' + ${JSON.stringify(name)})?.checked)`);
+            const current = await this.evaluate(`Boolean(document.querySelector('#' + ${JSON.stringify(name)})?.checked)`);
             if (current === desired) continue;
-            await this.clickShadow(SETTINGS_ROOT_ID, `label[for="${name}"]`);
-            await this.waitFor(`document.getElementById(${JSON.stringify(SETTINGS_ROOT_ID)})?.shadowRoot?.querySelector('#${name}')?.checked === ${desired}`, 3000);
+            await this.click(`label[for="${name}"]`);
+            await this.waitFor(`document.querySelector('#${name}')?.checked === ${desired}`, 3000);
         }
     }
 
@@ -282,7 +296,7 @@ export class IgHelperE2E {
             await this.closeSettings();
             return await action(original);
         } finally {
-            if (!await this.evaluate(`!!document.getElementById(${JSON.stringify(SETTINGS_ROOT_ID)})?.shadowRoot`)) {
+            if (!String(await this.evaluate('location.href')).startsWith(`${OPTIONS_URL}/settings/`)) {
                 await this.openSettings();
             }
             await this.setSettings(original);

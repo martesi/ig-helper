@@ -1,4 +1,4 @@
-import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'vite';
 import monkey from 'vite-plugin-monkey';
 import packageJson from './package.json' with { type: 'json' };
 
@@ -7,7 +7,7 @@ const jqueryUrl = 'https://code.jquery.com/jquery-4.0.0.min.js#sha256-OaVG6prZf4
 const preactUrl = 'https://cdn.jsdelivr.net/npm/preact@10.29.8/dist/preact.umd.js#sha256-E0t3vIA/o4Zh3BseROlusLtqGgDtu5bTTc3kIbLoCwY=';
 const preactHooksUrl = 'https://cdn.jsdelivr.net/npm/preact@10.29.8/hooks/dist/hooks.umd.js#sha256-XCkjjl3JnfMG1/f/8DhZGjl8/Pq7Wfgfve9D1nCqBWY=';
 
-export default {
+export default defineConfig(({ command }) => ({
     build: {
         minify: false,
         target: 'es2015',
@@ -17,8 +17,11 @@ export default {
         jsxFactory: 'h',
         jsxFragment: 'Fragment',
     },
+    server: {
+        port: 9000,
+        strictPort: true,
+    },
     plugins: [
-        tailwindcss(),
         monkey({
             entry: 'src/entry.js',
             userscript: {
@@ -65,7 +68,12 @@ export default {
                     'zh-TW': '一鍵下載 Instagram 貼文中的照片、影片，還包含限時動態、Reels 與大頭貼。',
                 },
                 author: 'SN-Koarashi (5026)',
-                match: ['https://*.instagram.com/*'],
+                match: [
+                    'https://*.instagram.com/*',
+                    command === 'serve'
+                        ? 'http://127.0.0.1:9100/settings/*'
+                        : 'https://martesi.github.io/ig-helper/settings/*',
+                ],
                 grant: [
                     'GM_addStyle',
                     'GM_download',
@@ -111,4 +119,4 @@ export default {
             },
         }),
     ],
-};
+}));
