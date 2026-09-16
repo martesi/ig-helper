@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'preact/hooks';
-import { useLocation, useParams } from 'wouter-preact';
 import { Button, Input, Select, Switch } from '../../shared/ui/components.jsx';
 import { KeyboardIcon, SlidersHorizontalIcon } from '../../shared/ui/icons.jsx';
 import {
@@ -45,9 +44,6 @@ export function OptionsApp() {
     const [locale, setLocale] = useState({});
     const [error, setError] = useState('');
     const [conflict, setConflict] = useState(null);
-    const [, navigate] = useLocation();
-    const { tab: routeTab } = useParams();
-    const tab = routeTab === 'keyboard' ? 'keyboard' : 'preferences';
     const t = createTranslator(locale);
 
     useEffect(() => {
@@ -65,8 +61,8 @@ export function OptionsApp() {
         return () => { cancelled = true; };
     }, []);
 
-    function setTab(next) {
-        navigate(`/settings/${next}`);
+    function locateSection(section) {
+        document.getElementById(`settings-${section}`)?.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
 
     async function saveSetting(name, value) {
@@ -126,7 +122,7 @@ export function OptionsApp() {
     }
 
     return (
-        <main class="IG_SETTINGS_DIALOG ig-helper-ui" data-settings-tab={tab}>
+        <main class="IG_SETTINGS_DIALOG ig-helper-ui">
             <div class="IG_SETTINGS_PANEL">
                 <header class="IG_SETTINGS_HEADER">
                     <div>
@@ -140,26 +136,27 @@ export function OptionsApp() {
                 {!data && !error && <p class="IG_SETTINGS_STATUS">Loading settings…</p>}
 
                 {data && (
-                    <div class="tabs IG_SETTINGS_LAYOUT">
-                        <nav class="IG_SETTINGS_TABS" aria-label={t('SETTINGS_SECTIONS')} role="tablist" aria-orientation="vertical" data-variant="line">
-                            <button type="button" role="tab" aria-selected={tab === 'preferences'} onClick={() => setTab('preferences')}>
+                    <div class="IG_SETTINGS_LAYOUT">
+                        <nav class="IG_SETTINGS_TABS" aria-label={t('SETTINGS_SECTIONS')}>
+                            <Button class="IG_SETTINGS_LOCATOR" variant="ghost" data-settings-locator="preferences"
+                                onClick={() => locateSection('preferences')}>
                                 <SlidersHorizontalIcon />
                                 {t('SETTINGS_PREFERENCES')}
-                            </button>
-                            <button type="button" role="tab" aria-selected={tab === 'keyboard'} onClick={() => setTab('keyboard')}>
+                            </Button>
+                            <Button class="IG_SETTINGS_LOCATOR" variant="ghost" data-settings-locator="keyboard"
+                                onClick={() => locateSection('keyboard')}>
                                 <KeyboardIcon />
                                 {t('SETTINGS_KEYBOARD')}
-                            </button>
+                            </Button>
                         </nav>
 
-                        <section class="IG_SETTINGS_CONTENT" role="tabpanel">
-                            {tab === 'preferences' ? (
+                        <section class="IG_SETTINGS_CONTENT">
+                            <div class="IG_SETTINGS_PAGE">
                                 <Preferences data={data} language={language} t={t}
                                     onLanguageChange={saveLanguage} onSettingChange={saveSetting}
                                     onVolumeChange={saveVolume} onRenameFormatChange={saveRenameFormat} />
-                            ) : (
                                 <KeyboardSettings data={data} conflict={conflict} t={t} onSave={saveHotkey} />
-                            )}
+                            </div>
                         </section>
                     </div>
                 )}
@@ -170,7 +167,10 @@ export function OptionsApp() {
 
 function Preferences({ data, language, t, onLanguageChange, onSettingChange, onVolumeChange, onRenameFormatChange }) {
     return (
-        <div class="IG_SETTINGS_PAGE">
+        <div id="settings-preferences" class="IG_SETTINGS_GROUP" data-settings-section="preferences">
+            <header class="IG_SETTINGS_GROUP_HEADER">
+                <h2>{t('SETTINGS_PREFERENCES')}</h2>
+            </header>
             <SettingsSection title={t('SETTINGS_GENERAL')} description={t('SETTINGS_GENERAL_DESCRIPTION')}>
                 <div class="IG_SETTING_ROW IG_SETTINGS_LANGUAGE">
                     <div class="IG_SETTING_COPY">
@@ -256,8 +256,12 @@ function RenameEditor({ value, t, onChange }) {
 
 function KeyboardSettings({ data, conflict, t, onSave }) {
     return (
-        <div class="IG_SETTINGS_PAGE">
-            <SettingsSection title={t('SETTINGS_KEYBOARD')} description={t('SETTINGS_KEYBOARD_DESCRIPTION')}>
+        <div id="settings-keyboard" class="IG_SETTINGS_GROUP" data-settings-section="keyboard">
+            <header class="IG_SETTINGS_GROUP_HEADER">
+                <h2>{t('SETTINGS_KEYBOARD')}</h2>
+                <p>{t('SETTINGS_KEYBOARD_DESCRIPTION')}</p>
+            </header>
+            <section class="IG_SETTINGS_SECTION">
                 <div class="IG_SETTINGS_SHORTCUT_NOTE">
                     {t('SETTINGS_SHORTCUT_NOTE')} <kbd class="kbd">Alt</kbd>
                 </div>
@@ -275,7 +279,7 @@ function KeyboardSettings({ data, conflict, t, onSave }) {
                         {conflict === config.stateKey && <p role="alert">{t('HOTKEY_CONFLICT_WARNING')}</p>}
                     </div>
                 ))}
-            </SettingsSection>
+            </section>
         </div>
     );
 }

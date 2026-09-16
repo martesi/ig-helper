@@ -229,10 +229,10 @@ export class IgHelperE2E {
         })()`);
     }
 
-    async openSettings(tab = 'preferences') {
-        await this.goto(`${OPTIONS_URL}/settings/#${tab}`);
-        await this.waitFor(`document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab === ${JSON.stringify(tab)}`, 5000);
-        await this.waitFor(`document.querySelectorAll('input[role="switch"]').length > 0 || ${JSON.stringify(tab)} === 'keyboard'`, 5000);
+    async openSettings(section = 'preferences') {
+        await this.goto(`${OPTIONS_URL}/#/settings`);
+        await this.waitFor(`document.querySelectorAll('[data-settings-section]').length === 2`, 5000);
+        await this.locateSettingsSection(section);
     }
 
     async closeSettings() {
@@ -240,23 +240,23 @@ export class IgHelperE2E {
     }
 
     async showPreferencesTab() {
-        await this.waitFor(`!!document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab`, 3000);
-        const selected = await this.evaluate(`document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab`);
-        if (selected !== 'preferences') {
-            await this.click('[role="tab"]', 0);
-            await this.waitFor(`document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab === 'preferences'`, 3000);
-        }
+        await this.locateSettingsSection('preferences');
         await this.waitFor(`document.querySelectorAll('input[role="switch"]').length > 0`, 5000);
     }
 
     async showKeyboardTab() {
-        await this.waitFor(`!!document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab`, 3000);
-        const selected = await this.evaluate(`document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab`);
-        if (selected !== 'keyboard') {
-            await this.click('[role="tab"]', 1);
-            await this.waitFor(`document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab === 'keyboard'`, 3000);
-        }
+        await this.locateSettingsSection('keyboard');
         await this.waitFor(`document.querySelectorAll('.IG_HOTKEY_ROW .select').length > 0`, 5000);
+    }
+
+    async locateSettingsSection(section) {
+        const target = `[data-settings-section="${section}"]`;
+        await this.waitFor(`!!document.querySelector(${JSON.stringify(`[data-settings-locator="${section}"]`)}) && !!document.querySelector(${JSON.stringify(target)})`, 3000);
+        await this.click(`[data-settings-locator="${section}"]`);
+        await this.waitFor(`(() => {
+            const rect = document.querySelector(${JSON.stringify(target)})?.getBoundingClientRect();
+            return !!rect && rect.top >= 0 && rect.top < innerHeight / 2;
+        })()`, 3000);
     }
 
     async readHotkeys() {

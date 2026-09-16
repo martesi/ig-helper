@@ -57,7 +57,7 @@
     color: var(--color-foreground);
 }
 
-.ig-helper-ui .input[type='checkbox'] {
+.ig-helper-ui .input[type='checkbox']:not([role='switch']) {
     width: 16px;
     height: 16px;
     margin: 0;
@@ -66,6 +66,10 @@
 
 .ig-helper-ui .select:not(select) [role='option'][aria-selected='true'] {
     background-image: none;
+}
+
+.ig-helper-ui .select [data-popover][aria-hidden='true'] {
+    display: none;
 }
 
 .ig-helper-ui .IG_SELECT_OPTION_LABEL {

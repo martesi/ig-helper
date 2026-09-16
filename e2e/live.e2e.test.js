@@ -3,7 +3,6 @@ import {
     IMAGE_VIEWER_ROOT_ID,
     INSTAGRAM_HOME,
     LEGACY_DIALOG_ROOT_ID,
-    OPTIONS_URL,
     PROFILE_URL,
     IgHelperE2E,
 } from './webview-harness.js';
@@ -40,19 +39,21 @@ describe('IG Helper live browser E2E', () => {
         expect(state.targets).toBeGreaterThan(0);
     }, 20000);
 
-    test('settings render on the standalone page, persist a real preference, and expose shortcut configuration', async () => {
+    test('settings render as one continuous page, persist a real preference, and expose shortcut configuration', async () => {
         await e2e.openSettings();
         await e2e.showPreferencesTab();
 
         const initial = await e2e.json(`({
             href: location.href,
-            tab: document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab,
+            sections: document.querySelectorAll('[data-settings-section]').length,
             switches: document.querySelectorAll('input[role="switch"]').length,
+            hotkeyRows: document.querySelectorAll('.IG_HOTKEY_ROW').length,
             directVisible: Boolean(document.querySelector('#DIRECT_DOWNLOAD_VISIBLE_RESOURCE')?.checked),
         })`);
-        expect(initial.href).toStartWith(`${OPTIONS_URL}/settings/`);
-        expect(initial.tab).toBe('preferences');
+        expect(initial.href).toContain('/#/settings');
+        expect(initial.sections).toBe(2);
         expect(initial.switches).toBeGreaterThanOrEqual(15);
+        expect(initial.hotkeyRows).toBe(4);
 
         await e2e.setSettings({ DIRECT_DOWNLOAD_VISIBLE_RESOURCE: !initial.directVisible });
         await e2e.reload();
@@ -66,11 +67,12 @@ describe('IG Helper live browser E2E', () => {
         hotkeys = await e2e.readHotkeys();
 
         const keyboard = await e2e.json(`({
-            tab: document.querySelector('.IG_SETTINGS_DIALOG')?.dataset.settingsTab,
+            top: document.querySelector('[data-settings-section="keyboard"]')?.getBoundingClientRect().top,
             selects: document.querySelectorAll('.IG_HOTKEY_ROW .select').length,
             nativeSelects: document.querySelectorAll('.IG_HOTKEY_ROW select').length,
         })`);
-        expect(keyboard.tab).toBe('keyboard');
+        expect(keyboard.top).toBeGreaterThanOrEqual(0);
+        expect(keyboard.top).toBeLessThan(450);
         expect(keyboard.selects).toBe(4);
         expect(keyboard.nativeSelects).toBe(0);
 

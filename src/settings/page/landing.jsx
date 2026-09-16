@@ -12,7 +12,7 @@ function Landing() {
                 <h1>Instagram Download Helper</h1>
                 <p>Download photos and videos from posts, Reels, Stories, highlights, and profiles.</p>
                 <div class="actions">
-                    <Link class="primary" href="/settings/preferences">Settings</Link>
+                    <Link class="primary" href="/settings">Settings</Link>
                     <a href="https://github.com/martesi/ig-helper">GitHub</a>
                 </div>
             </section>
