@@ -17,6 +17,13 @@ export default defineConfig(({ command }) => ({
             importSource: 'preact',
         },
     },
+    optimizeDeps: {
+        rolldownOptions: {
+            transform: {
+                jsx: { runtime: 'automatic', importSource: 'preact' },
+            },
+        },
+    },
     server: {
         port: 9000,
         strictPort: true,
