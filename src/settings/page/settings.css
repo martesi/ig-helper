@@ -14,7 +14,7 @@
 @import "basecoat-css/components/tabs";
 @import "basecoat-css/components/textarea";
 @import "basecoat-css/styles/vega";
-@import '../../../shared/ui/ui.css';
+@import '../../shared/ui/ui.css';
 @import './settings-ui.css';
 
 @theme {

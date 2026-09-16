@@ -1,12 +1,12 @@
 import $ from 'jquery';
 import { USER_SETTING, SVG, state } from "../settings/state";
-import { appendLegacyControl, appendReelScrollControls } from "../../shared/ui/legacy-controls.jsx";
-import { saveFiles, openNewTab, toggleVolumeSilder, triggerReactClickHandler } from "../../shared/general";
-import { updateLoadingBar } from "../../shared/ui/status.jsx";
-import { logger } from "../../shared/logger";
-import { getBlobMedia } from "../../shared/api";
-import { filterResourceData } from "../post/post";
-import { _i18n } from "../../shared/i18n";
+import { appendLegacyControl, appendReelScrollControls } from "../shared/ui/legacy-controls.jsx";
+import { saveFiles, openNewTab, toggleVolumeSilder, triggerReactClickHandler } from "../shared/general";
+import { updateLoadingBar } from "../shared/ui/status.jsx";
+import { logger } from "../shared/logger";
+import { getBlobMedia } from "../shared/api";
+import { filterResourceData } from "./post/post";
+import { _i18n } from "../shared/i18n";
 
 /**
  * onReels

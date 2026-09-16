@@ -1,4 +1,4 @@
-import { state } from '../features/settings/state';
+import { state } from '../settings/state';
 
 export function logger(...messages) {
     const now = new Date();

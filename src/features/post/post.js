@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { USER_SETTING, SVG, state, resourceCountSelector } from "../settings/state";
+import { USER_SETTING, SVG, state, resourceCountSelector } from "../../settings/state";
 import {
     openNewTab,
     toggleVolumeSilder, triggerLinkElement,
@@ -16,7 +16,7 @@ import { openImageViewer } from "../media/image-viewer.jsx";
 import { mountPostControls } from "./controls.jsx";
 import { appendLoadingMessage, appendMediaResource, decorateMediaResource, renderPostIdLink } from "../../shared/ui/media-resource.jsx";
 import { mediaIdFromURL } from "../media/image-cache";
-import { IG_createDM, IG_setDM } from "../menu/menu";
+import { IG_createDM, IG_setDM } from "../menu";
 import { LEGACY_DIALOG_ROOT_ID, queryAllLegacyDialog, queryLegacyDialog, removeOwnedUiRoot } from '../../shared/ui/shadow.js';
 
 function getLegacyPopupBody() {

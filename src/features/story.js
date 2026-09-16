@@ -1,7 +1,7 @@
 import $ from 'jquery';
 import { USER_SETTING, SVG, state } from "../settings/state";
-import { appendLegacyControl } from "../../shared/ui/legacy-controls.jsx";
-import { appendMediaResource, decorateMediaResource } from "../../shared/ui/media-resource.jsx";
+import { appendLegacyControl } from "../shared/ui/legacy-controls.jsx";
+import { appendMediaResource, decorateMediaResource } from "../shared/ui/media-resource.jsx";
 import {
     setDownloadProgress,
     saveFiles, getStoryProgress, openNewTab,
@@ -10,14 +10,14 @@ import {
     updatePopupSelectionSummary,
     setStoryProgressIndexText,
     setStoryProgressIndexByUsername
-} from "../../shared/general";
-import { updateLoadingBar } from "../../shared/ui/status.jsx";
-import { logger } from "../../shared/logger";
-import { getUserId, getStories, getMediaInfo } from "../../shared/api";
-import { _i18n } from "../../shared/i18n";
-import { getImageFromCache } from "../media/image-cache";
-import { IG_createDM } from "../menu/menu";
-import { queryLegacyDialog, queryAllLegacyDialog } from '../../shared/ui/shadow.js';
+} from "../shared/general";
+import { updateLoadingBar } from "../shared/ui/status.jsx";
+import { logger } from "../shared/logger";
+import { getUserId, getStories, getMediaInfo } from "../shared/api";
+import { _i18n } from "../shared/i18n";
+import { getImageFromCache } from "./media/image-cache";
+import { IG_createDM } from "./menu";
+import { queryLegacyDialog, queryAllLegacyDialog } from '../shared/ui/shadow.js';
 
 /**
  * createStoryListDOM

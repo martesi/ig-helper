@@ -1,11 +1,11 @@
 import $ from 'jquery';
 import { SVG, USER_SETTING } from "../settings/state";
-import { appendLegacyControl } from "../../shared/ui/legacy-controls.jsx";
-import { saveFiles } from "../../shared/general";
-import { updateLoadingBar } from "../../shared/ui/status.jsx";
-import { logger } from "../../shared/logger";
-import { _i18n } from "../../shared/i18n";
-import { getUserId, getUserHighSizeProfile } from "../../shared/api";
+import { appendLegacyControl } from "../shared/ui/legacy-controls.jsx";
+import { saveFiles } from "../shared/general";
+import { updateLoadingBar } from "../shared/ui/status.jsx";
+import { logger } from "../shared/logger";
+import { _i18n } from "../shared/i18n";
+import { getUserId, getUserHighSizeProfile } from "../shared/api";
 
 /**
  * onProfileAvatar

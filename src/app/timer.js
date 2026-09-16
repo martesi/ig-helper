@@ -1,11 +1,11 @@
 import $ from 'jquery';
-import { state, checkInterval, USER_SETTING } from "../features/settings/state";
+import { state, checkInterval, USER_SETTING } from "../settings/state";
 import { logger } from "../shared/logger";
 import { onReadyMyDW } from "../features/post/post";
-import { onReels } from "../features/reel/reel";
-import { onProfileAvatar, skipSharedWithYouDialog } from "../features/profile/profile";
-import { onHighlightsStory, onHighlightsStoryThumbnail } from "../features/highlight/highlight";
-import { onStory } from "../features/story/story";
+import { onReels } from "../features/reel";
+import { onProfileAvatar, skipSharedWithYouDialog } from "../features/profile";
+import { onHighlightsStory, onHighlightsStoryThumbnail } from "../features/highlight";
+import { onStory } from "../features/story";
 
 // Post-page observer belongs to the post/timer lifecycle, not the settings module.
 state.GL_observer = new MutationObserver(() => onReadyMyDW());

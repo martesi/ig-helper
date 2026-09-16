@@ -1,8 +1,8 @@
 import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { useLocation, useParams } from 'wouter-preact';
-import { Button, Input, Select, Switch } from '../../../shared/ui/components.jsx';
-import { KeyboardIcon, SlidersHorizontalIcon } from '../../../shared/ui/icons.jsx';
+import { Button, Input, Select, Switch } from '../../shared/ui/components.jsx';
+import { KeyboardIcon, SlidersHorizontalIcon } from '../../shared/ui/icons.jsx';
 import {
     HOTKEY_OPTIONS,
     HOTKEY_SETTINGS,

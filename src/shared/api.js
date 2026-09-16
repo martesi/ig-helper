@@ -1,4 +1,4 @@
-import { userIdCache } from "../features/settings/state";
+import { userIdCache } from "../settings/state";
 import { updateLoadingBar } from "./ui/status.jsx";
 import { logger } from "./logger";
 function getAppID() {

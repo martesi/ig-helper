@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { state, USER_SETTING, $body } from "../features/settings/state";
+import { state, USER_SETTING, $body } from "../settings/state";
 import {
     reloadScript,
     triggerLinkElement, openNewTab, saveFiles, toggleVolumeSilder, updatePopupSelectionSummary,
@@ -7,14 +7,14 @@ import {
     triggerReactClickHandler
 } from "../shared/general";
 import { logger } from "../shared/logger";
-import { onStory, onStoryAll, onStoryThumbnail } from "../features/story/story";
-import { onProfileAvatar } from "../features/profile/profile";
-import { onHighlightsStory, onHighlightsStoryAll, onHighlightsStoryThumbnail } from "../features/highlight/highlight";
-import { onReels } from "../features/reel/reel";
+import { onStory, onStoryAll, onStoryThumbnail } from "../features/story";
+import { onProfileAvatar } from "../features/profile";
+import { onHighlightsStory, onHighlightsStoryAll, onHighlightsStoryThumbnail } from "../features/highlight";
+import { onReels } from "../features/reel";
 import { _i18n } from "../shared/i18n";
 import { getImageFromCache, registerPerformanceObserver } from "../features/media/image-cache";
 import { batchDownloadPostFiles, createDownloadButton } from "../features/post/post";
-import { showDebugDOM, showHotkeySetting, showSetting } from "../features/menu/menu";
+import { showDebugDOM, showHotkeySetting, showSetting } from "../features/menu";
 import {
     LEGACY_DIALOG_MOUNTED_EVENT,
     LEGACY_DIALOG_ROOT_ID,

@@ -4,7 +4,7 @@
 ────────────────────────────────────────────────────────────── 
 */
 
-import { IMAGE_CACHE_KEY, IMAGE_CACHE_MAX_AGE, IMAGE_MAX_CACHE_ITEMS, state, USER_SETTING } from "../settings/state";
+import { IMAGE_CACHE_KEY, IMAGE_CACHE_MAX_AGE, IMAGE_MAX_CACHE_ITEMS, state, USER_SETTING } from "../../settings/state";
 
 let mediaCacheDirty = false;
 let mediaCacheSaveTimer = null;

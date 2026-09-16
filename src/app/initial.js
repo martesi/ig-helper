@@ -1,9 +1,9 @@
 import { initSettings } from "../shared/general";
 import { logger } from "../shared/logger";
 import { getTranslationText, repaintingTranslations } from "../shared/i18n";
-import { state } from "../features/settings/state";
+import { state } from "../settings/state";
 import { purgeCache } from "../features/media/image-cache";
-import { registerMenuCommand } from "../features/menu/menu";
+import { registerMenuCommand } from "../features/menu";
 
 // initialization script
 initSettings();

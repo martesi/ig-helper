@@ -1,6 +1,6 @@
 import $ from 'jquery';
 import * as Mediabunny from 'mediabunny';
-import { USER_SETTING, state, userIdCache, $body } from "../features/settings/state";
+import { USER_SETTING, state, userIdCache, $body } from "../settings/state";
 import { _i18n } from "./i18n";
 import { getPostOwner, getMediaInfo, getUserId } from "./api";
 import { getImageFromCache } from "../features/media/image-cache";
@@ -12,7 +12,7 @@ import {
     DEFAULT_VIDEO_VOLUME,
     HOTKEY_SETTINGS,
     SETTINGS_STORAGE_KEYS,
-} from '../features/settings/schema.js';
+} from '../settings/schema.js';
 
 
 /**

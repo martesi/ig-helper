@@ -1,20 +1,20 @@
 import $ from 'jquery';
 import { USER_SETTING, SVG, state } from "../settings/state";
-import { appendLegacyControl } from "../../shared/ui/legacy-controls.jsx";
+import { appendLegacyControl } from "../shared/ui/legacy-controls.jsx";
 import {
     openNewTab,
     setDownloadProgress, saveFiles, getStoryProgress,
     tryHandleDashFromMediaItem,
     getHighlightCurrentTimeElement, setTimeElementDateAndLocaleTime,
     setStoryProgressIndexText, setStoryProgressIndexByUsername
-} from "../../shared/general";
-import { updateLoadingBar } from "../../shared/ui/status.jsx";
-import { logger } from "../../shared/logger";
-import { _i18n } from "../../shared/i18n";
-import { getHighlightStories, getMediaInfo } from "../../shared/api";
-import { createStoryListDOM } from "../story/story";
-import { getImageFromCache } from "../media/image-cache";
-import { IG_createDM } from "../menu/menu";
+} from "../shared/general";
+import { updateLoadingBar } from "../shared/ui/status.jsx";
+import { logger } from "../shared/logger";
+import { _i18n } from "../shared/i18n";
+import { getHighlightStories, getMediaInfo } from "../shared/api";
+import { createStoryListDOM } from "./story";
+import { getImageFromCache } from "./media/image-cache";
+import { IG_createDM } from "./menu";
 
 /**
  * getHighlightsStoryUsername
