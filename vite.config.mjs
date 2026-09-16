@@ -23,7 +23,7 @@ export default defineConfig(({ command }) => ({
     },
     plugins: [
         monkey({
-            entry: 'src/entry.js',
+            entry: 'src/app/entry.js',
             userscript: {
                 name: {
                     '': 'IG Helper',
