@@ -10,7 +10,7 @@
     "dev": "bun run --parallel dev:*",
     "dev:script": "vite",
     "dev:pages": "vite --config vite.pages.config.mjs",
-    "build": "bun run build:script && bun run build:pages",
+    "build": "bun run --parallel build:*",
     "build:script": "vite build",
     "build:pages": "vite build --config vite.pages.config.mjs",
     "lint": "eslint .",
