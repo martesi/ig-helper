@@ -6,7 +6,7 @@ import { getPostOwner, getMediaInfo, getUserId } from "./api";
 import { getImageFromCache } from "../features/media/image-cache";
 import { appendCounter, appendDownloadProgress, appendVolumeSlider, updateLoadingBar } from "./ui/status.jsx";
 import { logger } from "./logger";
-import { queryLegacyDialog } from './ui/shadow.js';
+import { queryLegacyDialog } from './ui/dialogs.jsx';
 import {
     DEFAULT_RENAME_FORMAT,
     DEFAULT_VIDEO_VOLUME,

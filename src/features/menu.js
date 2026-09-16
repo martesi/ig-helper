@@ -2,8 +2,13 @@ import { state } from "../settings/state";
 import { reloadScript } from "../shared/general";
 import { logger } from "../shared/logger";
 import { _i18n } from "../shared/i18n";
-import { mountDebugPanel, mountFeedbackPanel, mountLegacyDialog } from '../shared/ui/dialogs.jsx';
-import { LEGACY_DIALOG_ROOT_ID, queryAllLegacyDialog, queryLegacyDialog, removeOwnedUiRoot } from '../shared/ui/shadow.js';
+import {
+    mountDebugPanel,
+    mountFeedbackPanel,
+    mountLegacyDialog,
+    queryLegacyDialog,
+    removeLegacyDialog,
+} from '../shared/ui/dialogs.jsx';
 
 const SETTINGS_PAGE_URL = import.meta.env.DEV
     ? 'http://127.0.0.1:9100/#/settings/'
@@ -39,9 +44,7 @@ export function IG_createDM(hasHidden, hasCheckbox) {
  * @return {void}
  */
 export function IG_setDM(hasHidden) {
-    queryAllLegacyDialog('.IG_POPUP_DIG').forEach(popup => {
-        popup.classList.toggle('hidden', Boolean(hasHidden));
-    });
+    queryLegacyDialog('.IG_POPUP_DIG')?.classList.toggle('hidden', Boolean(hasHidden));
 }
 
 
@@ -126,5 +129,5 @@ export function showFeedbackDOM() {
 }
 
 function removeLegacyDialogs() {
-    removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+    removeLegacyDialog();
 }

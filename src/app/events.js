@@ -16,11 +16,9 @@ import { getImageFromCache, registerPerformanceObserver } from "../features/medi
 import { batchDownloadPostFiles, createDownloadButton } from "../features/post/post";
 import { showDebugDOM, showHotkeySetting, showSetting } from "../features/menu";
 import {
-    LEGACY_DIALOG_MOUNTED_EVENT,
-    LEGACY_DIALOG_ROOT_ID,
     queryLegacyDialog,
-    removeOwnedUiRoot,
-} from '../shared/ui/shadow.js';
+    removeLegacyDialog,
+} from '../shared/ui/dialogs.jsx';
 
 // Running if document is ready
 $(function () {
@@ -99,7 +97,7 @@ $(function () {
         });
 
         on('click', '.IG_POPUP_DIG_BTN, .IG_POPUP_DIG_BG', () => {
-            removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+            removeLegacyDialog();
         });
 
         on('click', 'a[data-needed="direct"]', function (e) {
@@ -178,12 +176,12 @@ $(function () {
         });
     }
 
-    document.addEventListener(LEGACY_DIALOG_MOUNTED_EVENT, event => bindLegacyDialogEvents(event.detail));
+    bindLegacyDialogEvents(document);
 
     $(window).on('keydown', function (e) {
         // Hot key [Alt+Q] to close legacy download/debug dialogs.
         if (e.altKey && e.which == 81) {
-            removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+            removeLegacyDialog();
             e.preventDefault();
         }
 

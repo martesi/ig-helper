@@ -17,7 +17,7 @@ import { mountPostControls } from "./controls.jsx";
 import { appendLoadingMessage, appendMediaResource, decorateMediaResource, renderPostIdLink } from "../../shared/ui/media-resource.jsx";
 import { mediaIdFromURL } from "../media/image-cache";
 import { IG_createDM, IG_setDM } from "../menu";
-import { LEGACY_DIALOG_ROOT_ID, queryAllLegacyDialog, queryLegacyDialog, removeOwnedUiRoot } from '../../shared/ui/shadow.js';
+import { queryAllLegacyDialog, queryLegacyDialog, removeLegacyDialog } from '../../shared/ui/dialogs.jsx';
 
 function getLegacyPopupBody() {
     return queryLegacyDialog('.IG_POPUP_DIG_BODY');
@@ -527,7 +527,7 @@ async function openPostVideoThumbnail(target) {
     }
     finally {
         updateLoadingBar(false);
-        removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+        removeLegacyDialog();
     }
 }
 
@@ -585,7 +585,7 @@ async function openPostResourceInNewTab(target) {
     }
     finally {
         updateLoadingBar(false);
-        removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+        removeLegacyDialog();
     }
 }
 
@@ -610,7 +610,7 @@ async function downloadAllPostResources(target) {
         );
 
         if (!totalInserted || totalInserted < 1) {
-            removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+            removeLegacyDialog();
             return;
         }
 
@@ -625,7 +625,7 @@ async function downloadAllPostResources(target) {
         logger('downloadAllPostResources', err);
     }
     finally {
-        removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+        removeLegacyDialog();
     }
 }
 
@@ -677,7 +677,7 @@ async function downloadPostResource(target) {
             }
             finally {
                 updateLoadingBar(false);
-                removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+                removeLegacyDialog();
             }
 
             return;
@@ -781,7 +781,7 @@ async function downloadPostResource(target) {
             );
 
             if (!totalInserted || totalInserted < 1) {
-                removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+                removeLegacyDialog();
                 return;
             }
 
@@ -791,12 +791,12 @@ async function downloadPostResource(target) {
             });
 
             await batchDownloadPostFiles(links);
-            removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+            removeLegacyDialog();
         }
     }
     catch (err) {
         logger('downloadPostResource', err);
-        removeOwnedUiRoot(LEGACY_DIALOG_ROOT_ID);
+        removeLegacyDialog();
     }
 }
 

@@ -1,0 +1,161 @@
+.IG_CONTROL_BAR .btn[data-variant='ghost']:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    color: inherit;
+}
+
+.IG_CONTROL_BAR {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    --color-foreground: #fff;
+    --color-muted: rgba(255, 255, 255, 0.18);
+}
+
+.IG_CONTROL_BAR svg {
+    width: 18px;
+    height: 18px;
+}
+
+
+#imageViewer {
+    position: fixed;
+    inset: 0;
+    z-index: 600001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+#imageViewer #iv_header.IG_CONTROL_BAR {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    left: auto;
+    z-index: 1;
+    width: auto;
+    height: auto;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 12px;
+}
+
+#imageViewer > section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+}
+
+#imageViewer #iv_image {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    border-radius: 4px;
+    user-select: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+#imageViewer #iv_header svg {
+    fill: none !important;
+    stroke: currentColor !important;
+}
+
+.IG_LEGACY_DIALOG_HEADING {
+    position: relative;
+    min-height: 40px;
+    text-align: center;
+}
+
+.IG_LEGACY_DIALOG_HEADING #post_info {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--color-muted-foreground);
+}
+
+.IG_LEGACY_DIALOG_HEADING .IG_POPUP_DIG_BTN {
+    position: absolute;
+    top: -4px;
+    right: 0;
+}
+
+.IG_LEGACY_DIALOG_ACTIONS {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.IG_LEGACY_SELECT_ALL {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.IG_LEGACY_PANEL {
+    display: grid;
+    gap: 12px;
+}
+
+.ig-helper-ui .IG_DEBUG_TEXTAREA {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 300px;
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    resize: vertical;
+}
+
+
+#ig-helper-image-viewer-root {
+    position: fixed;
+    inset: 0;
+    z-index: 600001;
+    overflow: hidden;
+}
+
+#imageViewer {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+#imageViewer > section {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    overflow: hidden;
+    padding: 16px;
+}
+
+#imageViewer #iv_header.IG_CONTROL_BAR {
+    height: auto;
+    max-width: calc(100vw - 32px);
+    box-sizing: border-box;
+}
+
+#imageViewer #iv_header svg {
+    fill: none !important;
+    stroke: currentColor !important;
+}
