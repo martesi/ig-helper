@@ -3,7 +3,7 @@ const pending = new Map();
 let nextId = 0;
 
 window.addEventListener('message', event => {
-    if (event.source !== window || event.origin !== location.origin) return;
+    if (event.origin !== location.origin) return;
     const message = event.data;
     if (message?.channel !== CHANNEL || message.direction !== 'response') return;
 

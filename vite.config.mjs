@@ -78,9 +78,8 @@ export default defineConfig(({ command }) => ({
                 author: 'SN-Koarashi (5026)',
                 match: [
                     'https://*.instagram.com/*',
-                    command === 'serve'
-                        ? 'http://127.0.0.1:9100/*'
-                        : 'https://martesi.github.io/ig-helper/*',
+                    'https://martesi.github.io/ig-helper/*',
+                    ...(command === 'serve' ? ['http://127.0.0.1:9100/*'] : []),
                 ],
                 grant: [
                     'GM_addStyle',

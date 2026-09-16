@@ -13,7 +13,7 @@ const CHANNEL = 'ig-helper:settings';
 const hotkeysByStateKey = new Map(HOTKEY_SETTINGS.map(config => [config.stateKey, config]));
 
 window.addEventListener('message', async event => {
-    if (event.source !== window || event.origin !== location.origin) return;
+    if (event.origin !== location.origin) return;
     const message = event.data;
     if (message?.channel !== CHANNEL || message.direction !== 'request') return;
 
