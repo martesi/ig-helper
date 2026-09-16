@@ -5,22 +5,18 @@ export default defineConfig(({ command }) => ({
     base: command === 'serve' ? '/' : '/ig-helper/',
     build: {
         outDir: 'pages-dist',
-        target: 'es2015',
-        rolldownOptions: {
-            input: {
-                index: 'index.html',
-                settings: 'settings/index.html',
-            },
-        },
+        target: 'es2025',
     },
     server: {
         port: 9100,
         strictPort: true,
     },
-    esbuild: {
-        jsx: 'transform',
-        jsxFactory: 'h',
-        jsxFragment: 'Fragment',
+    oxc: {
+        jsx: {
+            runtime: 'classic',
+            pragma: 'h',
+            pragmaFrag: 'Fragment',
+        },
     },
     plugins: [tailwindcss()],
 }));

@@ -6,8 +6,8 @@ import { mountDebugPanel, mountFeedbackPanel, mountLegacyDialog } from '../ui/di
 import { LEGACY_DIALOG_ROOT_ID, queryAllLegacyDialog, queryLegacyDialog, removeOwnedUiRoot } from '../ui/shadow.js';
 
 const SETTINGS_PAGE_URL = import.meta.env.DEV
-    ? 'http://127.0.0.1:9100/settings/'
-    : 'https://martesi.github.io/ig-helper/settings/';
+    ? 'http://127.0.0.1:9100/#/settings/'
+    : 'https://martesi.github.io/ig-helper/#/settings/';
 
 /**
  * IG_createDM
@@ -86,7 +86,7 @@ export function showSetting() {
 }
 
 function openSettingsPage(tab) {
-    GM_openInTab(`${SETTINGS_PAGE_URL}#${tab}`, { active: true });
+    GM_openInTab(`${SETTINGS_PAGE_URL}${tab}`, { active: true });
 }
 
 /**

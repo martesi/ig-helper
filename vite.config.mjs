@@ -4,18 +4,18 @@ import packageJson from './package.json' with { type: 'json' };
 
 const mediabunnyUrl = 'https://cdn.jsdelivr.net/npm/mediabunny@1.34.5/dist/bundles/mediabunny.min.cjs#sha256-wUFR+x2bDvpqgMAVGy2CvGvULyjTGvGy4UUAm8rae5U=';
 const jqueryUrl = 'https://code.jquery.com/jquery-4.0.0.min.js#sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=';
-const preactUrl = 'https://cdn.jsdelivr.net/npm/preact@10.29.8/dist/preact.umd.js#sha256-E0t3vIA/o4Zh3BseROlusLtqGgDtu5bTTc3kIbLoCwY=';
-const preactHooksUrl = 'https://cdn.jsdelivr.net/npm/preact@10.29.8/hooks/dist/hooks.umd.js#sha256-XCkjjl3JnfMG1/f/8DhZGjl8/Pq7Wfgfve9D1nCqBWY=';
 
 export default defineConfig(({ command }) => ({
     build: {
         minify: false,
-        target: 'es2015',
+        target: 'es2025',
     },
-    esbuild: {
-        jsx: 'transform',
-        jsxFactory: 'h',
-        jsxFragment: 'Fragment',
+    oxc: {
+        jsx: {
+            runtime: 'classic',
+            pragma: 'h',
+            pragmaFrag: 'Fragment',
+        },
     },
     server: {
         port: 9000,
@@ -71,8 +71,8 @@ export default defineConfig(({ command }) => ({
                 match: [
                     'https://*.instagram.com/*',
                     command === 'serve'
-                        ? 'http://127.0.0.1:9100/settings/*'
-                        : 'https://martesi.github.io/ig-helper/settings/*',
+                        ? 'http://127.0.0.1:9100/*'
+                        : 'https://martesi.github.io/ig-helper/*',
                 ],
                 grant: [
                     'GM_addStyle',
@@ -97,11 +97,6 @@ export default defineConfig(({ command }) => ({
                 icon: 'https://www.google.com/s2/favicons?domain=www.instagram.com&sz=32',
                 license: 'GPL-3.0-only',
                 'run-at': 'document-idle',
-                $extra: [
-                    ['compatible', 'chrome >= 100'],
-                    ['compatible', 'edge >= 100'],
-                    ['compatible', 'firefox >= 100'],
-                ],
             },
             server: {
                 mountGmApi: true,
@@ -113,8 +108,6 @@ export default defineConfig(({ command }) => ({
                 externalGlobals: {
                     mediabunny: ['Mediabunny', mediabunnyUrl],
                     jquery: ['jQuery', jqueryUrl],
-                    preact: ['preact', preactUrl],
-                    'preact/hooks': ['preactHooks', preactHooksUrl],
                 },
             },
         }),

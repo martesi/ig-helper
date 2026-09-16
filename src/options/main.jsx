@@ -1,5 +1,6 @@
-import { h, render } from 'preact';
+import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
+import { useLocation, useParams } from 'wouter-preact';
 import { Button, Input, Select, Switch } from '../ui/components.jsx';
 import { KeyboardIcon, SlidersHorizontalIcon } from '../ui/icons.jsx';
 import {
@@ -39,13 +40,15 @@ const PREFERENCE_SECTIONS = [
     },
 ];
 
-function OptionsApp() {
+export function OptionsApp() {
     const [data, setData] = useState(null);
     const [language, setLanguage] = useState('en-US');
     const [locale, setLocale] = useState({});
-    const [tab, setTabState] = useState(tabFromHash());
     const [error, setError] = useState('');
     const [conflict, setConflict] = useState(null);
+    const [, navigate] = useLocation();
+    const { tab: routeTab } = useParams();
+    const tab = routeTab === 'keyboard' ? 'keyboard' : 'preferences';
     const t = createTranslator(locale);
 
     useEffect(() => {
@@ -63,15 +66,8 @@ function OptionsApp() {
         return () => { cancelled = true; };
     }, []);
 
-    useEffect(() => {
-        const syncTab = () => setTabState(tabFromHash());
-        window.addEventListener('hashchange', syncTab);
-        return () => window.removeEventListener('hashchange', syncTab);
-    }, []);
-
     function setTab(next) {
-        location.hash = next;
-        setTabState(next);
+        navigate(`/settings/${next}`);
     }
 
     async function saveSetting(name, value) {
@@ -309,8 +305,3 @@ function hotkeyLabel(keyCode) {
     return `Alt+${keyCode === 192 ? '~' : String.fromCharCode(keyCode)}`;
 }
 
-function tabFromHash() {
-    return location.hash === '#keyboard' ? 'keyboard' : 'preferences';
-}
-
-render(<OptionsApp />, document.getElementById('app'));

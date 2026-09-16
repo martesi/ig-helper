@@ -1,4 +1,7 @@
 import { h, render } from 'preact';
+import { Link, Route, Router, Switch } from 'wouter-preact';
+import { useHashLocation } from 'wouter-preact/use-hash-location';
+import { OptionsApp } from './main.jsx';
 import './landing.css';
 
 function Landing() {
@@ -9,7 +12,7 @@ function Landing() {
                 <h1>Instagram Download Helper</h1>
                 <p>Download photos and videos from posts, Reels, Stories, highlights, and profiles.</p>
                 <div class="actions">
-                    <a class="primary" href="./settings/">Settings</a>
+                    <Link class="primary" href="/settings/preferences">Settings</Link>
                     <a href="https://github.com/martesi/ig-helper">GitHub</a>
                 </div>
             </section>
@@ -17,4 +20,16 @@ function Landing() {
     );
 }
 
-render(<Landing />, document.getElementById('app'));
+function App() {
+    return (
+        <Router hook={useHashLocation}>
+            <Switch>
+                <Route path="/" component={Landing} />
+                <Route path="/settings/:tab?" component={OptionsApp} />
+                <Route component={Landing} />
+            </Switch>
+        </Router>
+    );
+}
+
+render(<App />, document.getElementById('app'));
