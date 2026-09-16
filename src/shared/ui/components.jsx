@@ -1,4 +1,4 @@
-import { h, toChildArray } from 'preact';
+import { toChildArray } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 export function Button({ class: className = '', variant = 'secondary', size = 'default', ...props }) {
     return <button type="button" class={`btn ${className}`.trim()} data-variant={variant} data-size={size} {...props} />;

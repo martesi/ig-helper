@@ -1,4 +1,4 @@
-import { h, render } from 'preact';
+import { render } from 'preact';
 import { Link, Route, Router, Switch } from 'wouter-preact';
 import { useHashLocation } from 'wouter-preact/use-hash-location';
 import { OptionsApp } from './settings.jsx';

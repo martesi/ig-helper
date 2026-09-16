@@ -1,4 +1,4 @@
-import { h, render } from 'preact';
+import { render } from 'preact';
 
 export function updateLoadingBar(isLoading) {
     const mount = document.querySelector('div[id^="mount"] > div > div > div');

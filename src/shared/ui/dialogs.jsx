@@ -1,4 +1,4 @@
-import { Fragment, h, render } from 'preact';
+import { render } from 'preact';
 import { Button, Checkbox, IconButton, Textarea } from './components.jsx';
 import { XIcon } from './icons.jsx';
 

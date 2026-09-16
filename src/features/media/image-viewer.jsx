@@ -1,4 +1,4 @@
-import { h, render } from 'preact';
+import { render } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ControlBar, IconButton } from '../../shared/ui/components.jsx';
 import { RotateCcwIcon, RotateCwIcon, XIcon } from '../../shared/ui/icons.jsx';

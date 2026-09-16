@@ -1,4 +1,3 @@
-import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { useLocation, useParams } from 'wouter-preact';
 import { Button, Input, Select, Switch } from '../../shared/ui/components.jsx';

@@ -1,4 +1,3 @@
-import { h } from 'preact';
 
 function Icon({ children, ...props }) {
     return (

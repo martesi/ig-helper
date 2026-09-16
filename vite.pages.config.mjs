@@ -13,9 +13,8 @@ export default defineConfig(({ command }) => ({
     },
     oxc: {
         jsx: {
-            runtime: 'classic',
-            pragma: 'h',
-            pragmaFrag: 'Fragment',
+            runtime: 'automatic',
+            importSource: 'preact',
         },
     },
     plugins: [tailwindcss()],

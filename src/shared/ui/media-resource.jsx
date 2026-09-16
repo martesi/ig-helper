@@ -1,4 +1,4 @@
-import { Fragment, h, render } from 'preact';
+import { render } from 'preact';
 import { Button } from './components.jsx';
 
 export function appendMediaResource(parent, resource) {

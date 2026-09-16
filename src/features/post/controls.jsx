@@ -1,4 +1,4 @@
-import { Fragment, h, render } from 'preact';
+import { render } from 'preact';
 import { SVG } from '../../settings/state';
 import { _i18n } from '../../shared/i18n';
 import { Button } from '../../shared/ui/components.jsx';

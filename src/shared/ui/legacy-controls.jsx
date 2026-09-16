@@ -1,4 +1,4 @@
-import { h, render } from 'preact';
+import { render } from 'preact';
 import { Button } from './components.jsx';
 
 export function appendLegacyControl(parent, { className, label, labelKey, icon }) {
