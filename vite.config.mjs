@@ -7,6 +7,7 @@ const jqueryUrl = 'https://code.jquery.com/jquery-4.0.0.min.js#sha256-OaVG6prZf4
 
 export default defineConfig(({ command }) => ({
     build: {
+        outDir: 'dist/script',
         minify: false,
         target: 'es2025',
     },

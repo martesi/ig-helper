@@ -7,10 +7,15 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout
@@ -30,20 +35,32 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Upload userscript artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ig-helper
-          path: |
-            dist/ig-helper.user.js
-            dist/ig-helper.meta.js
-          if-no-files-found: error
-
       - name: Verify release tag
         shell: bash
         run: |
           version="$(bun -p "require('./package.json').version")"
           test "$GITHUB_REF_NAME" = "v$version"
+
+      - name: Upload userscript artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ig-helper
+          path: |
+            dist/script/ig-helper.user.js
+            dist/script/ig-helper.meta.js
+          if-no-files-found: error
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/page
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Create GitHub release
         env:
@@ -51,8 +68,8 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           gh release create "$TAG" \
-            dist/ig-helper.user.js \
-            dist/ig-helper.meta.js \
+            dist/script/ig-helper.user.js \
+            dist/script/ig-helper.meta.js \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "$TAG" \

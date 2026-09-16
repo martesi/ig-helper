@@ -1,7 +1,6 @@
 node_modules/
 package-lock.json
 dist/
-pages-dist/
 .browser-state/
 .cache/
 e2e/artifacts/

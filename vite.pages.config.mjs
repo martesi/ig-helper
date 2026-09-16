@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 export default defineConfig(({ command }) => ({
     base: command === 'serve' ? '/' : '/ig-helper/',
     build: {
-        outDir: 'pages-dist',
+        outDir: 'dist/page',
         target: 'es2025',
     },
     server: {

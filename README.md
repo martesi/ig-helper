@@ -76,9 +76,9 @@ Install the development userscript offered by vite-plugin-monkey for live develo
 ```
 bun run build
 ```
-Install the generated `dist/ig-helper.user.js` file in your userscript manager.
+Install the generated `dist/script/ig-helper.user.js` file in your userscript manager.
 
-For a GitHub release, update the version in `package.json`, then run the **Publish Release** workflow manually. vite-plugin-monkey builds `dist/ig-helper.user.js` and `dist/ig-helper.meta.js`; the workflow uploads both as a GitHub Actions artifact and as assets on the matching `v<version>` release.
+For a GitHub release, update the version in `package.json`, then create the matching `v<version>` tag. The **Publish Release** workflow builds the settings page into `dist/page`, deploys it to GitHub Pages, and uploads `dist/script/ig-helper.user.js` plus `dist/script/ig-helper.meta.js` as both a GitHub Actions artifact and release assets.
 
 ### Contribution Workflow
 
@@ -86,7 +86,7 @@ For a GitHub release, update the version in `package.json`, then run the **Publi
 1. **Fork & Clone**: Fork the repository and clone it locally
 2. **Branch**: Create a feature branch
 3. **Develop**: Run `bun run dev` and make changes to the source files
-4. **Build**: Run `bun run build` to generate `dist/ig-helper.user.js` and `dist/ig-helper.meta.js`
+4. **Build**: Run `bun run build` to generate `dist/script/ig-helper.user.js`, `dist/script/ig-helper.meta.js`, and the settings page in `dist/page`
 5. **Test**: Install the script in your userscript manager and test your changes
 6. **Submit**: Create a pull request
 
