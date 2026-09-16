@@ -1,0 +1,141 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "basecoat-css/base/base.css";
+@import "basecoat-css/components/button";
+@import "basecoat-css/components/checkbox";
+@import "basecoat-css/components/dialog";
+@import "basecoat-css/components/input";
+@import "basecoat-css/components/kbd";
+@import "basecoat-css/components/popover";
+@import "basecoat-css/components/select";
+@import "basecoat-css/components/range";
+@import "basecoat-css/components/scrollbar";
+@import "basecoat-css/components/switch";
+@import "basecoat-css/components/tabs";
+@import "basecoat-css/components/textarea";
+@import "basecoat-css/styles/vega";
+@import '../../../shared/ui/ui.css';
+@import './settings-ui.css';
+
+@theme {
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 10px;
+    --radius-xl: 14px;
+    --color-background: #fff;
+    --color-foreground: #111;
+    --color-card: #fff;
+    --color-card-foreground: #111;
+    --color-popover: #fff;
+    --color-popover-foreground: #111;
+    --color-primary: #0095f6;
+    --color-primary-foreground: #fff;
+    --color-secondary: #efefef;
+    --color-secondary-foreground: #111;
+    --color-muted: #f5f5f5;
+    --color-muted-foreground: #737373;
+    --color-accent: #efefef;
+    --color-accent-foreground: #111;
+    --color-destructive: #ed4956;
+    --color-border: #dbdbdb;
+    --color-input: #dbdbdb;
+    --color-ring: #0095f6;
+    --color-chart-1: #93c5fd;
+    --color-chart-2: #3b82f6;
+    --color-chart-3: #2563eb;
+    --color-chart-4: #1d4ed8;
+    --color-chart-5: #1e40af;
+    --color-sidebar: #fafafa;
+    --color-sidebar-foreground: #111;
+    --color-sidebar-primary: #0095f6;
+    --color-sidebar-primary-foreground: #fff;
+    --color-sidebar-accent: #efefef;
+    --color-sidebar-accent-foreground: #111;
+    --color-sidebar-border: #dbdbdb;
+    --color-sidebar-ring: #0095f6;
+}
+
+html,
+body,
+#app {
+    min-height: 100%;
+    margin: 0;
+}
+
+body {
+    min-width: 320px;
+    background: #f5f5f5;
+}
+
+.IG_SETTINGS_DIALOG {
+    box-sizing: border-box;
+    min-height: 100vh;
+    padding: 32px;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_PANEL {
+    width: min(1120px, 100%);
+    height: auto;
+    min-height: calc(100vh - 64px);
+    margin: 0 auto;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_CONTENT {
+    overflow: visible;
+}
+
+.IG_SETTINGS_STATUS {
+    margin: 0;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-muted-foreground);
+    font-size: 13px;
+}
+
+.IG_SETTINGS_STATUS[role='alert'] {
+    color: var(--color-destructive);
+}
+
+.IG_SETTINGS_VERSION {
+    margin-left: auto;
+    color: var(--color-muted-foreground);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #0c0c0c;
+    }
+
+    .ig-helper-ui {
+        --color-background: #000;
+        --color-foreground: #f5f5f5;
+        --color-card: #000;
+        --color-card-foreground: #f5f5f5;
+        --color-popover: #181818;
+        --color-popover-foreground: #f5f5f5;
+        --color-secondary: #262626;
+        --color-secondary-foreground: #f5f5f5;
+        --color-muted: #171717;
+        --color-muted-foreground: #a3a3a3;
+        --color-accent: #262626;
+        --color-accent-foreground: #f5f5f5;
+        --color-border: #363636;
+        --color-input: #363636;
+    }
+}
+
+@media (max-width: 800px) {
+    .IG_SETTINGS_DIALOG {
+        padding: 0;
+    }
+
+    .IG_SETTINGS_DIALOG .IG_SETTINGS_PANEL {
+        width: 100%;
+        min-height: 100vh;
+        border: 0;
+        border-radius: 0;
+    }
+}

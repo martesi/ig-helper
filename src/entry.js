@@ -6,5 +6,5 @@ const isOptionsPage = (
     location.pathname === '/ig-helper/'
 );
 
-if (isOptionsPage) void import('./options/bridge.js');
-else void import('./instagram.js');
+if (isOptionsPage) void import('./features/settings/bridge.js');
+else void import('./app/instagram.js');
