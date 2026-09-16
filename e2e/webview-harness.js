@@ -273,15 +273,28 @@ export class IgHelperE2E {
         await this.showGeneralSection();
         return this.json(`Object.fromEntries(${JSON.stringify(names)}.map(name => {
             const element = document.querySelector('#' + name);
-            return [name, Boolean(element?.checked)];
+            const valueElement = document.querySelector('#' + name + '-value');
+            return [name, valueElement ? valueElement.value : Boolean(element?.checked)];
         }))`);
     }
 
     async setSettings(values) {
         await this.showGeneralSection();
         for (const [name, desired] of Object.entries(values)) {
-            const current = await this.evaluate(`Boolean(document.querySelector('#' + ${JSON.stringify(name)})?.checked)`);
+            const current = await this.evaluate(`(() => {
+                const element = document.querySelector('#' + ${JSON.stringify(name)});
+                const valueElement = document.querySelector('#' + ${JSON.stringify(name)} + '-value');
+                return valueElement ? valueElement.value : Boolean(element?.checked);
+            })()`);
             if (current === desired) continue;
+
+            if (typeof desired === 'string') {
+                await this.click(`#${name}-trigger`);
+                await this.click(`#${name}-listbox [data-value="${desired}"]`);
+                await this.waitFor(`document.querySelector('#${name}-value')?.value === ${JSON.stringify(desired)}`, 3000);
+                continue;
+            }
+
             await this.click(`label[for="${name}"]`);
             await this.waitFor(`document.querySelector('#${name}')?.checked === ${desired}`, 3000);
         }

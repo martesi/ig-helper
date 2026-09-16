@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Button, Input, Select, Switch } from '../../shared/ui/components.jsx';
 import {
+    DIRECT_DOWNLOAD_MODE_OPTIONS,
     HOTKEY_OPTIONS,
     HOTKEY_SETTINGS,
     PARENT_CHILD_MAPPING,
@@ -14,7 +15,7 @@ const SETTINGS_SECTIONS = [
         id: 'downloads',
         key: 'SETTINGS_DOWNLOADS',
         descriptionKey: 'SETTINGS_DOWNLOADS_DESCRIPTION',
-        settings: ['DIRECT_DOWNLOAD_VISIBLE_RESOURCE', 'DIRECT_DOWNLOAD_ALL', 'DIRECT_DOWNLOAD_STORY', 'FORCE_FETCH_ALL_RESOURCES', 'USE_EXTERNAL_DOWNLOAD_MODE'],
+        settings: ['DIRECT_DOWNLOAD_MODE', 'DIRECT_DOWNLOAD_STORY', 'FORCE_FETCH_ALL_RESOURCES', 'USE_EXTERNAL_DOWNLOAD_MODE'],
     },
     {
         id: 'files',
@@ -233,6 +234,7 @@ function SettingsSection({ id, title, description, children }) {
 }
 
 function SettingRow({ name, isChild, parentName, data, t, onSettingChange, onVolumeChange, onRenameFormatChange }) {
+    const isDownloadMode = name === 'DIRECT_DOWNLOAD_MODE';
     const checked = Boolean(data.settings[name]);
     const disabled = isChild && parentName && !data.settings[parentName];
     const label = t(settingLabelKey(name));
@@ -243,8 +245,16 @@ function SettingRow({ name, isChild, parentName, data, t, onSettingChange, onVol
                 <label for={name}>{label}</label>
                 <p>{settingDescription(t, name)}</p>
             </div>
-            <Switch id={name} checked={checked} disabled={disabled} aria-label={label}
-                onChange={event => onSettingChange(name, event.currentTarget.checked)} />
+            {isDownloadMode ? (
+                <Select id={name} value={data.settings[name]} onValueChange={value => onSettingChange(name, value)} popoverAlign="end">
+                    {Object.entries(DIRECT_DOWNLOAD_MODE_OPTIONS).map(([key, value]) => (
+                        <option key={value} value={value}>{t(`DIRECT_DOWNLOAD_MODE_${key}`)}</option>
+                    ))}
+                </Select>
+            ) : (
+                <Switch id={name} checked={checked} disabled={disabled} aria-label={label}
+                    onChange={event => onSettingChange(name, event.currentTarget.checked)} />
+            )}
             {name === 'MODIFY_VIDEO_VOLUME' && checked && (
                 <VolumeEditor value={data.videoVolume} t={t} onChange={onVolumeChange} />
             )}

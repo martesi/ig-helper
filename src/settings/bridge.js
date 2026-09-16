@@ -2,8 +2,10 @@ import {
     DEFAULT_RENAME_FORMAT,
     DEFAULT_USER_SETTINGS,
     DEFAULT_VIDEO_VOLUME,
+    DIRECT_DOWNLOAD_MODE_OPTIONS,
     HOTKEY_OPTIONS,
     HOTKEY_SETTINGS,
+    resolveDirectDownloadMode,
     SETTINGS_STORAGE_KEYS,
 } from './schema';
 
@@ -48,7 +50,7 @@ function handleRequest(method, payload = {}) {
 
 function getState() {
     return {
-        settings: Object.fromEntries(Object.entries(DEFAULT_USER_SETTINGS).map(([key, fallback]) => [key, GM_getValue(key, fallback)])),
+        settings: Object.fromEntries(Object.entries(DEFAULT_USER_SETTINGS).map(([key, fallback]) => [key, getSetting(key, fallback)])),
         language: GM_getValue(SETTINGS_STORAGE_KEYS.language, navigator.language || 'en-US'),
         videoVolume: Number(GM_getValue(SETTINGS_STORAGE_KEYS.videoVolume, DEFAULT_VIDEO_VOLUME)),
         renameFormat: GM_getValue(SETTINGS_STORAGE_KEYS.renameFormat, DEFAULT_RENAME_FORMAT),
@@ -57,8 +59,18 @@ function getState() {
     };
 }
 
+function getSetting(name, fallback) {
+    if (name !== 'DIRECT_DOWNLOAD_MODE') return GM_getValue(name, fallback);
+    return resolveDirectDownloadMode(
+        GM_getValue(name),
+        GM_getValue('DIRECT_DOWNLOAD_VISIBLE_RESOURCE'),
+        GM_getValue('DIRECT_DOWNLOAD_ALL')
+    );
+}
+
 function setSetting({ name, value }) {
-    if (!Object.hasOwn(DEFAULT_USER_SETTINGS, name) || typeof value !== 'boolean') throw new Error('Invalid setting');
+    if (!Object.hasOwn(DEFAULT_USER_SETTINGS, name) || typeof value !== typeof DEFAULT_USER_SETTINGS[name]) throw new Error('Invalid setting');
+    if (name === 'DIRECT_DOWNLOAD_MODE' && !Object.values(DIRECT_DOWNLOAD_MODE_OPTIONS).includes(value)) throw new Error('Invalid setting');
     GM_setValue(name, value);
     return value;
 }

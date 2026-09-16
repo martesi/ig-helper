@@ -1,9 +1,14 @@
+export const DIRECT_DOWNLOAD_MODE_OPTIONS = Object.freeze({
+    ASK: 'ask',
+    VISIBLE: 'visible',
+    ALL: 'all',
+});
+
 export const DEFAULT_USER_SETTINGS = {
     AUTO_RENAME: true,
     CAPTURE_IMAGE_VIA_MEDIA_CACHE: true,
-    DIRECT_DOWNLOAD_ALL: false,
+    DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE,
     DIRECT_DOWNLOAD_STORY: false,
-    DIRECT_DOWNLOAD_VISIBLE_RESOURCE: false,
     DISABLE_VIDEO_LOOPING: false,
     FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED: false,
     FORCE_FETCH_ALL_RESOURCES: false,
@@ -20,6 +25,14 @@ export const DEFAULT_USER_SETTINGS = {
     SKIP_SHARED_WITH_YOU_DIALOG: false,
     USE_EXTERNAL_DOWNLOAD_MODE: false,
 };
+
+export function resolveDirectDownloadMode(value, legacyVisible, legacyAll) {
+    if (Object.values(DIRECT_DOWNLOAD_MODE_OPTIONS).includes(value)) return value;
+    if (legacyVisible === true) return DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE;
+    if (legacyAll === true) return DIRECT_DOWNLOAD_MODE_OPTIONS.ALL;
+    if (legacyVisible === false || legacyAll === false) return DIRECT_DOWNLOAD_MODE_OPTIONS.ASK;
+    return DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE;
+}
 
 export const PARENT_CHILD_MAPPING = {
     AUTO_RENAME: ['RENAME_PUBLISH_DATE'],

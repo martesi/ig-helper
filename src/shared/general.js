@@ -11,6 +11,7 @@ import {
     DEFAULT_RENAME_FORMAT,
     DEFAULT_VIDEO_VOLUME,
     HOTKEY_SETTINGS,
+    resolveDirectDownloadMode,
     SETTINGS_STORAGE_KEYS,
 } from '../settings/schema.js';
 
@@ -1303,9 +1304,15 @@ export function reloadScript() {
  * @return {void}
  */
 export function initSettings() {
-    for (const name in USER_SETTING) {
-        const value = GM_getValue(name);
-        if (typeof value === 'boolean') USER_SETTING[name] = value;
+    for (const [name, fallback] of Object.entries(USER_SETTING)) {
+        const value = name === 'DIRECT_DOWNLOAD_MODE'
+            ? resolveDirectDownloadMode(
+                GM_getValue(name),
+                GM_getValue('DIRECT_DOWNLOAD_VISIBLE_RESOURCE'),
+                GM_getValue('DIRECT_DOWNLOAD_ALL')
+            )
+            : GM_getValue(name);
+        if (typeof value === typeof fallback) USER_SETTING[name] = value;
     }
 
     state.videoVolume = USER_SETTING.MODIFY_VIDEO_VOLUME

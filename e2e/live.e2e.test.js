@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { DIRECT_DOWNLOAD_MODE_OPTIONS } from '../src/settings/schema.js';
 import {
     IMAGE_VIEWER_ROOT_ID,
     INSTAGRAM_HOME,
@@ -48,7 +49,7 @@ describe('IG Helper live browser E2E', () => {
             sections: document.querySelectorAll('[data-settings-section]').length,
             switches: document.querySelectorAll('input[role="switch"]').length,
             hotkeyRows: document.querySelectorAll('.IG_HOTKEY_ROW').length,
-            directVisible: Boolean(document.querySelector('#DIRECT_DOWNLOAD_VISIBLE_RESOURCE')?.checked),
+            directDownloadMode: document.querySelector('#DIRECT_DOWNLOAD_MODE-value')?.value,
         })`);
         expect(initial.href).toContain('/#/settings');
         expect(initial.sections).toBe(7);
@@ -63,14 +64,17 @@ describe('IG Helper live browser E2E', () => {
         })()`);
         await e2e.waitFor(`document.querySelector('[data-settings-locator="downloads"]')?.getAttribute('aria-current') === 'location'`, 3000);
 
-        await e2e.setSettings({ DIRECT_DOWNLOAD_VISIBLE_RESOURCE: !initial.directVisible });
+        const nextDownloadMode = initial.directDownloadMode === DIRECT_DOWNLOAD_MODE_OPTIONS.ASK
+            ? DIRECT_DOWNLOAD_MODE_OPTIONS.ALL
+            : DIRECT_DOWNLOAD_MODE_OPTIONS.ASK;
+        await e2e.setSettings({ DIRECT_DOWNLOAD_MODE: nextDownloadMode });
         await e2e.reload();
         await e2e.showGeneralSection();
 
-        const persisted = await e2e.evaluate(`Boolean(document.querySelector('#DIRECT_DOWNLOAD_VISIBLE_RESOURCE')?.checked)`);
-        expect(persisted).toBe(!initial.directVisible);
+        const persisted = await e2e.evaluate(`document.querySelector('#DIRECT_DOWNLOAD_MODE-value')?.value`);
+        expect(persisted).toBe(nextDownloadMode);
 
-        await e2e.setSettings({ DIRECT_DOWNLOAD_VISIBLE_RESOURCE: initial.directVisible });
+        await e2e.setSettings({ DIRECT_DOWNLOAD_MODE: initial.directDownloadMode });
         await e2e.showKeyboardTab();
         hotkeys = await e2e.readHotkeys();
 
@@ -198,8 +202,7 @@ describe('IG Helper live browser E2E', () => {
 
     test('resource picker selection works and a real post media download completes on disk', async () => {
         const requiredSettings = {
-            DIRECT_DOWNLOAD_ALL: false,
-            DIRECT_DOWNLOAD_VISIBLE_RESOURCE: false,
+            DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
             FORCE_FETCH_ALL_RESOURCES: false,
             FORCE_RESOURCE_VIA_MEDIA: false,
             USE_EXTERNAL_DOWNLOAD_MODE: false,

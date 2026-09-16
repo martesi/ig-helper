@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { USER_SETTING, SVG, state, resourceCountSelector } from "../../settings/state";
+import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, SVG, state, resourceCountSelector } from "../../settings/state";
 import {
     openNewTab,
     toggleVolumeSilder, triggerLinkElement,
@@ -334,7 +334,7 @@ export function createDownloadButton() {
                 $resourceLayout[0].append(controlsMount);
 
                 const resource_count = $mainElement.find(resourceCountSelector).length;
-                const showDownloadAll = resource_count > 1 && USER_SETTING.DIRECT_DOWNLOAD_VISIBLE_RESOURCE && !USER_SETTING.DIRECT_DOWNLOAD_ALL;
+                const showDownloadAll = resource_count > 1 && USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE;
                 const postControlActions = {
                     view: () => openPostImageViewer(controlsMount),
                     thumbnail: () => openPostVideoThumbnail(controlsMount),
@@ -600,7 +600,7 @@ async function downloadAllPostResources(target) {
         state.GL_username = $article.data('username');
         state.GL_postPath = postPath;
 
-        IG_createDM(USER_SETTING.DIRECT_DOWNLOAD_ALL, true);
+        IG_createDM(USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ALL, true);
         renderPostIdLink(queryLegacyDialog('#article-id'), state.GL_postPath);
 
         const totalInserted = await createMediaListDOM(
@@ -640,10 +640,10 @@ async function downloadPostResource(target) {
         state.GL_username = $article.data('username');
         state.GL_postPath = postPath;
 
-        IG_createDM(USER_SETTING.DIRECT_DOWNLOAD_ALL, true);
+        IG_createDM(USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ALL, true);
         renderPostIdLink(queryLegacyDialog('#article-id'), state.GL_postPath);
 
-        if (USER_SETTING.DIRECT_DOWNLOAD_VISIBLE_RESOURCE) {
+        if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE) {
             updateLoadingBar(true);
             IG_setDM(true);
 
@@ -683,7 +683,7 @@ async function downloadPostResource(target) {
             return;
         }
 
-        if (!USER_SETTING.DIRECT_DOWNLOAD_ALL) {
+        if (USER_SETTING.DIRECT_DOWNLOAD_MODE !== DIRECT_DOWNLOAD_MODE_OPTIONS.ALL) {
             let s = 0;
             const $resourceItems = $article.find(resourceCountSelector);
             let multiple = $resourceItems.length;
@@ -773,7 +773,7 @@ async function downloadPostResource(target) {
             });
         });
 
-        if (USER_SETTING.DIRECT_DOWNLOAD_ALL) {
+        if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ALL) {
             const totalInserted = await createMediaListDOM(
                 state.GL_postPath,
                 getLegacyPopupBody(),
