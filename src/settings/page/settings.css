@@ -148,6 +148,7 @@ body {
 }
 
 .IG_SETTINGS_DIALOG .IG_SETTINGS_LOCATOR {
+    position: relative;
     width: 100%;
     flex: none;
     justify-content: flex-start;
@@ -160,6 +161,7 @@ body {
     font-size: 14px;
     font-weight: 600;
     line-height: 20px;
+    transition: background-color 120ms ease, color 120ms ease, font-weight 120ms ease;
 }
 
 .IG_SETTINGS_DIALOG .IG_SETTINGS_LOCATOR:hover {
@@ -168,9 +170,20 @@ body {
 }
 
 .IG_SETTINGS_DIALOG .IG_SETTINGS_LOCATOR[aria-current='location'] {
-    background: var(--color-sidebar-accent);
-    color: var(--color-sidebar-accent-foreground);
-    box-shadow: inset 2px 0 0 var(--color-primary);
+    color: var(--color-foreground);
+    background: transparent;
+    font-weight: 700;
+}
+
+.IG_SETTINGS_DIALOG .IG_SETTINGS_LOCATOR[aria-current='location']::before {
+    position: absolute;
+    top: 9px;
+    bottom: 9px;
+    left: 2px;
+    width: 3px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-foreground) 52%, transparent);
+    content: '';
 }
 
 .IG_SETTINGS_DIALOG .IG_SETTINGS_LOCATOR svg {
@@ -332,7 +345,16 @@ body {
     }
 
     .IG_SETTINGS_DIALOG .IG_SETTINGS_LOCATOR[aria-current='location'] {
-        box-shadow: inset 0 -2px 0 var(--color-primary);
+        background: transparent;
+    }
+
+    .IG_SETTINGS_DIALOG .IG_SETTINGS_LOCATOR[aria-current='location']::before {
+        top: auto;
+        right: 10px;
+        bottom: 2px;
+        left: 10px;
+        width: auto;
+        height: 2px;
     }
 
     .IG_SETTINGS_PAGE {
