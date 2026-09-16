@@ -121,8 +121,7 @@ export function Select({ class: className = '', children, id, value, onValueChan
                                 aria-selected={isSelected}
                                 class={open && index === activeIndex ? 'active' : ''}
                                 onMouseEnter={() => setActiveIndex(index)} onClick={() => selectIndex(index)}>
-                                <span class="IG_SELECT_OPTION_LABEL">{option.props.children}</span>
-                                {isSelected && <span class="IG_SELECT_CHECK" aria-hidden="true">✓</span>}
+                                {option.props.children}
                             </div>
                         );
                     })}

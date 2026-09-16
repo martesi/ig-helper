@@ -1,6 +1,5 @@
 .ig-helper-ui {
     --radius: 10px;
-    --check-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>');
     --color-background: rgb(var(--ig-primary-background, 255, 255, 255));
     --color-foreground: rgb(var(--ig-primary-text, 17, 17, 17));
     --color-card: rgb(var(--ig-primary-background, 255, 255, 255));
@@ -64,29 +63,11 @@
     accent-color: var(--color-primary);
 }
 
-.ig-helper-ui .select:not(select) [role='option'][aria-selected='true'] {
-    background-image: none;
-}
 
 .ig-helper-ui .select [data-popover][aria-hidden='true'] {
     display: none;
 }
 
-.ig-helper-ui .IG_SELECT_OPTION_LABEL {
-    min-width: 0;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.ig-helper-ui .IG_SELECT_CHECK {
-    flex: 0 0 auto;
-    color: currentColor;
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1;
-}
 
 .ig-helper-ui .btn[data-variant='ghost'] {
     background-color: transparent;
