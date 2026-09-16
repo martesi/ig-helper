@@ -229,9 +229,9 @@ export class IgHelperE2E {
         })()`);
     }
 
-    async openSettings(section = 'preferences') {
+    async openSettings(section = 'general') {
         await this.goto(`${OPTIONS_URL}/#/settings`);
-        await this.waitFor(`document.querySelectorAll('[data-settings-section]').length === 2`, 5000);
+        await this.waitFor(`document.querySelectorAll('[data-settings-section]').length === 7`, 5000);
         await this.locateSettingsSection(section);
     }
 
@@ -239,8 +239,8 @@ export class IgHelperE2E {
         await this.goto(INSTAGRAM_HOME);
     }
 
-    async showPreferencesTab() {
-        await this.locateSettingsSection('preferences');
+    async showGeneralSection() {
+        await this.locateSettingsSection('general');
         await this.waitFor(`document.querySelectorAll('input[role="switch"]').length > 0`, 5000);
     }
 
@@ -270,7 +270,7 @@ export class IgHelperE2E {
     }
 
     async readSettings(names) {
-        await this.showPreferencesTab();
+        await this.showGeneralSection();
         return this.json(`Object.fromEntries(${JSON.stringify(names)}.map(name => {
             const element = document.querySelector('#' + name);
             return [name, Boolean(element?.checked)];
@@ -278,7 +278,7 @@ export class IgHelperE2E {
     }
 
     async setSettings(values) {
-        await this.showPreferencesTab();
+        await this.showGeneralSection();
         for (const [name, desired] of Object.entries(values)) {
             const current = await this.evaluate(`Boolean(document.querySelector('#' + ${JSON.stringify(name)})?.checked)`);
             if (current === desired) continue;

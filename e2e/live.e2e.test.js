@@ -41,7 +41,7 @@ describe('IG Helper live browser E2E', () => {
 
     test('settings render as one continuous page, persist a real preference, and expose shortcut configuration', async () => {
         await e2e.openSettings();
-        await e2e.showPreferencesTab();
+        await e2e.showGeneralSection();
 
         const initial = await e2e.json(`({
             href: location.href,
@@ -51,13 +51,21 @@ describe('IG Helper live browser E2E', () => {
             directVisible: Boolean(document.querySelector('#DIRECT_DOWNLOAD_VISIBLE_RESOURCE')?.checked),
         })`);
         expect(initial.href).toContain('/#/settings');
-        expect(initial.sections).toBe(2);
+        expect(initial.sections).toBe(7);
         expect(initial.switches).toBeGreaterThanOrEqual(15);
         expect(initial.hotkeyRows).toBe(4);
+        expect(await e2e.evaluate(`document.querySelector('[data-settings-locator="general"]')?.getAttribute('aria-current')`)).toBe('location');
+
+        await e2e.evaluate(`(() => {
+            const content = document.querySelector('.IG_SETTINGS_CONTENT');
+            const downloads = document.querySelector('[data-settings-section="downloads"]');
+            content.scrollTop = downloads.offsetTop;
+        })()`);
+        await e2e.waitFor(`document.querySelector('[data-settings-locator="downloads"]')?.getAttribute('aria-current') === 'location'`, 3000);
 
         await e2e.setSettings({ DIRECT_DOWNLOAD_VISIBLE_RESOURCE: !initial.directVisible });
         await e2e.reload();
-        await e2e.showPreferencesTab();
+        await e2e.showGeneralSection();
 
         const persisted = await e2e.evaluate(`Boolean(document.querySelector('#DIRECT_DOWNLOAD_VISIBLE_RESOURCE')?.checked)`);
         expect(persisted).toBe(!initial.directVisible);
@@ -75,6 +83,7 @@ describe('IG Helper live browser E2E', () => {
         expect(keyboard.top).toBeLessThan(450);
         expect(keyboard.selects).toBe(4);
         expect(keyboard.nativeSelects).toBe(0);
+        expect(await e2e.evaluate(`document.querySelector('[data-settings-locator="keyboard"]')?.getAttribute('aria-current')`)).toBe('location');
 
         await e2e.click('#settingsHotkeyKeyCode-trigger');
         const customSelect = await e2e.json(`({

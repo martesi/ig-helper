@@ -73,6 +73,7 @@ body {
 
 .IG_SETTINGS_DIALOG {
     box-sizing: border-box;
+    height: 100dvh;
     min-height: 100vh;
     padding: 32px;
 }
@@ -80,8 +81,8 @@ body {
 .IG_SETTINGS_DIALOG .IG_SETTINGS_PANEL {
     width: min(1120px, 100%);
     max-width: none;
-    height: auto;
-    min-height: calc(100vh - 64px);
+    height: calc(100dvh - 64px);
+    min-height: 0;
     margin: 0 auto;
     overflow: hidden;
     border: 1px solid var(--color-border);
@@ -93,7 +94,11 @@ body {
 .IG_SETTINGS_DIALOG .IG_SETTINGS_CONTENT {
     width: 100%;
     max-width: none;
-    overflow: visible;
+    min-height: 0;
+    overflow: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -120,8 +125,8 @@ body {
 
 .IG_SETTINGS_DIALOG .IG_SETTINGS_LAYOUT {
     grid-template-columns: 220px minmax(0, 1fr);
-    min-height: calc(100vh - 143px);
-    height: auto;
+    min-height: 0;
+    height: 100%;
     background: linear-gradient(
         to right,
         var(--color-sidebar) 0,
@@ -132,9 +137,8 @@ body {
 }
 
 .IG_SETTINGS_DIALOG .IG_SETTINGS_TABS {
-    position: sticky;
-    top: 32px;
-    align-self: start;
+    position: static;
+    align-self: stretch;
     justify-content: flex-start;
     width: 100%;
     min-height: 0;
@@ -163,47 +167,27 @@ body {
     box-shadow: none;
 }
 
+.IG_SETTINGS_DIALOG .IG_SETTINGS_LOCATOR[aria-current='location'] {
+    background: var(--color-sidebar-accent);
+    color: var(--color-sidebar-accent-foreground);
+    box-shadow: inset 2px 0 0 var(--color-primary);
+}
+
 .IG_SETTINGS_DIALOG .IG_SETTINGS_LOCATOR svg {
     color: var(--color-muted-foreground);
 }
 
 .IG_SETTINGS_PAGE {
     width: min(760px, 100%);
-    gap: 52px;
+    gap: 32px;
     margin: 0 auto;
     padding: 40px 40px 56px;
-}
-
-.IG_SETTINGS_GROUP {
-    display: grid;
-    gap: 32px;
-    scroll-margin-top: 32px;
-}
-
-.IG_SETTINGS_GROUP_HEADER {
-    display: grid;
-    gap: 4px;
-}
-
-.IG_SETTINGS_GROUP_HEADER h2 {
-    margin: 0;
-    color: var(--color-foreground);
-    font-size: 20px;
-    font-weight: 700;
-    line-height: 26px;
-    letter-spacing: -0.018em;
-}
-
-.IG_SETTINGS_GROUP_HEADER p {
-    margin: 0;
-    color: var(--color-muted-foreground);
-    font-size: 13px;
-    line-height: 19px;
 }
 
 .IG_SETTINGS_SECTION {
     gap: 14px;
     padding: 0;
+    scroll-margin-top: 24px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -214,11 +198,13 @@ body {
     padding: 0;
 }
 
-.IG_SETTINGS_SECTION > header h3 {
-    font-size: 15px;
-    font-weight: 650;
-    line-height: 21px;
-    letter-spacing: -0.01em;
+.IG_SETTINGS_SECTION > header h2 {
+    margin: 0;
+    color: var(--color-foreground);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 26px;
+    letter-spacing: -0.018em;
 }
 
 .IG_SETTINGS_SECTION > header p {
@@ -310,7 +296,8 @@ body {
 
     .IG_SETTINGS_DIALOG .IG_SETTINGS_PANEL {
         width: 100%;
-        min-height: calc(100vh - 24px);
+        height: calc(100dvh - 24px);
+        min-height: 0;
         border: 1px solid var(--color-border);
         border-radius: 14px;
     }
@@ -327,9 +314,8 @@ body {
     }
 
     .IG_SETTINGS_DIALOG .IG_SETTINGS_TABS {
-        position: sticky;
+        position: static;
         z-index: 2;
-        top: 12px;
         width: 100%;
         min-height: 0;
         flex-direction: row;
@@ -345,18 +331,17 @@ body {
         flex: 0 0 auto;
     }
 
+    .IG_SETTINGS_DIALOG .IG_SETTINGS_LOCATOR[aria-current='location'] {
+        box-shadow: inset 0 -2px 0 var(--color-primary);
+    }
+
     .IG_SETTINGS_PAGE {
         width: 100%;
-        gap: 40px;
+        gap: 28px;
         padding: 28px 20px 44px;
     }
 
-    .IG_SETTINGS_GROUP {
-        gap: 26px;
-        scroll-margin-top: 76px;
-    }
-
-    .IG_SETTINGS_GROUP_HEADER h2 {
+    .IG_SETTINGS_SECTION > header h2 {
         font-size: 19px;
         line-height: 25px;
     }
