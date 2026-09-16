@@ -6,6 +6,7 @@ const mediabunnyUrl = 'https://cdn.jsdelivr.net/npm/mediabunny@1.34.5/dist/bundl
 const jqueryUrl = 'https://code.jquery.com/jquery-4.0.0.min.js#sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=';
 
 export default defineConfig(({ command }) => ({
+    cacheDir: 'node_modules/.vite/script',
     build: {
         outDir: 'dist/script',
         minify: false,

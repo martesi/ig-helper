@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig(({ command }) => ({
+    cacheDir: 'node_modules/.vite/pages',
     base: command === 'serve' ? '/' : '/ig-helper/',
     build: {
         outDir: 'dist/page',
