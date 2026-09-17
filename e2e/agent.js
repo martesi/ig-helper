@@ -1,4 +1,4 @@
-import { closeSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import path from 'node:path';
@@ -29,7 +29,7 @@ async function start() {
 }
 
 function stop() {
-    runAgentBrowser(['close'], { allowFailure: true });
+    if (existsSync(runtimeDir)) runAgentBrowser(['close'], { allowFailure: true });
     stopOwnedProcess(devPidFile);
     stopOwnedProcess(xvfbPidFile);
     rmSync(runtimeDir, { recursive: true, force: true });

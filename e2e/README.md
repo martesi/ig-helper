@@ -10,10 +10,10 @@ Use this path for **agent E2E**, **use your own browser**, browser-visible debug
 bun run test:agent:start
 bun run test:agent -- open http://127.0.0.1:9000/__vite-plugin-monkey.install.user.js
 bun run test:agent -- snapshot
-bun run test:stop
+bun run test:agent:stop
 ```
 
-`test:agent:start` prepares the repo-owned environment, starts the Vite servers, opens the headed agent browser, and imports local cookies. `test:agent` is equivalent to calling `agent-browser` with the repo's Nix environment, Chromium path, ScriptCat path, session name, and `.browser-state/agent` profile already applied. `test:stop` closes only that agent session and stops dev servers started by `test:agent:start`.
+`test:agent:start` prepares the repo-owned environment, starts the Vite servers, opens the headed agent browser, and imports local cookies. `test:agent` is equivalent to calling `agent-browser` with the repo's Nix environment, Chromium path, ScriptCat path, session name, and `.browser-state/agent` profile already applied. `test:agent:stop` closes only that agent session and stops dev servers started by `test:agent:start`.
 
 Cookie bootstrap checks `cookies.json` first. If it is absent, it imports matching Netscape-format `cookies*.txt` files. These files stay ignored by git.
 
