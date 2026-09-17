@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { expect, test } from '@playwright/test';
 import { DIRECT_DOWNLOAD_MODE_OPTIONS } from '../src/settings/schema.js';
 import {
     IMAGE_VIEWER_ROOT_ID,
@@ -6,19 +6,21 @@ import {
     LEGACY_DIALOG_ROOT_ID,
     PROFILE_URL,
     IgHelperE2E,
-} from './webview-harness.js';
+} from './playwright-harness.js';
 
 const HOTKEY_OPTIONS_COUNT = 13;
 
 const e2e = new IgHelperE2E();
 let hotkeys;
 
-describe('IG Helper live browser E2E', () => {
-    beforeAll(async () => {
-        await e2e.start();
-    }, 45000);
+test.describe.configure({ mode: 'serial' });
 
-    afterAll(async () => {
+test.describe('IG Helper live browser E2E', () => {
+    test.beforeAll(async () => {
+        await e2e.start();
+    });
+
+    test.afterAll(async () => {
         await e2e.stop();
     });
 
@@ -38,7 +40,7 @@ describe('IG Helper live browser E2E', () => {
         expect(state.title).toContain('Instagram');
         expect(state.hasLoginForm).toBe(false);
         expect(state.targets).toBeGreaterThan(0);
-    }, 20000);
+    });
 
     test('settings render as one continuous page, persist a real preference, and expose shortcut configuration', async () => {
         await e2e.openSettings();
@@ -104,7 +106,7 @@ describe('IG Helper live browser E2E', () => {
         expect(hotkeys.debug).toBeGreaterThan(0);
 
         await e2e.closeSettings();
-    }, 15000);
+    });
 
     test('configured debug hotkey opens the Shadow DOM dialog and captures the live DOM tree', async () => {
         if (!hotkeys) {
@@ -138,23 +140,31 @@ describe('IG Helper live browser E2E', () => {
 
         await e2e.pressLegacyHotkey(81);
         await e2e.waitFor(`!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`, 3000);
-    }, 15000);
+    });
 
-    test('feed hover mounts post controls and image viewer supports rotate, zoom, and close', async () => {
+    test('post action row mounts controls before Save and image viewer supports rotate, zoom, and close', async () => {
         await e2e.ensurePostControls();
 
-        const controls = await e2e.json(`({
-            wrappers: document.querySelectorAll('.button_wrapper').length,
-            viewer: document.querySelectorAll('.button_wrapper .IG_IMAGE_VIEWER').length,
-            newTab: document.querySelectorAll('.button_wrapper .IG_NEWTAB_MAIN').length,
-            download: document.querySelectorAll('.button_wrapper .IG_DW_MAIN').length,
-        })`);
+        const controls = await e2e.json(`(() => {
+            const wrapper = document.querySelector('.button_wrapper');
+            const saveIcon = wrapper?.parentElement?.querySelector(':scope > div svg[aria-label="Save"], :scope > div svg[aria-label="Remove"]');
+            return {
+                wrappers: document.querySelectorAll('.button_wrapper').length,
+                viewer: document.querySelectorAll('.button_wrapper .IG_IMAGE_VIEWER').length,
+                newTab: document.querySelectorAll('.button_wrapper .IG_NEWTAB_MAIN').length,
+                download: document.querySelectorAll('.button_wrapper .IG_DW_MAIN').length,
+                beforeSave: Boolean(saveIcon && wrapper?.nextElementSibling?.contains(saveIcon)),
+                position: wrapper ? getComputedStyle(wrapper).position : null,
+            };
+        })()`);
         expect(controls.wrappers).toBeGreaterThan(0);
         expect(controls.viewer).toBeGreaterThan(0);
         expect(controls.newTab).toBeGreaterThan(0);
         expect(controls.download).toBeGreaterThan(0);
+        expect(controls.beforeSave).toBe(true);
+        expect(controls.position).toBe('static');
 
-        await e2e.view.click('.button_wrapper .IG_IMAGE_VIEWER');
+        await e2e.click('.button_wrapper .IG_IMAGE_VIEWER');
         await e2e.waitFor(`!!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})?.shadowRoot`, 3000);
 
         await e2e.clickShadow(IMAGE_VIEWER_ROOT_ID, '#rotate_right');
@@ -177,28 +187,15 @@ describe('IG Helper live browser E2E', () => {
 
         await e2e.clickShadow(IMAGE_VIEWER_ROOT_ID, '#iv_close');
         await e2e.waitFor(`!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})`, 3000);
-    }, 20000);
+    });
 
     test('open-in-new-tab creates a real Chrome target and cleans it up', async () => {
         await e2e.ensurePostControls();
-        const before = await e2e.browserTargets();
-        const beforeIds = new Set(before.map(target => target.id));
+        const created = await e2e.clickAndWaitForPage('.button_wrapper .IG_NEWTAB_MAIN');
 
-        await e2e.view.click('.button_wrapper .IG_NEWTAB_MAIN');
-
-        let created;
-        const deadline = Date.now() + 10000;
-        while (Date.now() < deadline) {
-            const after = await e2e.browserTargets();
-            created = after.find(target => target.type === 'page' && !beforeIds.has(target.id));
-            if (created) break;
-            await Bun.sleep(100);
-        }
-
-        expect(created).toBeDefined();
-        expect(created.url).not.toBe('about:blank');
-        await e2e.closeTarget(created.id);
-    }, 20000);
+        expect(created.url()).not.toBe('about:blank');
+        await created.close();
+    });
 
     test('resource picker selection works and a real post media download completes on disk', async () => {
         const requiredSettings = {
@@ -212,7 +209,7 @@ describe('IG Helper live browser E2E', () => {
         await e2e.withSettings(requiredSettings, async () => {
             await e2e.configureDownloads();
             await e2e.ensurePostControls();
-            await e2e.view.click('.button_wrapper .IG_DW_MAIN');
+            await e2e.click('.button_wrapper .IG_DW_MAIN');
 
             await e2e.waitFor(`(() => {
                 const root = document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})?.shadowRoot;
@@ -251,7 +248,7 @@ describe('IG Helper live browser E2E', () => {
             await e2e.pressLegacyHotkey(81);
             await e2e.waitFor(`!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`, 3000);
         });
-    }, 60000);
+    });
 
     test('profile page mounts the avatar download control in the live Instagram DOM', async () => {
         await e2e.goto(PROFILE_URL);
@@ -270,6 +267,6 @@ describe('IG Helper live browser E2E', () => {
         expect(profile.href).toBe(PROFILE_URL);
         expect(profile.controls).toBeGreaterThan(0);
         expect(profile.visible).toBe(true);
-    }, 20000);
+    });
 
 });

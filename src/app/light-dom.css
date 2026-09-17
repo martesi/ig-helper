@@ -35,19 +35,30 @@
 }
 
 .button_wrapper.IG_CONTROL_BAR {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 1;
+    position: static;
     flex-flow: row;
+    gap: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: rgb(var(--ig-primary-text));
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     line-height: 0;
 }
 
+.button_wrapper.IG_CONTROL_BAR svg {
+    width: 24px;
+    height: 24px;
+}
+
 .IG_POST_CONTROL {
-    width: 28px;
-    height: 28px;
-    padding: 5px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    border-radius: 0;
 }
 
 .IG_LEGACY_CONTROL {

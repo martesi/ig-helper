@@ -319,19 +319,12 @@ export function createDownloadButton() {
 
                 if ($resourceLayout.length === 0) return;
 
-                if (window.matchMedia('(hover: hover)').matches && !$mainElement.data('igHelper_controlsRequested')) {
-                    $mainElement.attr('data-snig', 'canDownload');
-                    $mainElement.off('pointerenter.igHelperPostControls').one('pointerenter.igHelperPostControls', function () {
-                        $mainElement.data('igHelper_controlsRequested', true);
-                        $mainElement.removeAttr('data-snig');
-                        createDownloadButton();
-                    });
-                    return;
-                }
+                const $saveSlot = findPostSaveSlot($mainElement);
+                if ($saveSlot.length === 0) return;
 
                 const controlsMount = document.createElement('div');
                 controlsMount.className = 'button_wrapper IG_CONTROL_BAR ig-helper-ui';
-                $resourceLayout[0].append(controlsMount);
+                $saveSlot.prepend(controlsMount);
 
                 const resource_count = $mainElement.find(resourceCountSelector).length;
                 const showDownloadAll = resource_count > 1 && USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE;
@@ -343,18 +336,6 @@ export function createDownloadButton() {
                     download: () => downloadPostResource(controlsMount),
                 };
                 mountPostControls(controlsMount, { showDownloadAll, mediaType: 'image', actions: postControlActions });
-
-                const $buttonWrapper = $(controlsMount);
-
-                let $isNewPostStyleLayout = $resourceLayout.find(`a[role="link"][tabindex="0"][href^="/"]`).filter(function () {
-                    const href = $(this).attr('href');
-                    return !href.startsWith("/p/") && !href.startsWith("/reels/");
-                }).length > 0;
-
-                // Make sure the button wrapper doesn't cover the "More Options" button.
-                if ($isNewPostStyleLayout) {
-                    $buttonWrapper.css('top', '45px');
-                }
 
                 setTimeout(() => {
                     // eslint-disable-next-line no-unused-vars
@@ -378,7 +359,7 @@ export function createDownloadButton() {
                     };
 
                     const observer_i = new IntersectionObserver(checkNodeCallback, {
-                        root: $childElement.find('.button_wrapper').parent()[0],
+                        root: $resourceLayout[0],
                         rootMargin: "0px",
                         threshold: 0.1,
                     });
@@ -399,7 +380,7 @@ export function createDownloadButton() {
 
                     let $triggeredTarget = null;
                     // first onload
-                    $childElement.find('.button_wrapper').parent().find('ul li, div[role="button"] > div, div[class] > div').each(function () {
+                    $resourceLayout.find('ul li, div[role="button"] > div, div[class] > div').each(function () {
                         const $li = $(this);
                         const $targetNode = $li.find('video').length > 0
                             ? $li.find('video')?.first()
@@ -431,10 +412,9 @@ export function createDownloadButton() {
                         }
                     });
 
-                    const $bwParent = $childElement.find('.button_wrapper').parent();
                     const listRoot =
-                        $bwParent.find('ul li, div[role="button"] > div').first().parent()[0] ||
-                        $bwParent.find('ul').first()[0];
+                        $resourceLayout.find('ul li, div[role="button"] > div').first().parent()[0] ||
+                        $resourceLayout.find('ul').first()[0];
 
                     if (listRoot) {
                         observer.observe(listRoot, {
@@ -448,7 +428,6 @@ export function createDownloadButton() {
 
                 }, 50);
 
-                $childElement.css('position', 'relative');
 
                 // Add the mark that download is ready
                 var username = $self.find("header > div:last-child > div:first-child span a").first().text() || $self.find('a[href^="/"]').filter(function () {
@@ -1059,6 +1038,22 @@ export async function batchDownloadPostFiles($elements) {
 }
 
 
+
+function findPostSaveSlot($mainElement) {
+    const $saveIcon = $mainElement
+        .find('section > div:nth-child(2) svg[aria-label="Save"], section > div:nth-child(2) svg[aria-label="Remove"]')
+        .first();
+
+    if ($saveIcon.length > 0) {
+        return $saveIcon.closest('section').children('div').eq(1);
+    }
+
+    return $mainElement.find('section').filter(function () {
+        const $groups = $(this).children('div');
+        return $groups.length === 2 && $groups.eq(0).find('svg').length >= 2 && $groups.eq(1).find('svg').length === 1;
+    }).first().children('div').eq(1);
+}
+
 const postLinkPattern = /(?:^\/|instagram\.com\/)(?:[^/?#]+\/)?(?:p|reel)\/([^/?#;]+)/i;
 
 function getPostContainerFromButton(target) {
@@ -1070,7 +1065,7 @@ function getPostPathFromURL(url) {
 }
 
 async function getPostPathFromMedia(target) {
-    const $mediaRoot = $(target).closest('.button_wrapper').parent();
+    const $mediaRoot = getPostContainerFromButton(target);
     const mediaElement = $mediaRoot.find('img[src*="ig_cache_key="], video[poster*="ig_cache_key="]').first()[0];
     const mediaURL = mediaElement?.currentSrc || mediaElement?.src || mediaElement?.poster;
     const mediaId = mediaIdFromURL(mediaURL);

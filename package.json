@@ -15,10 +15,11 @@
     "build:pages": "vite build --config vite.pages.config.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e": "bun test e2e/live.e2e.test.js --timeout 90000"
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "4.3.1",
     "@types/jquery": "^4.0.0",
     "@types/tampermonkey": "^5.0.5",

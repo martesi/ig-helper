@@ -1,8 +1,8 @@
 # Live browser E2E
 
-The E2E suite uses `Bun.WebView` against the existing Chrome instance over CDP. It does not use an Instagram fixture or mock media downloads.
+The E2E suite uses Playwright Test against the existing Chrome instance over CDP. It does not use an Instagram fixture or mock media downloads.
 
-Set `IG_HELPER_E2E_CDP` when the browser endpoint differs from the project default.
+Set `IG_HELPER_E2E_CDP` when the browser endpoint differs from the project default. Browser actions include a randomized delay of 80-220 ms by default; override the bounds with `IG_HELPER_E2E_ACTION_DELAY_MIN` and `IG_HELPER_E2E_ACTION_DELAY_MAX`.
 
 Run:
 
@@ -16,6 +16,6 @@ A real post media download uses Chrome's configured download directory. The test
 
 ## Functional coverage
 
-The test matrix intentionally measures major user-visible feature families rather than source-line coverage. Current automated surfaces are: live-session bootstrap, settings persistence, shortcut configuration, debug DOM capture, feed post controls, image viewer, open-in-new-tab, resource picker/selection, real media download, and profile-avatar control. Reels and story/highlight controls are listed as uncovered until a stable live route is available for deterministic automation.
+The test matrix intentionally measures major user-visible feature families rather than source-line coverage. Current automated surfaces are: live-session bootstrap, settings persistence, shortcut configuration, debug DOM capture, post action controls, image viewer, open-in-new-tab, resource picker/selection, real media download, and profile-avatar control. Reels and story/highlight controls are listed as uncovered until a stable live route is available for deterministic automation.
 
 That is 10/12 major surfaces (83.3%).

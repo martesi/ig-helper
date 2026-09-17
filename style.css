@@ -93,43 +93,6 @@
     background: rgba(255, 255, 255, 0.25);
 }
 
-.button_wrapper {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    line-height: 0;
-    display: flex;
-    flex-flow: row;
-    gap: 8px;
-    z-index: 1;
-    background: rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    padding: 6px 8px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* SVG scaling */
-.button_wrapper svg {
-    width: 18px;
-    height: 18px;
-    display: block;
-}
-
-@media (hover: hover) {
-    [data-snig="canDownload"] .button_wrapper {
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.15s ease;
-    }
-
-    [data-snig="canDownload"]:hover .button_wrapper {
-        opacity: 1;
-        pointer-events: auto;
-    }
-}
 
 #_SNLOAD {
     text-align: center;
