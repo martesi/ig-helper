@@ -16,7 +16,7 @@ import { openImageViewer } from "../media/image-viewer.jsx";
 import { mountPostControls } from "./controls.jsx";
 import { appendLoadingMessage, appendMediaResource, decorateMediaResource, renderPostIdLink } from "../../shared/ui/media-resource.jsx";
 import { mediaIdFromURL } from "../media/image-cache";
-import { IG_createDM, IG_setDM } from "../menu";
+import { IG_createDM } from "../menu";
 import { queryAllLegacyDialog, queryLegacyDialog, removeLegacyDialog } from '../../shared/ui/dialogs.jsx';
 
 function getLegacyPopupBody() {
@@ -602,10 +602,11 @@ async function downloadAllPostResources(target) {
 
         IG_createDM(USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ALL, true);
         renderPostIdLink(queryLegacyDialog('#article-id'), state.GL_postPath);
+        const popupBody = getLegacyPopupBody();
 
         const totalInserted = await createMediaListDOM(
             state.GL_postPath,
-            getLegacyPopupBody(),
+            popupBody,
             _i18n("LOAD_BLOB_MULTIPLE")
         );
 
@@ -615,7 +616,7 @@ async function downloadAllPostResources(target) {
         }
 
         const links = [];
-        $(getLegacyPopupBody()).find('a').each(function () {
+        $(popupBody).find('a').each(function () {
             links.push($(this));
         });
 
@@ -630,6 +631,8 @@ async function downloadAllPostResources(target) {
 }
 
 async function downloadPostResource(target) {
+    const directDownload = USER_SETTING.DIRECT_DOWNLOAD_MODE !== DIRECT_DOWNLOAD_MODE_OPTIONS.ASK;
+
     try {
         const { $article, postPath } = await getPostContextFromButton(target);
         if ($article.length === 0 || !postPath) {
@@ -640,19 +643,21 @@ async function downloadPostResource(target) {
         state.GL_username = $article.data('username');
         state.GL_postPath = postPath;
 
-        IG_createDM(USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ALL, true);
-        renderPostIdLink(queryLegacyDialog('#article-id'), state.GL_postPath);
+        const popupBody = directDownload ? document.createElement('div') : (() => {
+            IG_createDM(false, true);
+            renderPostIdLink(queryLegacyDialog('#article-id'), state.GL_postPath);
+            return getLegacyPopupBody();
+        })();
 
         if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE) {
             updateLoadingBar(true);
-            IG_setDM(true);
 
             try {
                 const index = getVisibleNodeIndex($article);
 
                 const totalInserted = await createMediaListDOM(
                     state.GL_postPath,
-                    getLegacyPopupBody(),
+                    popupBody,
                     ""
                 );
 
@@ -661,7 +666,7 @@ async function downloadPostResource(target) {
                     return;
                 }
 
-                const $popupBody = $(getLegacyPopupBody());
+                const $popupBody = $(popupBody);
                 const $targetLink = $popupBody.find('a[data-globalindex="' + (index + 1) + '"]');
 
                 if ($targetLink.length > 0 && $targetLink.data('href')) {
@@ -677,7 +682,6 @@ async function downloadPostResource(target) {
             }
             finally {
                 updateLoadingBar(false);
-                removeLegacyDialog();
             }
 
             return;
@@ -706,12 +710,12 @@ async function downloadPostResource(target) {
                 if (blob || USER_SETTING.FORCE_RESOURCE_VIA_MEDIA) {
                     await createMediaListDOM(
                         state.GL_postPath,
-                        getLegacyPopupBody(),
+                        popupBody,
                         _i18n("LOAD_BLOB_MULTIPLE")
                     );
                 }
                 else {
-                    const $popupBody = $(getLegacyPopupBody());
+                    const $popupBody = $(popupBody);
                     $resourceItems.each(function () {
                         s++;
                         const $this = $(this);
@@ -730,7 +734,7 @@ async function downloadPostResource(target) {
                     if (blob) {
                         await createMediaListDOM(
                             state.GL_postPath,
-                            getLegacyPopupBody(),
+                            popupBody,
                             _i18n("LOAD_BLOB_RELOAD")
                         );
                     }
@@ -740,7 +744,7 @@ async function downloadPostResource(target) {
                 if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA) {
                     await createMediaListDOM(
                         state.GL_postPath,
-                        getLegacyPopupBody(),
+                        popupBody,
                         _i18n("LOAD_BLOB_MULTIPLE")
                     );
                 }
@@ -753,12 +757,12 @@ async function downloadPostResource(target) {
                     if (element_videos && element_videos.attr('src')) {
                         await createMediaListDOM(
                             state.GL_postPath,
-                            getLegacyPopupBody(),
+                            popupBody,
                             _i18n("LOAD_BLOB_ONE")
                         );
                     }
                     if (element_images && imgLink) {
-                        appendMediaResource(getLegacyPopupBody(), { datetime: publish_time, name: 'photo', type: 'jpg', username: state.GL_username, path: state.GL_postPath, index: s, href: imgLink, preview: imgLink, labelKey: 'IMG', label: _i18n('IMG') });
+                        appendMediaResource(popupBody, { datetime: publish_time, name: 'photo', type: 'jpg', username: state.GL_username, path: state.GL_postPath, index: s, href: imgLink, preview: imgLink, labelKey: 'IMG', label: _i18n('IMG') });
                     }
                 }
             }
@@ -776,27 +780,25 @@ async function downloadPostResource(target) {
         if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ALL) {
             const totalInserted = await createMediaListDOM(
                 state.GL_postPath,
-                getLegacyPopupBody(),
+                popupBody,
                 _i18n("LOAD_BLOB_MULTIPLE")
             );
 
             if (!totalInserted || totalInserted < 1) {
-                removeLegacyDialog();
                 return;
             }
 
             const links = [];
-            $(getLegacyPopupBody()).find('a').each(function () {
+            $(popupBody).find('a').each(function () {
                 links.push($(this));
             });
 
             await batchDownloadPostFiles(links);
-            removeLegacyDialog();
         }
     }
     catch (err) {
         logger('downloadPostResource', err);
-        removeLegacyDialog();
+        if (!directDownload) removeLegacyDialog();
     }
 }
 
