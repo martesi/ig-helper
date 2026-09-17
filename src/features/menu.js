@@ -10,7 +10,9 @@ import {
     removeLegacyDialog,
 } from '../shared/ui/dialogs.jsx';
 
-const SETTINGS_PAGE_URL = 'https://martesi.github.io/ig-helper/#/settings/';
+const SETTINGS_PAGE_URL = import.meta.env.DEV
+    ? 'http://127.0.0.1:9100/#/settings/'
+    : 'https://martesi.github.io/ig-helper/#/settings/';
 
 /**
  * IG_createDM
