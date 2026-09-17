@@ -1,11 +1,12 @@
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { chromium } from '@playwright/test';
+import { loadLocalCookies } from '../cookie-loader.js';
 
 export const LEGACY_DIALOG_ROOT_ID = 'ig-helper-legacy-dialog-root';
 export const IMAGE_VIEWER_ROOT_ID = 'ig-helper-image-viewer-root';
 
-export const CDP_HTTP = process.env.IG_HELPER_E2E_CDP ?? 'http://169.254.1.2:9223';
+export const CDP_HTTP = process.env.IG_HELPER_E2E_CDP ?? 'http://127.0.0.1:9013';
 export const INSTAGRAM_HOME = process.env.IG_HELPER_E2E_HOME ?? 'https://www.instagram.com/';
 export const PROFILE_URL = process.env.IG_HELPER_E2E_PROFILE ?? 'https://www.instagram.com/instagram/';
 export const VITE_URL = process.env.IG_HELPER_E2E_VITE ?? 'http://127.0.0.1:9000';
@@ -30,11 +31,11 @@ export class IgHelperE2E {
         this.browser = await chromium.connectOverCDP(CDP_HTTP);
         this.context = this.browser.contexts()[0];
         if (!this.context) throw new Error('Connected Chrome has no default browser context');
+        await this.context.addCookies(await loadLocalCookies(repoRoot));
 
         await this.installUserscript();
         this.page = await this.createPage();
         await this.goto(INSTAGRAM_HOME);
-        await this.waitFor(`document.querySelectorAll('[data-snig="canDownload"]').length > 0`, 15000);
     }
 
     async stop() {

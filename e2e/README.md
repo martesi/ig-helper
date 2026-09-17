@@ -1,21 +1,36 @@
-# Live browser E2E
+# Browser E2E
 
-The E2E suite uses Playwright Test against the existing Chrome instance over CDP. It does not use an Instagram fixture or mock media downloads.
+There are two independent paths. Pick one before inspecting test code; they do not share browser state.
 
-Set `IG_HELPER_E2E_CDP` when the browser endpoint differs from the project default. Browser actions include a randomized delay of 80-220 ms by default; override the bounds with `IG_HELPER_E2E_ACTION_DELAY_MIN` and `IG_HELPER_E2E_ACTION_DELAY_MAX`.
+## Agent E2E — interactive browser verification
 
-Run:
+Use this path for **agent E2E**, **use your own browser**, browser-visible debugging, UI verification, or when the `e2e` skill selects website testing.
+
+```sh
+bun run test:agent:start
+bun run test:agent -- open http://127.0.0.1:9000/__vite-plugin-monkey.install.user.js
+bun run test:agent -- snapshot
+bun run test:stop
+```
+
+`test:agent:start` prepares the repo-owned environment, starts the Vite servers, opens the headed agent browser, and imports local cookies. `test:agent` is equivalent to calling `agent-browser` with the repo's Nix environment, Chromium path, ScriptCat path, session name, and `.browser-state/agent` profile already applied. `test:stop` closes only that agent session and stops dev servers started by `test:agent:start`.
+
+Cookie bootstrap checks `cookies.json` first. If it is absent, it imports matching Netscape-format `cookies*.txt` files. These files stay ignored by git.
+
+If Chromium opens ScriptCat's **Allow User Scripts** instructions on a fresh profile, enable that permission once; `.browser-state/agent` preserves it. If development injection is specifically blocked by HTTP CSP, follow the `e2e` skill's userscript instructions and add its test-only CSP helper for that agent-browser run.
+
+**Boundary:** do not inspect or reuse anything under `e2e/playwright/`, `playwright.config.js`, or `bun run test:e2e` for Agent E2E.
+
+## Playwright — automated regression suite
+
+Use this path only when Playwright or the automated regression suite is explicitly requested.
 
 ```sh
 bun run test:e2e
 ```
 
-The suite starts both Vite dev servers when ports 9000 and 9100 are not already serving the userscript and settings app, reinstalls the development userscript through Violentmonkey, opens real Instagram pages in the existing browser profile, and restores any settings it temporarily changes.
+All Playwright-specific code lives under `e2e/playwright/`. The harness attaches to the existing Chrome CDP endpoint at `http://127.0.0.1:9013` by default; override it with `IG_HELPER_E2E_CDP`. Its browser state is external and separate from `.browser-state/agent`.
+
+At suite startup, Playwright imports `cookies.json`, or Netscape-format `cookies*.txt` when JSON is absent. The suite starts the Vite servers when needed, installs the development userscript through the userscript manager already present in that browser, opens real Instagram pages, and restores settings it temporarily changes.
 
 A real post media download uses Chrome's configured download directory. The test requires `Browser.downloadWillBegin`, a completed `Browser.downloadProgress` event, a concrete browser-reported file path, and matching non-zero received/total byte counts. The harness does not replace the browser download with a mock or container-side fetch.
-
-## Functional coverage
-
-The test matrix intentionally measures major user-visible feature families rather than source-line coverage. Current automated surfaces are: live-session bootstrap, settings persistence, shortcut configuration, debug DOM capture, post action controls, image viewer, open-in-new-tab, resource picker/selection, real media download, and profile-avatar control. Reels and story/highlight controls are listed as uncovered until a stable live route is available for deterministic automation.
-
-That is 10/12 major surfaces (83.3%).

@@ -53,11 +53,9 @@ export function onReadyMyDW(NoDialog, hasReferrer) {
         const maxCall = 100;
         let i = 0;
         state.GL_repeat = setInterval(() => {
-            // section:visible > main > div > div[data-snig="canDownload"] > div > div > div > hr << (single foreground post in page, non-floating // <hr> element here is literally the line beneath poster's username) >>
-            // section:visible > main > div > div.xdt5ytf[data-snig="canDownload"] << (former CSS selector for single foreground post in page, non-floating) >>
-            // <hr> is much more unique element than "div.xdt5ytf"
+            // <hr> is the line beneath the poster's username on a standalone post.
             if (i > maxCall || $(`article[data-snig="canDownload"],
-                section:visible > main > div > div[data-snig="canDownload"] > div > div > div > hr,
+                section:visible > main [data-snig="canDownload"] hr,
                 div[id^="mount"] div div div.x1n2onr6.x1vjfegm div[data-snig="canDownload"]
             `).length > 0) {
                 clearInterval(state.GL_repeat);
@@ -254,7 +252,7 @@ export function createDownloadButton() {
     // Add download icon per each posts
     // eslint-disable-next-line no-unused-vars
     $('article, section:visible > main > div > div > div > div > div > hr').map(function (index) {
-        return $(this).is('section:visible > main > div > div > div > div > div > hr') ? $(this).parent().parent().parent().parent()[0] : this;
+        return this.tagName === 'ARTICLE' ? this : findPermalinkPostContainer(this);
     }).filter(function () {
         const $this = $(this);
         return document.hidden || ($this.height() > 0 && $this.width() > 0);
@@ -306,15 +304,7 @@ export function createDownloadButton() {
                 }
 
                 const $resourceLayout = $childElement.filter(function () {
-                    const $candidate = $(this);
-                    if ($candidate.find('video').length > 0) return true;
-
-                    return $candidate.find('img').filter(function () {
-                        const rect = this.getBoundingClientRect();
-                        const width = rect.width || this.naturalWidth;
-                        const height = rect.height || this.naturalHeight;
-                        return width > 64 && height > 64;
-                    }).length > 0;
+                    return containsPostMedia($(this));
                 }).first();
 
                 if ($resourceLayout.length === 0) return;
@@ -1052,6 +1042,24 @@ function findPostActionGroup($mainElement) {
         const $groups = $(this).children('div');
         return $groups.length === 2 && $groups.eq(0).find('svg').length >= 2 && $groups.eq(1).find('svg').length === 1;
     }).first().children('div').eq(0);
+}
+
+function findPermalinkPostContainer(marker) {
+    return $(marker).parents('div').filter(function () {
+        const $candidate = $(this);
+        return containsPostMedia($candidate) && findPostActionGroup($candidate).length > 0;
+    }).first()[0];
+}
+
+function containsPostMedia($candidate) {
+    if ($candidate.find('video').length > 0) return true;
+
+    return $candidate.find('img').filter(function () {
+        const rect = this.getBoundingClientRect();
+        const width = rect.width || this.naturalWidth;
+        const height = rect.height || this.naturalHeight;
+        return width > 64 && height > 64;
+    }).length > 0;
 }
 
 const postLinkPattern = /(?:^\/|instagram\.com\/)(?:[^/?#]+\/)?(?:p|reel)\/([^/?#;]+)/i;

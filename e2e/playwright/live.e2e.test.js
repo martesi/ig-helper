@@ -1,14 +1,15 @@
 import { expect, test } from '@playwright/test';
-import { DIRECT_DOWNLOAD_MODE_OPTIONS } from '../src/settings/schema.js';
+import { DIRECT_DOWNLOAD_MODE_OPTIONS } from '../../src/settings/schema.js';
 import {
     IMAGE_VIEWER_ROOT_ID,
     INSTAGRAM_HOME,
     LEGACY_DIALOG_ROOT_ID,
     PROFILE_URL,
     IgHelperE2E,
-} from './playwright-harness.js';
+} from './harness.js';
 
 const HOTKEY_OPTIONS_COUNT = 13;
+const PERMALINK_URL = process.env.IG_HELPER_E2E_PERMALINK ?? 'https://www.instagram.com/p/Dc7Z80KGzLT/';
 
 const e2e = new IgHelperE2E();
 let hotkeys;
@@ -40,6 +41,26 @@ test.describe('IG Helper live browser E2E', () => {
         expect(state.title).toContain('Instagram');
         expect(state.hasLoginForm).toBe(false);
         expect(state.targets).toBeGreaterThan(0);
+    });
+
+    test('direct permalink mounts post controls on the media container', async () => {
+        await e2e.goto(PERMALINK_URL);
+        await e2e.waitFor(`document.querySelectorAll('[data-snig="canDownload"] .button_wrapper').length > 0`, 15000);
+
+        const state = await e2e.json(`({
+            href: location.href,
+            targets: document.querySelectorAll('[data-snig="canDownload"]').length,
+            wrappers: document.querySelectorAll('[data-snig="canDownload"] .button_wrapper').length,
+            media: [...document.querySelectorAll('[data-snig="canDownload"] img, [data-snig="canDownload"] video')].some(element => {
+                const rect = element.getBoundingClientRect();
+                return rect.width > 64 && rect.height > 64;
+            }),
+        })`);
+
+        expect(state.href).toBe(PERMALINK_URL);
+        expect(state.targets).toBeGreaterThan(0);
+        expect(state.wrappers).toBeGreaterThan(0);
+        expect(state.media).toBe(true);
     });
 
     test('settings render as one continuous page, persist a real preference, and expose shortcut configuration', async () => {
