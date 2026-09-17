@@ -147,13 +147,15 @@ test.describe('IG Helper live browser E2E', () => {
 
         const controls = await e2e.json(`(() => {
             const wrapper = document.querySelector('.button_wrapper');
-            const saveIcon = wrapper?.parentElement?.querySelector(':scope > div svg[aria-label="Save"], :scope > div svg[aria-label="Remove"]');
+            const section = wrapper?.closest('section');
+            const groups = section ? [...section.children].filter(child => child.tagName === 'DIV') : [];
+            const saveIcon = groups[1]?.querySelector('svg[aria-label="Save"], svg[aria-label="Remove"]');
             return {
                 wrappers: document.querySelectorAll('.button_wrapper').length,
                 viewer: document.querySelectorAll('.button_wrapper .IG_IMAGE_VIEWER').length,
                 newTab: document.querySelectorAll('.button_wrapper .IG_NEWTAB_MAIN').length,
                 download: document.querySelectorAll('.button_wrapper .IG_DW_MAIN').length,
-                beforeSave: Boolean(saveIcon && wrapper?.nextElementSibling?.contains(saveIcon)),
+                beforeSave: Boolean(saveIcon && wrapper?.parentElement === groups[0] && groups[0]?.lastElementChild === wrapper),
                 position: wrapper ? getComputedStyle(wrapper).position : null,
             };
         })()`);

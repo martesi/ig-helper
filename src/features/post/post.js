@@ -319,12 +319,12 @@ export function createDownloadButton() {
 
                 if ($resourceLayout.length === 0) return;
 
-                const $saveSlot = findPostSaveSlot($mainElement);
-                if ($saveSlot.length === 0) return;
+                const $actionGroup = findPostActionGroup($mainElement);
+                if ($actionGroup.length === 0) return;
 
                 const controlsMount = document.createElement('div');
                 controlsMount.className = 'button_wrapper IG_CONTROL_BAR ig-helper-ui';
-                $saveSlot.prepend(controlsMount);
+                $actionGroup.append(controlsMount);
 
                 const resource_count = $mainElement.find(resourceCountSelector).length;
                 const showDownloadAll = resource_count > 1 && USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE;
@@ -1039,19 +1039,19 @@ export async function batchDownloadPostFiles($elements) {
 
 
 
-function findPostSaveSlot($mainElement) {
+function findPostActionGroup($mainElement) {
     const $saveIcon = $mainElement
         .find('section > div:nth-child(2) svg[aria-label="Save"], section > div:nth-child(2) svg[aria-label="Remove"]')
         .first();
 
     if ($saveIcon.length > 0) {
-        return $saveIcon.closest('section').children('div').eq(1);
+        return $saveIcon.closest('section').children('div').eq(0);
     }
 
     return $mainElement.find('section').filter(function () {
         const $groups = $(this).children('div');
         return $groups.length === 2 && $groups.eq(0).find('svg').length >= 2 && $groups.eq(1).find('svg').length === 1;
-    }).first().children('div').eq(1);
+    }).first().children('div').eq(0);
 }
 
 const postLinkPattern = /(?:^\/|instagram\.com\/)(?:[^/?#]+\/)?(?:p|reel)\/([^/?#;]+)/i;
