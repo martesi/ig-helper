@@ -262,7 +262,8 @@ export function createDownloadButton() {
             const $self = $(this);
             // If it is have not download icon
             // class x1iyjqo2 mean user profile pages post list container
-            if (!$self.attr('data-snig') && !$self.hasClass('x1iyjqo2') && !$self.children('article')?.hasClass('x1iyjqo2') && $self.parents('div#scrollview').length === 0) {
+            const hasPostControls = $self.find('.button_wrapper').length > 0;
+            if ((!$self.attr('data-snig') || !hasPostControls) && !$self.hasClass('x1iyjqo2') && !$self.children('article')?.hasClass('x1iyjqo2') && $self.parents('div#scrollview').length === 0) {
                 logger("Found post container", $self);
 
                 const $mainElement = $self;

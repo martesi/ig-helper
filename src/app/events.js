@@ -322,7 +322,7 @@ $(function () {
     registerPerformanceObserver();
 
     const element_observer = new MutationObserver((mutationsList) => {
-        const hasPostMutation = location.pathname === '/' && mutationsList.some((mutation) =>
+        const hasPostMutation = mutationsList.some((mutation) =>
             mutation.target.closest?.('article') ||
             [...mutation.addedNodes].some((node) => node.matches?.('article') || node.querySelector?.('article'))
         );
