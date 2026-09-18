@@ -267,13 +267,13 @@ export function getPostOwner(postPath) {
  * @param  {String}  postPath
  * @return {Object}
  */
-export function getBlobMedia(postPath) {
+export function getBlobMedia(postPath, request = GM_xmlhttpRequest) {
     return new Promise((resolve, reject) => {
         if (!postPath) reject("NOPATH");
         const postShortCode = postPath;
         const getURL = `https://www.instagram.com/graphql/query/?query_hash=2c4c2e343a8f64c625ba02b2aa12c7f8&variables=%7B%22shortcode%22:%22${postShortCode}%22}`;
 
-        GM_xmlhttpRequest({
+        request({
             method: "GET",
             url: getURL,
             headers: {
@@ -287,14 +287,27 @@ export function getBlobMedia(postPath) {
                     if (obj.status === 'fail') {
                         // alert(`Request failed with API response:\n${obj.message}: ${obj.feedback_message}`);
                         logger('Request with:', 'getBlobMediaWithQuery()', postShortCode);
-                        getBlobMediaWithQueryID(postShortCode).then((res) => {
-                            resolve({ type: 'query_id', data: res.xdt_api__v1__media__shortcode__web_info.items[0] });
-                        }).catch((err) => {
-                            reject(err);
-                        })
+                        getBlobMediaWithQueryID(postShortCode, request)
+                            .then(res => resolve(toQueryIdBlobMedia(res)))
+                            .catch(reject);
                     }
                     else {
-                        resolve({ type: 'query_hash', data: obj.data });
+                        const legacy = { type: 'query_hash', data: obj.data };
+                        if (!legacyCarouselMayBeTruncated(obj.data)) {
+                            resolve(legacy);
+                            return;
+                        }
+
+                        // The legacy sidecar response tops out at the old 10-item carousel
+                        // size. Ask the current web-info endpoint before accepting it so
+                        // 11-20 item posts do not silently lose their tail.
+                        getBlobMediaWithQueryID(postShortCode, request)
+                            .then(toQueryIdBlobMedia)
+                            .then(modern => resolve(carouselItemCount(modern.data) > carouselItemCount(legacy.data) ? modern : legacy))
+                            .catch(err => {
+                                logger('getBlobMedia()', 'query_id completeness fallback failed', err);
+                                resolve(legacy);
+                            });
                     }
                 }
                 catch (err) {
@@ -310,6 +323,22 @@ export function getBlobMedia(postPath) {
     });
 }
 
+function legacyCarouselMayBeTruncated(data) {
+    const media = data?.shortcode_media ?? data;
+    return media?.__typename === 'GraphSidecar' && carouselItemCount(media) >= 10;
+}
+
+function carouselItemCount(data) {
+    const media = data?.shortcode_media ?? data;
+    return media?.carousel_media?.length ?? media?.edge_sidecar_to_children?.edges?.length ?? 0;
+}
+
+function toQueryIdBlobMedia(response) {
+    const data = response?.xdt_api__v1__media__shortcode__web_info?.items?.[0];
+    if (!data) throw new Error('query_id response did not include media');
+    return { type: 'query_id', data };
+}
+
 /**
  * getBlobMediaWithQueryID
  * @description Get list of all media files in post with post shortcode.
@@ -317,13 +346,13 @@ export function getBlobMedia(postPath) {
  * @param  {String}  postPath
  * @return {Object}
  */
-export function getBlobMediaWithQueryID(postPath) {
+export function getBlobMediaWithQueryID(postPath, request = GM_xmlhttpRequest) {
     return new Promise((resolve, reject) => {
         if (!postPath) reject("NOPATH");
         const postShortCode = postPath;
         const getURL = `https://www.instagram.com/graphql/query/?query_id=9496392173716084&variables={%22shortcode%22:%22${postShortCode}%22,%22__relay_internal__pv__PolarisFeedShareMenurelayprovider%22:true,%22__relay_internal__pv__PolarisIsLoggedInrelayprovider%22:true}`;
 
-        GM_xmlhttpRequest({
+        request({
             method: "GET",
             url: getURL,
             headers: {

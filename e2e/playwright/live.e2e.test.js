@@ -5,6 +5,7 @@ import {
     INSTAGRAM_HOME,
     LEGACY_DIALOG_ROOT_ID,
     PROFILE_URL,
+    VITE_URL,
     IgHelperE2E,
 } from './harness.js';
 
@@ -329,6 +330,54 @@ test.describe('IG Helper live browser E2E', () => {
         });
     });
 
+    test('legacy 10-item carousel is completed from the current web-info response', async () => {
+        const page = await e2e.context.newPage();
+        try {
+            await page.goto(`${VITE_URL}/src/shared/api.js`, { waitUntil: 'domcontentloaded' });
+            const result = await page.evaluate(async () => {
+                globalThis.GM_getResourceText = () => '{}';
+                globalThis.GM_getValue = (_key, fallback) => fallback;
+
+                const legacyItems = Array.from({ length: 10 }, (_, index) => ({ node: { id: `legacy-${index}` } }));
+                const currentItems = Array.from({ length: 12 }, (_, index) => ({ pk: `current-${index}` }));
+                const requests = [];
+                const request = options => {
+                    requests.push(options.url);
+                    const response = options.url.includes('query_hash=')
+                        ? {
+                            status: 'ok',
+                            data: {
+                                shortcode_media: {
+                                    __typename: 'GraphSidecar',
+                                    edge_sidecar_to_children: { edges: legacyItems },
+                                },
+                            },
+                        }
+                        : {
+                            status: 'ok',
+                            data: {
+                                xdt_api__v1__media__shortcode__web_info: {
+                                    items: [{ carousel_media: currentItems }],
+                                },
+                            },
+                        };
+                    queueMicrotask(() => options.onload({ response: JSON.stringify(response), finalUrl: options.url }));
+                };
+                const { getBlobMedia } = await import('/src/shared/api.js?e2e-long-carousel=1');
+                const media = await getBlobMedia('synthetic-carousel', request);
+                return {
+                    type: media.type,
+                    count: media.data.carousel_media?.length ?? 0,
+                    requests: requests.length,
+                };
+            });
+
+            expect(result).toEqual({ type: 'query_id', count: 12, requests: 2 });
+        } finally {
+            await page.close();
+        }
+    });
+
     test('resource picker selection works and a real post media download completes on disk', async () => {
         const requiredSettings = {
             DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
@@ -359,9 +408,22 @@ test.describe('IG Helper live browser E2E', () => {
             await e2e.page.setViewportSize({ width: 320, height: 800 });
             const mobile = await e2e.shadowJson(RESOURCE_PICKER_ROOT_ID, `(() => {
                 const footer = root.querySelector('.resource-picker-footer');
-                return { width: footer.clientWidth, scrollWidth: footer.scrollWidth };
+                const panel = root.querySelector('.resource-picker');
+                const count = root.querySelector('.resource-picker-count');
+                const buttons = [...footer.querySelectorAll('.btn')];
+                return {
+                    width: footer.clientWidth,
+                    scrollWidth: footer.scrollWidth,
+                    height: footer.clientHeight,
+                    panelBottom: panel.getBoundingClientRect().bottom,
+                    viewportHeight: innerHeight,
+                    countAboveButtons: count.getBoundingClientRect().bottom <= Math.min(...buttons.map(button => button.getBoundingClientRect().top)),
+                };
             })()`);
             expect(mobile.scrollWidth).toBeLessThanOrEqual(mobile.width + 1);
+            expect(mobile.height).toBeLessThanOrEqual(100);
+            expect(mobile.panelBottom).toBeLessThanOrEqual(mobile.viewportHeight + 1);
+            expect(mobile.countAboveButtons).toBe(true);
 
             await e2e.page.emulateMedia({ colorScheme: 'dark' });
             const dark = await e2e.shadowJson(RESOURCE_PICKER_ROOT_ID, `(() => {
