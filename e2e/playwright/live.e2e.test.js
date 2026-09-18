@@ -197,20 +197,38 @@ test.describe('IG Helper live browser E2E', () => {
         await e2e.waitFor(`!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`, 3000);
     });
 
-    test('post action row mounts controls before Save and image viewer supports rotate, zoom, and close', async () => {
+    test('post action row places native-sized controls beside Save and image viewer supports rotate, zoom, and close', async () => {
         await e2e.ensurePostControls();
 
         const controls = await e2e.json(`(() => {
             const wrapper = document.querySelector('.button_wrapper');
             const section = wrapper?.closest('section');
             const groups = section ? [...section.children].filter(child => child.tagName === 'DIV') : [];
-            const saveIcon = groups[1]?.querySelector('svg[aria-label="Save"], svg[aria-label="Remove"]');
+            const saveIcon = section?.querySelector('svg[aria-label="Save"], svg[aria-label="Remove"]');
+            const saveGroup = groups.find(group => group.contains(saveIcon));
+            const saveItem = saveIcon?.closest('[role="button"]');
+            const wrapperRect = wrapper?.getBoundingClientRect();
+            const saveRect = saveIcon?.getBoundingClientRect();
+            const buttonRects = [...(wrapper?.querySelectorAll('.IG_POST_CONTROL') || [])]
+                .map(button => button.getBoundingClientRect());
             return {
                 wrappers: document.querySelectorAll('.button_wrapper').length,
                 viewer: document.querySelectorAll('.button_wrapper .IG_IMAGE_VIEWER').length,
                 newTab: document.querySelectorAll('.button_wrapper .IG_NEWTAB_MAIN').length,
                 download: document.querySelectorAll('.button_wrapper .IG_DW_MAIN').length,
-                beforeSave: Boolean(saveIcon && wrapper?.parentElement === groups[0] && groups[0]?.lastElementChild === wrapper),
+                besideSave: Boolean(
+                    saveIcon &&
+                    saveGroup &&
+                    wrapper?.parentElement === saveGroup &&
+                    wrapper.nextElementSibling?.contains(saveIcon)
+                ),
+                nativeButtonSize: buttonRects.length > 0 && buttonRects.every(rect => rect.width === 40 && rect.height === 40),
+                saveGap: wrapperRect && saveRect ? Math.round(saveRect.left - wrapperRect.right) : null,
+                aligned: wrapperRect && saveRect
+                    ? Math.abs((wrapperRect.top + wrapperRect.height / 2) - (saveRect.top + saveRect.height / 2)) < 1
+                    : false,
+                marginRight: wrapper ? getComputedStyle(wrapper).marginRight : null,
+                saveItem: Boolean(saveItem),
                 position: wrapper ? getComputedStyle(wrapper).position : null,
             };
         })()`);
@@ -218,8 +236,21 @@ test.describe('IG Helper live browser E2E', () => {
         expect(controls.viewer).toBeGreaterThan(0);
         expect(controls.newTab).toBeGreaterThan(0);
         expect(controls.download).toBeGreaterThan(0);
-        expect(controls.beforeSave).toBe(true);
+        expect(controls.besideSave).toBe(true);
+        expect(controls.nativeButtonSize).toBe(true);
+        expect(controls.saveGap).toBe(8);
+        expect(controls.aligned).toBe(true);
+        expect(controls.marginRight).toBe('8px');
+        expect(controls.saveItem).toBe(true);
         expect(controls.position).toBe('static');
+
+        await e2e.page.locator('.button_wrapper .IG_DW_MAIN').first().hover();
+        const hoverStyle = await e2e.json(`(() => {
+            const style = getComputedStyle(document.querySelector('.button_wrapper .IG_DW_MAIN'));
+            return { transform: style.transform, background: style.backgroundColor };
+        })()`);
+        expect(hoverStyle.transform).toContain('1.05');
+        expect(hoverStyle.background).toBe('rgba(0, 0, 0, 0)');
 
         await e2e.click('.button_wrapper .IG_IMAGE_VIEWER');
         await e2e.waitFor(`!!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})`, 3000);

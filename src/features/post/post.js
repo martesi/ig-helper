@@ -1074,10 +1074,9 @@ function insertPostControls($actionSection, controlsMount) {
     const $saveItem = $actionSection.children().filter(function () {
         return this === $saveIcon[0] || $.contains(this, $saveIcon[0]);
     }).first();
-    const $groups = $actionSection.children('div');
 
-    if ($groups.length === 2 && $saveItem.is($groups.eq(1))) {
-        $groups.eq(0).append(controlsMount);
+    if ($saveItem.is('div')) {
+        $saveItem.addClass('IG_POST_SAVE_GROUP').prepend(controlsMount);
         return;
     }
 

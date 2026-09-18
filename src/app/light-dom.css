@@ -38,6 +38,7 @@
     position: static;
     flex-flow: row;
     gap: 0;
+    margin-right: 8px;
     padding: 0;
     border: 0;
     border-radius: 0;
@@ -49,16 +50,28 @@
     line-height: 0;
 }
 
+.IG_POST_SAVE_GROUP {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
 .button_wrapper.IG_CONTROL_BAR svg {
     width: 24px;
     height: 24px;
 }
 
-.IG_POST_CONTROL {
+.button_wrapper.IG_CONTROL_BAR .IG_POST_CONTROL {
     width: 40px;
+    min-height: 40px;
     height: 40px;
     padding: 8px;
     border-radius: 0;
+}
+
+.button_wrapper.IG_CONTROL_BAR .IG_POST_CONTROL:hover {
+    background-color: transparent;
+    transform: scale(1.05);
 }
 
 .IG_LEGACY_CONTROL {
