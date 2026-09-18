@@ -15,7 +15,7 @@
     "build:pages": "vite build --config vite.pages.config.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e": "playwright test",
+    "test:e2e": "nix develop .#e2e --command bunx playwright test",
     "test:agent:start": "nix develop .#e2e --command bun e2e/agent.js start",
     "test:agent": "nix develop .#e2e --command agent-browser",
     "test:agent:stop": "nix develop .#e2e --command bun e2e/agent.js stop"

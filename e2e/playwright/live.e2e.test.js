@@ -64,6 +64,35 @@ test.describe('IG Helper live browser E2E', () => {
         expect(state.media).toBe(true);
     });
 
+    test('post control bar renders real visible button DOM', async () => {
+        await e2e.ensurePostControls();
+
+        const controls = await e2e.json(`(() => {
+            const wrapper = document.querySelector('.button_wrapper.IG_CONTROL_BAR');
+            const buttons = [...(wrapper?.children || [])];
+            return {
+                wrapper: Boolean(wrapper),
+                allButtons: buttons.length > 0 && buttons.every(button =>
+                    button.tagName === 'BUTTON' &&
+                    button.classList.contains('IG_POST_CONTROL') &&
+                    Boolean(button.getAttribute('aria-label')) &&
+                    Boolean(button.querySelector('svg')) &&
+                    button.getBoundingClientRect().width > 0 &&
+                    button.getBoundingClientRect().height > 0
+                ),
+                viewerOrThumbnail: Boolean(wrapper?.querySelector('.IG_IMAGE_VIEWER, .IG_THUMBNAIL_MAIN')),
+                newTab: Boolean(wrapper?.querySelector('.IG_NEWTAB_MAIN')),
+                download: Boolean(wrapper?.querySelector('.IG_DW_MAIN')),
+            };
+        })()`);
+
+        expect(controls.wrapper).toBe(true);
+        expect(controls.allButtons).toBe(true);
+        expect(controls.viewerOrThumbnail).toBe(true);
+        expect(controls.newTab).toBe(true);
+        expect(controls.download).toBe(true);
+    });
+
     test('settings render as one continuous page, persist a real preference, and expose shortcut configuration', async () => {
         await e2e.openSettings();
         await e2e.showGeneralSection();
@@ -138,26 +167,30 @@ test.describe('IG Helper live browser E2E', () => {
         }
 
         await e2e.pressLegacyHotkey(hotkeys.debug);
-        await e2e.waitFor(`!!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})?.shadowRoot`, 3000);
+        await e2e.waitFor(`!!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`, 3000);
 
-        const opened = await e2e.shadowJson(LEGACY_DIALOG_ROOT_ID, `({
-            debug: !!root.querySelector('.IG_LEGACY_PANEL'),
-            textarea: !!root.querySelector('.IG_POPUP_DIG_BODY textarea'),
-        })`);
+        const opened = await e2e.json(`(() => {
+            const root = document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)});
+            return {
+                debug: !!root?.querySelector('.IG_LEGACY_PANEL'),
+                textarea: !!root?.querySelector('.IG_POPUP_DIG_BODY textarea'),
+            };
+        })()`);
         expect(opened.debug).toBe(true);
         expect(opened.textarea).toBe(true);
 
-        await e2e.clickShadow(LEGACY_DIALOG_ROOT_ID, '.IG_DISPLAY_DOM_TREE');
+        await e2e.click(`#${LEGACY_DIALOG_ROOT_ID} .IG_DISPLAY_DOM_TREE`);
         await e2e.waitFor(`(() => {
-            const root = document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})?.shadowRoot;
+            const root = document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)});
             const area = root?.querySelector('.IG_POPUP_DIG_BODY textarea');
             return (area?.value || area?.textContent || '').length > 1000;
         })()`, 5000);
 
-        const treeLength = await e2e.shadowJson(
-            LEGACY_DIALOG_ROOT_ID,
-            `(root.querySelector('.IG_POPUP_DIG_BODY textarea')?.value || root.querySelector('.IG_POPUP_DIG_BODY textarea')?.textContent || '').length`,
-        );
+        const treeLength = await e2e.json(`(() => {
+            const root = document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)});
+            const area = root?.querySelector('.IG_POPUP_DIG_BODY textarea');
+            return (area?.value || area?.textContent || '').length;
+        })()`);
         expect(treeLength).toBeGreaterThan(1000);
 
         await e2e.pressLegacyHotkey(81);
@@ -189,27 +222,27 @@ test.describe('IG Helper live browser E2E', () => {
         expect(controls.position).toBe('static');
 
         await e2e.click('.button_wrapper .IG_IMAGE_VIEWER');
-        await e2e.waitFor(`!!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})?.shadowRoot`, 3000);
+        await e2e.waitFor(`!!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})`, 3000);
 
-        await e2e.clickShadow(IMAGE_VIEWER_ROOT_ID, '#rotate_right');
-        await e2e.waitFor(`document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})?.shadowRoot?.querySelector('#iv_rotate')?.style.transform.includes('90deg')`, 3000);
+        await e2e.click(`#${IMAGE_VIEWER_ROOT_ID} #rotate_right`);
+        await e2e.waitFor(`document.querySelector('#${IMAGE_VIEWER_ROOT_ID} #iv_rotate')?.style.transform.includes('90deg')`, 3000);
 
         await e2e.waitFor(`(() => {
-            const image = document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})?.shadowRoot?.querySelector('#iv_image');
+            const image = document.querySelector('#${IMAGE_VIEWER_ROOT_ID} #iv_image');
             const rect = image?.getBoundingClientRect();
             return image?.complete && image.naturalWidth > 0 && rect?.width > 0;
         })()`, 10000);
-        await e2e.clickShadow(IMAGE_VIEWER_ROOT_ID, '#iv_image');
-        await e2e.waitFor(`document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})?.shadowRoot?.querySelector('#iv_transform')?.style.transform.includes('scale(2.25)')`, 3000);
+        await e2e.click(`#${IMAGE_VIEWER_ROOT_ID} #iv_image`);
+        await e2e.waitFor(`document.querySelector('#${IMAGE_VIEWER_ROOT_ID} #iv_transform')?.style.transform.includes('scale(2.25)')`, 3000);
 
-        const transform = await e2e.shadowJson(IMAGE_VIEWER_ROOT_ID, `({
-            rotate: root.querySelector('#iv_rotate')?.style.transform,
-            zoom: root.querySelector('#iv_transform')?.style.transform,
+        const transform = await e2e.json(`({
+            rotate: document.querySelector('#${IMAGE_VIEWER_ROOT_ID} #iv_rotate')?.style.transform,
+            zoom: document.querySelector('#${IMAGE_VIEWER_ROOT_ID} #iv_transform')?.style.transform,
         })`);
         expect(transform.rotate).toContain('90deg');
         expect(transform.zoom).toContain('scale(2.25)');
 
-        await e2e.clickShadow(IMAGE_VIEWER_ROOT_ID, '#iv_close');
+        await e2e.click(`#${IMAGE_VIEWER_ROOT_ID} #iv_close`);
         await e2e.waitFor(`!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})`, 3000);
     });
 
@@ -256,6 +289,13 @@ test.describe('IG Helper live browser E2E', () => {
                 `root.querySelector('.resource-picker-count')?.textContent || ''`,
             );
             expect(summary).toContain(String(resources.checkboxes));
+
+            await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-footer .btn[data-variant="outline"]');
+            await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-item .input[type="checkbox"]');
+            await e2e.waitFor(`(() => {
+                const root = document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})?.shadowRoot;
+                return root?.querySelector('.resource-picker-count')?.textContent?.includes('1');
+            })()`, 3000);
 
             await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-footer .btn[data-variant="primary"]');
             const { begin, complete } = await e2e.waitForCompletedDownload(30000);

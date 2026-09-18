@@ -29,8 +29,8 @@ Use this path only when Playwright or the automated regression suite is explicit
 bun run test:e2e
 ```
 
-All Playwright-specific code lives under `e2e/playwright/`. The harness attaches to the existing Chrome CDP endpoint at `http://127.0.0.1:9013` by default; override it with `IG_HELPER_E2E_CDP`. Its browser state is external and separate from `.browser-state/agent`.
+All Playwright-specific code lives under `e2e/playwright/`. `test:e2e` enters the repo E2E shell, starts its own headed Chromium, exposes CDP on `http://127.0.0.1:9013`, then connects Playwright to that owned browser. Its persistent profile is `.browser-state/playwright`, separate from the agent-browser profile at `.browser-state/agent`. Set `IG_HELPER_E2E_CDP` only to explicitly use an externally managed CDP browser.
 
-At suite startup, Playwright imports `cookies.json`, or Netscape-format `cookies*.txt` when JSON is absent. The suite starts the Vite servers when needed, installs the development userscript through the userscript manager already present in that browser, opens real Instagram pages, and restores settings it temporarily changes.
+At suite startup, Playwright imports `cookies.json`, or Netscape-format `cookies*.txt` when JSON is absent. It starts Xvfb and the Vite servers when needed, enables ScriptCat's user-script permission on the owned profile, installs or updates the development userscript, opens real Instagram pages, and restores settings it temporarily changes.
 
 A real post media download uses Chrome's configured download directory. The test requires `Browser.downloadWillBegin`, a completed `Browser.downloadProgress` event, a concrete browser-reported file path, and matching non-zero received/total byte counts. The harness does not replace the browser download with a mock or container-side fetch.

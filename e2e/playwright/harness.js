@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { chromium } from '@playwright/test';
 import { loadLocalCookies } from '../cookie-loader.js';
@@ -6,36 +6,45 @@ import { loadLocalCookies } from '../cookie-loader.js';
 export const LEGACY_DIALOG_ROOT_ID = 'ig-helper-legacy-dialog-root';
 export const IMAGE_VIEWER_ROOT_ID = 'ig-helper-image-viewer-root';
 
-export const CDP_HTTP = process.env.IG_HELPER_E2E_CDP ?? 'http://127.0.0.1:9013';
+const externalCdpHttp = process.env.IG_HELPER_E2E_CDP;
+export const CDP_HTTP = externalCdpHttp ?? 'http://127.0.0.1:9013';
 export const INSTAGRAM_HOME = process.env.IG_HELPER_E2E_HOME ?? 'https://www.instagram.com/';
 export const PROFILE_URL = process.env.IG_HELPER_E2E_PROFILE ?? 'https://www.instagram.com/instagram/';
 export const VITE_URL = process.env.IG_HELPER_E2E_VITE ?? 'http://127.0.0.1:9000';
 export const OPTIONS_URL = process.env.IG_HELPER_E2E_OPTIONS ?? 'http://127.0.0.1:9100';
 
 const repoRoot = process.cwd();
+const chromiumPath = process.env.IG_HELPER_E2E_CHROMIUM;
+const extensionPath = process.env.IG_HELPER_E2E_EXTENSION;
+const cspExtensionPath = process.env.IG_HELPER_E2E_CSP_EXTENSION;
+const profileDir = process.env.IG_HELPER_E2E_PROFILE_DIR ?? `${repoRoot}/.browser-state/playwright`;
 const actionDelayMin = Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MIN ?? 80);
 const actionDelayMax = Math.max(actionDelayMin, Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MAX ?? 220));
 
 export class IgHelperE2E {
     constructor() {
         this.browser = null;
+        this.browserProcess = null;
         this.context = null;
         this.page = null;
         this.viteProcesses = [];
         this.downloadEvents = [];
         this.downloadCdp = null;
+        this.xvfbProcess = null;
     }
 
     async start() {
-        await this.ensureDevServer();
-        this.browser = await chromium.connectOverCDP(CDP_HTTP);
-        this.context = this.browser.contexts()[0];
-        if (!this.context) throw new Error('Connected Chrome has no default browser context');
-        await this.context.addCookies(await loadLocalCookies(repoRoot));
-
-        await this.installUserscript();
-        this.page = await this.createPage();
-        await this.goto(INSTAGRAM_HOME);
+        try {
+            await this.ensureDevServer();
+            await this.startBrowser();
+            await this.context.addCookies(await loadLocalCookies(repoRoot));
+            await this.installUserscript();
+            this.page = await this.createPage();
+            await this.goto(INSTAGRAM_HOME);
+        } catch (error) {
+            await this.stop();
+            throw error;
+        }
     }
 
     async stop() {
@@ -43,8 +52,127 @@ export class IgHelperE2E {
         await this.page?.close().catch(() => {});
         this.page = null;
 
+        if (!externalCdpHttp) {
+            await this.browser?.close().catch(() => {});
+            this.browserProcess?.kill();
+            this.browserProcess = null;
+        }
+        this.browser = null;
+        this.context = null;
+
         this.viteProcesses.forEach(process => process.kill());
         this.viteProcesses = [];
+
+        this.xvfbProcess?.kill();
+        this.xvfbProcess = null;
+    }
+
+    async startBrowser() {
+        if (!externalCdpHttp) {
+            await this.ensureDisplay();
+            await this.launchOwnedBrowser();
+        }
+
+        await this.connectBrowser();
+
+        if (!externalCdpHttp) await this.ensureUserScriptsEnabled();
+    }
+
+    async launchOwnedBrowser() {
+        if (!chromiumPath || !extensionPath) {
+            throw new Error('Playwright E2E requires the repo e2e shell; run `bun run test:e2e`.');
+        }
+        if (await this.isReachable(`${CDP_HTTP}/json/version`)) {
+            throw new Error(`Playwright E2E CDP port is already in use: ${CDP_HTTP}`);
+        }
+
+        const extensions = [extensionPath, cspExtensionPath].filter(Boolean).join(',');
+        this.browserProcess = spawn(chromiumPath, [
+            '--remote-debugging-address=127.0.0.1',
+            '--remote-debugging-port=9013',
+            `--user-data-dir=${profileDir}`,
+            '--no-first-run',
+            '--no-default-browser-check',
+            `--disable-extensions-except=${extensions}`,
+            `--load-extension=${extensions}`,
+            '--disable-features=LocalNetworkAccessChecks',
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            'about:blank',
+        ], {
+            cwd: repoRoot,
+            stdio: 'ignore',
+        });
+
+        const deadline = Date.now() + 10000;
+        while (Date.now() < deadline) {
+            if (await this.isReachable(`${CDP_HTTP}/json/version`)) return;
+            if (this.browserProcess.exitCode != null) {
+                throw new Error(`Owned Chromium exited with code ${this.browserProcess.exitCode}`);
+            }
+            await sleep(100);
+        }
+        throw new Error(`Owned Chromium did not expose CDP at ${CDP_HTTP}`);
+    }
+
+    async connectBrowser() {
+        this.browser = await chromium.connectOverCDP(CDP_HTTP);
+        this.context = this.browser.contexts()[0];
+        if (!this.context) throw new Error('Connected Chrome has no default browser context');
+    }
+
+    async ensureDisplay() {
+        const display = process.env.DISPLAY ?? ':99';
+        process.env.DISPLAY = display;
+        if (spawnSync('xdpyinfo', { stdio: 'ignore' }).status === 0) return;
+
+        this.xvfbProcess = spawn('Xvfb', [display, '-screen', '0', '1280x900x24', '-nolisten', 'tcp', '-noreset'], {
+            cwd: repoRoot,
+            stdio: 'ignore',
+        });
+
+        const deadline = Date.now() + 5000;
+        while (Date.now() < deadline) {
+            if (spawnSync('xdpyinfo', { stdio: 'ignore' }).status === 0) return;
+            if (this.xvfbProcess.exitCode != null) {
+                throw new Error(`Xvfb exited with code ${this.xvfbProcess.exitCode}`);
+            }
+            await sleep(100);
+        }
+        throw new Error(`Xvfb did not become ready on ${display}`);
+    }
+
+    async ensureUserScriptsEnabled() {
+        const extensionId = await this.getExtensionId();
+        const page = await this.createPage();
+        try {
+            await page.goto(`chrome://extensions/?id=${extensionId}`);
+            const toggle = page.locator('#allow-user-scripts cr-toggle');
+            if (await toggle.evaluate(element => element.checked)) return;
+            await toggle.click();
+        } finally {
+            await page.close().catch(() => {});
+        }
+
+        await this.browser?.close().catch(() => {});
+        this.browserProcess?.kill();
+        this.browser = null;
+        this.context = null;
+        this.browserProcess = null;
+
+        const deadline = Date.now() + 5000;
+        while (Date.now() < deadline && await this.isReachable(`${CDP_HTTP}/json/version`)) {
+            await sleep(100);
+        }
+
+        await this.launchOwnedBrowser();
+        await this.connectBrowser();
+    }
+
+    async getExtensionId() {
+        const serviceWorker = this.context.serviceWorkers()[0]
+            ?? await this.context.waitForEvent('serviceworker', { timeout: 5000 });
+        return new URL(serviceWorker.url()).host;
     }
 
     async ensureDevServer() {
@@ -89,10 +217,22 @@ export class IgHelperE2E {
             await page.goto(`${VITE_URL}/__vite-plugin-monkey.install.user.js`, { waitUntil: 'domcontentloaded' }).catch(error => {
                 if (!String(error).includes('ERR_ABORTED')) throw error;
             });
-            await this.waitForOn(page, `location.protocol === 'chrome-extension:' && !!document.querySelector('#confirm') && !document.querySelector('#confirm').disabled`, 5000);
+            await this.waitForOn(page, `location.protocol === 'chrome-extension:'`, 5000);
+
+            const violentmonkeyConfirm = page.locator('#confirm');
+            if (await violentmonkeyConfirm.count()) {
+                await this.waitForOn(page, `!document.querySelector('#confirm').disabled`, 5000);
+                await this.actionDelay();
+                await violentmonkeyConfirm.click();
+                await this.waitForOn(page, `document.body?.innerText.includes('Script installed.') || document.body?.innerText.includes('Script updated.')`, 5000);
+                return;
+            }
+
+            const scriptcatConfirm = page.getByRole('button', { name: /^(Install Script|Update Script)$/ });
+            await scriptcatConfirm.waitFor({ state: 'visible', timeout: 5000 });
             await this.actionDelay();
-            await page.locator('#confirm').click();
-            await this.waitForOn(page, `document.body?.innerText.includes('Script installed.')`, 5000);
+            await scriptcatConfirm.click();
+            await scriptcatConfirm.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
         } finally {
             await page.close().catch(() => {});
         }
@@ -147,29 +287,28 @@ export class IgHelperE2E {
     }
 
     async click(selector, index = 0) {
+        await this.dismissInstagramNotificationPrompt();
         const locator = this.page.locator(selector).nth(index);
         await locator.scrollIntoViewIfNeeded();
         await this.actionDelay();
         await locator.click();
     }
 
+    async dismissInstagramNotificationPrompt() {
+        if (!this.page.url().startsWith('https://www.instagram.com/')) return;
+
+        const turnOn = this.page.getByRole('button', { name: 'Turn On', exact: true });
+        if (!await turnOn.isVisible().catch(() => false)) return;
+
+        const notNow = this.page.getByRole('button', { name: 'Not Now', exact: true });
+        if (await notNow.isVisible().catch(() => false)) await notNow.click();
+    }
+
     async pressLegacyHotkey(keyCode) {
-        const key = hotkeyKey(keyCode);
-        const code = hotkeyCode(keyCode);
+        await this.page.bringToFront();
         await this.actionDelay();
-        return this.evaluate(`(() => {
-            const event = new KeyboardEvent('keydown', {
-                altKey: true,
-                key: ${JSON.stringify(key)},
-                code: ${JSON.stringify(code)},
-                bubbles: true,
-                cancelable: true,
-            });
-            Object.defineProperty(event, 'which', { get: () => ${keyCode} });
-            Object.defineProperty(event, 'keyCode', { get: () => ${keyCode} });
-            window.dispatchEvent(event);
-            return event.defaultPrevented;
-        })()`);
+        await this.page.keyboard.press(`Alt+${hotkeyKey(keyCode)}`);
+        await sleep(250);
     }
 
     async openSettings(section = 'general') {
@@ -315,12 +454,6 @@ export class IgHelperE2E {
 }
 
 function hotkeyKey(keyCode) {
-    if (keyCode === 192) return '~';
-    return String.fromCharCode(keyCode).toLowerCase();
-}
-
-function hotkeyCode(keyCode) {
     if (keyCode === 192) return 'Backquote';
-    if (keyCode >= 49 && keyCode <= 53) return `Digit${String.fromCharCode(keyCode)}`;
-    return `Key${String.fromCharCode(keyCode)}`;
+    return String.fromCharCode(keyCode);
 }
