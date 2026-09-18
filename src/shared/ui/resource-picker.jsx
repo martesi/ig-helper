@@ -75,10 +75,11 @@ function ResourcePicker({ title, resources, onDownload }) {
         setSelected(allSelected ? new Set() : new Set(resources.map((_, index) => index)));
     }
 
-    async function downloadSelected() {
+    function downloadSelected() {
         if (selectedResources.length === 0) return;
-        await onDownload(selectedResources);
+        const resources = selectedResources;
         removeResourcePicker();
+        void onDownload(resources);
     }
 
     return (

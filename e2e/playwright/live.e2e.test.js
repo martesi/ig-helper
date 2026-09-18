@@ -329,6 +329,8 @@ test.describe('IG Helper live browser E2E', () => {
             })()`, 3000);
 
             await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-footer .btn[data-variant="primary"]');
+            await e2e.waitFor(`!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})`, 3000);
+
             const { begin, complete } = await e2e.waitForCompletedDownload(30000);
 
             expect(begin).toBeDefined();
@@ -337,7 +339,6 @@ test.describe('IG Helper live browser E2E', () => {
             expect(complete.totalBytes).toBeGreaterThan(1000);
             expect(complete.receivedBytes).toBe(complete.totalBytes);
 
-            await e2e.waitFor(`!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})`, 3000);
         });
     });
 
