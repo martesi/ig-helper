@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import monkey from 'vite-plugin-monkey';
 import packageJson from './package.json' with { type: 'json' };
@@ -30,6 +31,7 @@ export default defineConfig(({ command }) => ({
         strictPort: true,
     },
     plugins: [
+        tailwindcss(),
         monkey({
             entry: 'src/app/entry.js',
             userscript: {
@@ -54,8 +56,10 @@ export default defineConfig(({ command }) => ({
                 },
                 namespace: 'github.com/martesi',
                 version: packageJson.version,
-                updateURL: 'https://github.com/martesi/ig-helper/releases/latest/download/ig-helper.meta.js',
-                downloadURL: 'https://github.com/martesi/ig-helper/releases/latest/download/ig-helper.user.js',
+                ...(command === 'build' ? {
+                    updateURL: 'https://github.com/martesi/ig-helper/releases/latest/download/ig-helper.meta.js',
+                    downloadURL: 'https://github.com/martesi/ig-helper/releases/latest/download/ig-helper.user.js',
+                } : {}),
                 description: {
                     '': 'Download photos and videos from Instagram posts in one click, including Stories, Reels, and profile pictures.',
                     ar: 'نزّل صورًا ومقاطع فيديو من منشورات Instagram بنقرة واحدة، بما في ذلك القصص وReels وصور الملف الشخصي.',

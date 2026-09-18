@@ -1,0 +1,130 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "basecoat-css/base/base.css";
+@import "basecoat-css/components/button";
+@import "basecoat-css/components/checkbox";
+
+@theme {
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --color-background: #fff;
+  --color-foreground: #111;
+  --color-primary: #0095f6;
+  --color-primary-foreground: #fff;
+  --color-secondary: #efefef;
+  --color-secondary-foreground: #111;
+  --color-muted: #f5f5f5;
+  --color-muted-foreground: #737373;
+  --color-accent: #efefef;
+  --color-accent-foreground: #111;
+  --color-destructive: #ed4956;
+  --color-border: #dbdbdb;
+  --color-input: #dbdbdb;
+  --color-ring: #0095f6;
+}
+
+:host {
+  color: var(--color-foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --check-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>');
+}
+
+.resource-picker .btn {
+  @apply h-9 rounded-md border border-transparent bg-clip-padding px-2.5 text-sm font-medium;
+}
+
+.resource-picker .btn[data-size='icon-sm'] {
+  @apply size-8 p-0;
+}
+
+.resource-picker .btn[data-variant='primary'] {
+  @apply bg-primary text-primary-foreground hover:opacity-80;
+}
+
+.resource-picker .btn[data-variant='outline'] {
+  @apply border-border bg-background hover:bg-muted;
+}
+
+.resource-picker .btn[data-variant='ghost'] {
+  @apply bg-transparent hover:bg-muted;
+}
+
+.resource-picker .input[type='checkbox'] {
+  @apply size-4 rounded-[6px] border border-input bg-background;
+}
+
+.resource-picker .input[type='checkbox']:checked {
+  @apply border-primary bg-primary text-primary-foreground;
+}
+
+.resource-picker-backdrop {
+  @apply fixed inset-0 z-[600001] flex items-center justify-center bg-black/70 p-4;
+}
+
+.resource-picker {
+  @apply flex max-h-[min(80vh,760px)] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border bg-background text-foreground shadow-2xl;
+}
+
+.resource-picker-header,
+.resource-picker-footer {
+  @apply flex items-center gap-3 border-border px-4 py-3;
+}
+
+.resource-picker-header {
+  @apply border-b;
+}
+
+.resource-picker-title {
+  @apply min-w-0 flex-1;
+}
+
+.resource-picker-title strong {
+  @apply block truncate text-sm font-medium;
+}
+
+.resource-picker-title span {
+  @apply text-xs text-muted-foreground;
+}
+
+.resource-picker-grid {
+  @apply grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto p-4 sm:grid-cols-3;
+}
+
+.resource-picker-item {
+  @apply relative overflow-hidden rounded-lg border border-border bg-muted/30;
+}
+
+.resource-picker-item > label {
+  @apply block cursor-pointer;
+}
+
+.resource-picker-item img {
+  @apply aspect-square w-full object-cover;
+}
+
+.resource-picker-item-meta {
+  @apply flex items-center justify-between gap-2 px-2 py-2 text-xs;
+}
+
+.resource-picker-item .input {
+  @apply absolute left-2 top-2 z-10;
+}
+
+.resource-picker-footer {
+  @apply border-t;
+}
+
+.resource-picker-count {
+  @apply flex-1 text-sm text-muted-foreground;
+}
+
+@media (max-width: 540px) {
+  .resource-picker-backdrop {
+    @apply items-stretch p-0;
+  }
+
+  .resource-picker {
+    @apply max-h-none max-w-none rounded-none border-0;
+  }
+}

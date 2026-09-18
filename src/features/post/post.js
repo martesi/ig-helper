@@ -18,6 +18,7 @@ import { appendLoadingMessage, appendMediaResource, decorateMediaResource, rende
 import { mediaIdFromURL } from "../media/image-cache";
 import { IG_createDM } from "../menu";
 import { queryAllLegacyDialog, queryLegacyDialog, removeLegacyDialog } from '../../shared/ui/dialogs.jsx';
+import { openResourcePicker } from '../../shared/ui/resource-picker.jsx';
 
 function getLegacyPopupBody() {
     return queryLegacyDialog('.IG_POPUP_DIG_BODY');
@@ -613,11 +614,43 @@ async function downloadPostResource(target) {
         state.GL_username = $article.data('username');
         state.GL_postPath = postPath;
 
-        const popupBody = directDownload ? document.createElement('div') : (() => {
-            IG_createDM(false, true);
-            renderPostIdLink(queryLegacyDialog('#article-id'), state.GL_postPath);
-            return getLegacyPopupBody();
-        })();
+        if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ASK) {
+            updateLoadingBar(true);
+            const resourceRoot = document.createElement('div');
+
+            try {
+                const totalInserted = await createMediaListDOM(
+                    state.GL_postPath,
+                    resourceRoot,
+                    _i18n("LOAD_BLOB_MULTIPLE")
+                );
+
+                if (!totalInserted) {
+                    alert('Cannot find download URL.');
+                    return;
+                }
+
+                const resources = Array.from(resourceRoot.querySelectorAll('a[data-needed="direct"]')).map(anchor => ({
+                    mediaId: anchor.getAttribute('media-id'),
+                    preview: anchor.querySelector('img')?.src ?? anchor.dataset.href,
+                    label: _i18n(anchor.dataset.type === 'mp4' ? 'VID' : 'IMG'),
+                    element: anchor,
+                }));
+
+                openResourcePicker({
+                    title: `Post ${state.GL_postPath}`,
+                    resources,
+                    onDownload: selected => batchDownloadPostFiles(selected.map(resource => $(resource.element))),
+                });
+            }
+            finally {
+                updateLoadingBar(false);
+            }
+
+            return;
+        }
+
+        const popupBody = document.createElement('div');
 
         if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE) {
             updateLoadingBar(true);

@@ -10,6 +10,7 @@ import {
 
 const HOTKEY_OPTIONS_COUNT = 13;
 const PERMALINK_URL = process.env.IG_HELPER_E2E_PERMALINK ?? 'https://www.instagram.com/p/Dc7Z80KGzLT/';
+const RESOURCE_PICKER_ROOT_ID = 'ig-helper-resource-picker-root';
 
 const e2e = new IgHelperE2E();
 let hotkeys;
@@ -234,32 +235,29 @@ test.describe('IG Helper live browser E2E', () => {
             await e2e.ensurePostControls();
             await e2e.click('.button_wrapper .IG_DW_MAIN');
 
-            await e2e.waitFor(`(() => {
-                const root = document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})?.shadowRoot;
-                return !!root?.querySelector('.IG_POPUP_DIG_BODY a[data-needed="direct"]');
-            })()`, 20000);
+            await e2e.waitFor(`!!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})?.shadowRoot?.querySelector('.resource-picker-item')`, 20000);
 
-            const resources = await e2e.shadowJson(LEGACY_DIALOG_ROOT_ID, `({
-                links: root.querySelectorAll('.IG_POPUP_DIG_BODY a[data-needed="direct"]').length,
-                checkboxes: root.querySelectorAll('.IG_POPUP_DIG_BODY .inner_box').length,
+            const resources = await e2e.shadowJson(RESOURCE_PICKER_ROOT_ID, `({
+                items: root.querySelectorAll('.resource-picker-item').length,
+                checkboxes: root.querySelectorAll('.resource-picker-item .input[type="checkbox"]').length,
             })`);
-            expect(resources.links).toBeGreaterThan(0);
+            expect(resources.items).toBeGreaterThan(0);
             expect(resources.checkboxes).toBeGreaterThan(0);
 
-            await e2e.clickShadow(LEGACY_DIALOG_ROOT_ID, '.IG_SELECT_ALL input');
+            await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-footer .btn[data-variant="outline"]');
             await e2e.waitFor(`(() => {
-                const root = document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})?.shadowRoot;
-                const boxes = [...(root?.querySelectorAll('.IG_POPUP_DIG_BODY .inner_box') || [])];
+                const root = document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})?.shadowRoot;
+                const boxes = [...(root?.querySelectorAll('.resource-picker-item .input[type="checkbox"]') || [])];
                 return boxes.length > 0 && boxes.every(box => box.checked);
             })()`, 3000);
 
             const summary = await e2e.shadowJson(
-                LEGACY_DIALOG_ROOT_ID,
-                `root.querySelector('.IG_SELECT_ALL')?.textContent || ''`,
+                RESOURCE_PICKER_ROOT_ID,
+                `root.querySelector('.resource-picker-count')?.textContent || ''`,
             );
             expect(summary).toContain(String(resources.checkboxes));
 
-            await e2e.clickShadow(LEGACY_DIALOG_ROOT_ID, '.IG_POPUP_DIG_BODY a[data-needed="direct"]');
+            await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-footer .btn[data-variant="primary"]');
             const { begin, complete } = await e2e.waitForCompletedDownload(30000);
 
             expect(begin).toBeDefined();
@@ -268,8 +266,7 @@ test.describe('IG Helper live browser E2E', () => {
             expect(complete.totalBytes).toBeGreaterThan(1000);
             expect(complete.receivedBytes).toBe(complete.totalBytes);
 
-            await e2e.pressLegacyHotkey(81);
-            await e2e.waitFor(`!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`, 3000);
+            await e2e.waitFor(`!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})`, 3000);
         });
     });
 
