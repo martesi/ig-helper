@@ -52,6 +52,10 @@ function ResourcePicker({ title, resources, onDownload }) {
         [resources, selected],
     );
     const allSelected = resources.length > 0 && selected.size === resources.length;
+    const itemCount = _i18n(resources.length === 1 ? 'ITEM_COUNT_SINGULAR' : 'ITEM_COUNT_PLURAL')
+        .replace('%COUNT%', resources.length);
+    const selectedCount = _i18n(selected.size === 1 ? 'SELECTED_COUNT_SINGULAR' : 'SELECTED_COUNT_PLURAL')
+        .replace('%COUNT%', selected.size);
 
     useEffect(() => {
         function onKeyDown(event) {
@@ -90,7 +94,7 @@ function ResourcePicker({ title, resources, onDownload }) {
                 <header class="resource-picker-header">
                     <div class="resource-picker-title">
                         <strong>{title}</strong>
-                        <span>{resources.length} {_i18n(resources.length === 1 ? 'ITEM_COUNT_SINGULAR' : 'ITEM_COUNT_PLURAL').replace('%COUNT% ', '')}</span>
+                        <span>{itemCount}</span>
                     </div>
                     <IconButton icon={XIcon} label={_i18n('CLOSE')} onClick={removeResourcePicker} />
                 </header>
@@ -113,9 +117,7 @@ function ResourcePicker({ title, resources, onDownload }) {
 
                 <footer class="resource-picker-footer">
                     <Button variant="outline" onClick={toggleAll}>{_i18n('ALL_CHECK')}</Button>
-                    <span class="resource-picker-count">
-                        {_i18n(selected.size === 1 ? 'SELECTED_COUNT_SINGULAR' : 'SELECTED_COUNT_PLURAL').replace('%COUNT%', selected.size)}
-                    </span>
+                    <span class="resource-picker-count">{selectedCount}</span>
                     <Button variant="primary" disabled={selected.size === 0} onClick={downloadSelected}>
                         {_i18n('BATCH_DOWNLOAD_SELECTED')} ({selected.size})
                     </Button>

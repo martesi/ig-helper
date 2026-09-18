@@ -166,6 +166,7 @@ test.describe('IG Helper live browser E2E', () => {
             await e2e.closeSettings();
         }
 
+        await e2e.waitFor(`document.querySelectorAll('.button_wrapper .IG_DW_MAIN').length > 0`, 15000);
         await e2e.pressLegacyHotkey(hotkeys.debug);
         await e2e.waitFor(`!!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`, 3000);
 
@@ -277,12 +278,55 @@ test.describe('IG Helper live browser E2E', () => {
         await e2e.waitFor(`!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})`, 3000);
     });
 
-    test('open-in-new-tab creates a real Chrome target and cleans it up', async () => {
+    test('open-in-new-tab creates a real Chrome target without mounting the legacy dialog', async () => {
         await e2e.ensurePostControls();
+        await e2e.evaluate(`(() => {
+            window.__igHelperLegacyDialogMounted = false;
+            window.__igHelperLegacyDialogObserver?.disconnect();
+            window.__igHelperLegacyDialogObserver = new MutationObserver(() => {
+                if (document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})) {
+                    window.__igHelperLegacyDialogMounted = true;
+                }
+            });
+            window.__igHelperLegacyDialogObserver.observe(document.body, { childList: true });
+        })()`);
+
         const created = await e2e.clickAndWaitForPage('.button_wrapper .IG_NEWTAB_MAIN');
 
         expect(created.url()).not.toBe('about:blank');
+        expect(await e2e.evaluate('window.__igHelperLegacyDialogMounted')).toBe(false);
+        expect(await e2e.evaluate(`!!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`)).toBe(false);
+        await e2e.evaluate('window.__igHelperLegacyDialogObserver?.disconnect()');
         await created.close();
+    });
+
+    test('download-all bypasses the legacy dialog', async () => {
+        await e2e.withSettings({ DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE }, async () => {
+            await e2e.goto(PERMALINK_URL);
+            await e2e.waitFor(`!!document.querySelector('.button_wrapper .IG_DW_ALL_MAIN')`, 15000);
+            await e2e.evaluate(`(() => {
+                window.__igHelperLegacyDialogMounted = false;
+                window.__igHelperLegacyDialogObserver?.disconnect();
+                window.__igHelperLegacyDialogObserver = new MutationObserver(() => {
+                    if (document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})) {
+                        window.__igHelperLegacyDialogMounted = true;
+                    }
+                });
+                window.__igHelperLegacyDialogObserver.observe(document.body, { childList: true });
+            })()`);
+
+            await e2e.click('.button_wrapper .IG_DW_ALL_MAIN');
+            await e2e.page.waitForTimeout(1000);
+
+            const legacyDialog = await e2e.json(`({
+                mounted: window.__igHelperLegacyDialogMounted,
+                present: !!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)}),
+            })`);
+            expect(legacyDialog.mounted).toBe(false);
+            expect(legacyDialog.present).toBe(false);
+
+            await e2e.evaluate(`window.__igHelperLegacyDialogObserver?.disconnect()`);
+        });
     });
 
     test('resource picker selection works and a real post media download completes on disk', async () => {
@@ -304,9 +348,33 @@ test.describe('IG Helper live browser E2E', () => {
             const resources = await e2e.shadowJson(RESOURCE_PICKER_ROOT_ID, `({
                 items: root.querySelectorAll('.resource-picker-item').length,
                 checkboxes: root.querySelectorAll('.resource-picker-item .input[type="checkbox"]').length,
+                panelRadius: getComputedStyle(root.querySelector('.resource-picker')).borderRadius,
+                titleSize: getComputedStyle(root.querySelector('.resource-picker-title strong')).fontSize,
             })`);
             expect(resources.items).toBeGreaterThan(0);
             expect(resources.checkboxes).toBeGreaterThan(0);
+            expect(resources.panelRadius).toBe('16px');
+            expect(resources.titleSize).toBe('19px');
+
+            await e2e.page.setViewportSize({ width: 320, height: 800 });
+            const mobile = await e2e.shadowJson(RESOURCE_PICKER_ROOT_ID, `(() => {
+                const footer = root.querySelector('.resource-picker-footer');
+                return { width: footer.clientWidth, scrollWidth: footer.scrollWidth };
+            })()`);
+            expect(mobile.scrollWidth).toBeLessThanOrEqual(mobile.width + 1);
+
+            await e2e.page.emulateMedia({ colorScheme: 'dark' });
+            const dark = await e2e.shadowJson(RESOURCE_PICKER_ROOT_ID, `(() => {
+                const panel = root.querySelector('.resource-picker');
+                return {
+                    background: getComputedStyle(panel).backgroundColor,
+                    foreground: getComputedStyle(panel).color,
+                };
+            })()`);
+            expect(dark.background).toBe('rgb(0, 0, 0)');
+            expect(dark.foreground).toBe('rgb(245, 245, 245)');
+            await e2e.page.emulateMedia({ colorScheme: 'light' });
+            await e2e.page.setViewportSize({ width: 1280, height: 900 });
 
             await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-footer .btn[data-variant="outline"]');
             await e2e.waitFor(`(() => {
@@ -314,6 +382,14 @@ test.describe('IG Helper live browser E2E', () => {
                 const boxes = [...(root?.querySelectorAll('.resource-picker-item .input[type="checkbox"]') || [])];
                 return boxes.length > 0 && boxes.every(box => box.checked);
             })()`, 3000);
+
+            const checkedIndicator = await e2e.shadowJson(RESOURCE_PICKER_ROOT_ID, `(() => {
+                const checkbox = root.querySelector('.resource-picker-item .input[type="checkbox"]');
+                const style = getComputedStyle(checkbox, '::after');
+                return { width: style.width, maskImage: style.maskImage };
+            })()`);
+            expect(Number.parseFloat(checkedIndicator.width)).toBeGreaterThan(0);
+            expect(checkedIndicator.maskImage).not.toBe('none');
 
             const summary = await e2e.shadowJson(
                 RESOURCE_PICKER_ROOT_ID,
@@ -340,6 +416,39 @@ test.describe('IG Helper live browser E2E', () => {
             expect(complete.receivedBytes).toBe(complete.totalBytes);
 
         });
+    });
+
+    test('resource picker renders Korean item counts without leaking placeholders', async () => {
+        await e2e.openSettings();
+        const originalLanguage = await e2e.readLanguage();
+
+        try {
+            await e2e.setLanguage('ko');
+            await e2e.closeSettings();
+
+            await e2e.withSettings({
+                DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
+                FORCE_FETCH_ALL_RESOURCES: false,
+                FORCE_RESOURCE_VIA_MEDIA: false,
+            }, async () => {
+                await e2e.ensurePostControls();
+                await e2e.click('.button_wrapper .IG_DW_MAIN');
+                await e2e.waitFor(`!!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})?.shadowRoot?.querySelector('.resource-picker-title span')`, 20000);
+
+                const itemCount = await e2e.shadowJson(
+                    RESOURCE_PICKER_ROOT_ID,
+                    `root.querySelector('.resource-picker-title span')?.textContent || ''`,
+                );
+                expect(itemCount).not.toContain('%COUNT%');
+                expect(itemCount).toMatch(/^\d+개 항목$/);
+
+                await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-header .btn[data-size="icon-sm"]');
+            });
+        } finally {
+            await e2e.openSettings();
+            await e2e.setLanguage(originalLanguage);
+            await e2e.closeSettings();
+        }
     });
 
     test('profile page mounts the avatar download control in the live Instagram DOM', async () => {

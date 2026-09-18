@@ -407,6 +407,29 @@ export function saveFiles(downloadLink, metadata) {
     });
 }
 
+export function saveMediaThumbnail($element, fallbackPostPath = null) {
+    const $link = $($element);
+    let timestamp = Date.now();
+    if (USER_SETTING.RENAME_PUBLISH_DATE && $link.attr('datetime')) {
+        timestamp = $link.attr('datetime');
+    }
+
+    const mediaId = $link.attr('media-id');
+    const cached = USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE ? getImageFromCache(mediaId) : null;
+    const source = cached ?? $link.find('img').first().attr('src');
+    if (!source) return Promise.resolve(false);
+
+    if (cached) logger('[Restore Cached postThumbnail]', mediaId);
+
+    return saveFiles(source, {
+        username: $link.data('username'),
+        sourceType: 'thumbnail',
+        timestamp,
+        filetype: 'jpg',
+        shortcode: $link.data('path') ?? fallbackPostPath,
+    });
+}
+
 /**
  * fetchArrayBuffer
  * @description Download URL as ArrayBuffer.

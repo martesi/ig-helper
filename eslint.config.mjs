@@ -5,7 +5,7 @@ import reactPlugin from "eslint-plugin-react";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
-  { ignores: ["dist/**", ".workspaces/**"] },
+  { ignores: ["dist/**", ".workspaces/**", ".browser-state/**", ".cache/**", "e2e/artifacts/**"] },
   {
     files: ["**/*.{js,mjs,jsx}"],
     plugins: {

@@ -2,7 +2,7 @@ import $ from 'jquery';
 import { state, USER_SETTING, $body } from "../settings/state";
 import {
     reloadScript,
-    triggerLinkElement, openNewTab, saveFiles, toggleVolumeSilder, updatePopupSelectionSummary,
+    triggerLinkElement, openNewTab, saveMediaThumbnail, toggleVolumeSilder, updatePopupSelectionSummary,
     replaceSameOriginHost, setTimeElementDateAndLocaleTime, getHighlightCurrentTimeElement,
     triggerReactClickHandler
 } from "../shared/general";
@@ -12,7 +12,7 @@ import { onProfileAvatar } from "../features/profile";
 import { onHighlightsStory, onHighlightsStoryAll, onHighlightsStoryThumbnail } from "../features/highlight";
 import { onReels } from "../features/reel";
 import { _i18n } from "../shared/i18n";
-import { getImageFromCache, registerPerformanceObserver } from "../features/media/image-cache";
+import { registerPerformanceObserver } from "../features/media/image-cache";
 import { batchDownloadPostFiles, createDownloadButton } from "../features/post/post";
 import { showDebugDOM, showHotkeySetting, showSetting } from "../features/menu";
 import {
@@ -116,33 +116,8 @@ $(function () {
 
         on('click', '.IG_POPUP_DIG_BODY .videoThumbnail', function () {
             const $linkA = $(this).parent().children('a');
-            let timestamp = Date.now();
-            if (USER_SETTING.RENAME_PUBLISH_DATE && $linkA.attr('datetime')) timestamp = $linkA.attr('datetime');
-
             const postPath = $linkA.data('path') ?? $(queryLegacyDialog('#article-id')).text();
-            if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
-                const mediaId = $linkA.first().attr('media-id');
-                const cached = getImageFromCache(mediaId);
-                if (cached) {
-                    logger('[Restore Cached postThumbnail]', mediaId);
-                    saveFiles(cached, {
-                        username: $linkA.data('username'),
-                        sourceType: 'thumbnail',
-                        timestamp,
-                        filetype: 'jpg',
-                        shortcode: postPath,
-                    });
-                    return;
-                }
-            }
-
-            saveFiles($linkA.find('img').first().attr('src'), {
-                username: $linkA.data('username'),
-                sourceType: 'thumbnail',
-                timestamp,
-                filetype: 'jpg',
-                shortcode: postPath,
-            });
+            void saveMediaThumbnail($linkA, postPath);
         });
 
         on('change', '.IG_POPUP_DIG_TITLE .IG_SELECT_ALL', function () {
@@ -178,43 +153,45 @@ $(function () {
 
     bindLegacyDialogEvents(document);
 
-    $(window).on('keydown', function (e) {
+    document.addEventListener('keydown', function (e) {
+        const keyCode = e.keyCode || e.which;
+
         // Hot key [Alt+Q] to close legacy download/debug dialogs.
-        if (e.altKey && e.which == 81) {
+        if (e.altKey && keyCode === 81) {
             removeLegacyDialog();
             e.preventDefault();
         }
 
         // Hot key [Alt+W] to open settings - use custom keycode if enabled, fallback to default Alt+W(87)
         let settingsKeyCode = state.settingsHotkeyKeyCode || 87;
-        if (e.altKey && e.which == settingsKeyCode) {
+        if (e.altKey && keyCode === settingsKeyCode) {
             showSetting();
             e.preventDefault();
         }
 
         // Hot key [Alt+C] to open hotkey settings - use custom keycode if enabled, fallback to default Alt+C(67)
         let keySettingsHotkeyKeyCode = state.keySettingsHotkeyKeyCode || 67;
-        if (e.altKey && e.which == keySettingsHotkeyKeyCode) {
+        if (e.altKey && keyCode === keySettingsHotkeyKeyCode) {
             showHotkeySetting();
             e.preventDefault();
         }
 
         // Hot key [Alt+Z] to open the debug DOM - use custom keycode if enabled, fallback to default Alt+Z(90)
         let debugKeyCode = state.debugHotkeyKeyCode || 90;
-        if (e.altKey && e.which == debugKeyCode) {
+        if (e.altKey && keyCode === debugKeyCode) {
             showDebugDOM();
             e.preventDefault();
         }
 
         // Hot key [Alt+R] to reload script (fixed, not customizable)
-        if (e.which == '82' && e.altKey) {
+        if (keyCode === 82 && e.altKey) {
             reloadScript();
             e.preventDefault();
         }
 
         // Hot key [Alt+S] to download story/highlights resource - use custom keycode if enabled, fallback to default Alt+S(83)
         let downloadStoryKeyCode = state.downloadStoryHotkeyKeyCode || 83;
-        if (e.altKey && e.which == downloadStoryKeyCode) {
+        if (e.altKey && keyCode === downloadStoryKeyCode) {
             if (location.href.match(/^(https:\/\/www\.instagram\.com\/stories\/)/ig) && $('.IG_DWSTORY').length > 0) {
                 $('.IG_DWSTORY')?.trigger("click");
             }

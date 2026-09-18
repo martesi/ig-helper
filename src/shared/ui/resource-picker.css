@@ -8,6 +8,7 @@
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 10px;
+  --radius-xl: 14px;
   --color-background: #fff;
   --color-foreground: #111;
   --color-primary: #0095f6;
@@ -28,6 +29,19 @@
   color: var(--color-foreground);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --check-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>');
+}
+
+@media (prefers-color-scheme: dark) {
+  :host {
+    --color-background: #000;
+    --color-foreground: #f5f5f5;
+    --color-muted: #171717;
+    --color-muted-foreground: #a3a3a3;
+    --color-accent: #262626;
+    --color-accent-foreground: #f5f5f5;
+    --color-border: #363636;
+    --color-input: #363636;
+  }
 }
 
 .resource-picker .btn {
@@ -51,28 +65,34 @@
 }
 
 .resource-picker .input[type='checkbox'] {
-  @apply size-4 rounded-[6px] border border-input bg-background;
+  @apply size-4 rounded-[4px] border border-input bg-background shadow-xs transition-shadow;
 }
 
 .resource-picker .input[type='checkbox']:checked {
   @apply border-primary bg-primary text-primary-foreground;
 }
 
+.resource-picker .input[type='checkbox']:checked::after {
+  @apply size-3.5;
+}
+
 .resource-picker-backdrop {
-  @apply fixed inset-0 z-[600001] flex items-center justify-center bg-black/70 p-4;
+  @apply fixed inset-0 z-[600001] flex items-center justify-center bg-black/60 p-4 backdrop-blur-[2px];
 }
 
 .resource-picker {
-  @apply flex max-h-[min(80vh,760px)] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border bg-background text-foreground shadow-2xl;
+  @apply flex max-h-[min(88vh,860px)] w-full max-w-3xl flex-col overflow-hidden border border-border bg-background text-foreground;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 18%);
 }
 
 .resource-picker-header,
 .resource-picker-footer {
-  @apply flex items-center gap-3 border-border px-4 py-3;
+  @apply flex items-center gap-3 border-border px-6;
 }
 
 .resource-picker-header {
-  @apply border-b;
+  @apply border-b py-5;
 }
 
 .resource-picker-title {
@@ -80,19 +100,19 @@
 }
 
 .resource-picker-title strong {
-  @apply block truncate text-sm font-medium;
+  @apply block truncate text-[19px] font-bold leading-6;
 }
 
 .resource-picker-title span {
-  @apply text-xs text-muted-foreground;
+  @apply mt-1 block text-[13px] leading-[18px] text-muted-foreground;
 }
 
 .resource-picker-grid {
-  @apply grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto p-4 sm:grid-cols-3;
+  @apply grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto p-5 sm:grid-cols-3;
 }
 
 .resource-picker-item {
-  @apply relative overflow-hidden rounded-lg border border-border bg-muted/30;
+  @apply relative overflow-hidden rounded-[10px] border border-border bg-muted/30;
 }
 
 .resource-picker-item > label {
@@ -112,7 +132,7 @@
 }
 
 .resource-picker-footer {
-  @apply border-t;
+  @apply border-t py-4;
 }
 
 .resource-picker-count {
@@ -126,5 +146,17 @@
 
   .resource-picker {
     @apply max-h-none max-w-none rounded-none border-0;
+  }
+
+  .resource-picker-footer {
+    @apply flex-wrap px-4;
+  }
+
+  .resource-picker-footer .btn {
+    @apply max-w-full whitespace-normal;
+  }
+
+  .resource-picker-count {
+    @apply min-w-full order-last;
   }
 }

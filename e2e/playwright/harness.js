@@ -351,6 +351,21 @@ export class IgHelperE2E {
         })`);
     }
 
+    async readLanguage() {
+        await this.showGeneralSection();
+        return this.evaluate(`document.querySelector('#langSelect-value')?.value`);
+    }
+
+    async setLanguage(language) {
+        await this.showGeneralSection();
+        const current = await this.readLanguage();
+        if (current === language) return;
+
+        await this.click('#langSelect-trigger');
+        await this.click(`#langSelect-listbox [data-value="${language}"]`);
+        await this.waitFor(`document.querySelector('#langSelect-value')?.value === ${JSON.stringify(language)}`, 3000);
+    }
+
     async readSettings(names) {
         await this.showGeneralSection();
         return this.json(`Object.fromEntries(${JSON.stringify(names)}.map(name => {
