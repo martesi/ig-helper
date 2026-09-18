@@ -310,12 +310,12 @@ export function createDownloadButton() {
 
                 if ($resourceLayout.length === 0) return;
 
-                const $actionGroup = findPostActionGroup($mainElement);
-                if ($actionGroup.length === 0) return;
+                const $actionSection = findPostActionSection($mainElement);
+                if ($actionSection.length === 0) return;
 
                 const controlsMount = document.createElement('div');
                 controlsMount.className = 'button_wrapper IG_CONTROL_BAR ig-helper-ui';
-                $actionGroup.append(controlsMount);
+                insertPostControls($actionSection, controlsMount);
 
                 const resource_count = $mainElement.find(resourceCountSelector).length;
                 const showDownloadAll = resource_count > 1 && USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE;
@@ -1030,25 +1030,31 @@ export async function batchDownloadPostFiles($elements) {
 
 
 
-function findPostActionGroup($mainElement) {
-    const $saveIcon = $mainElement
-        .find('section > div:nth-child(2) svg[aria-label="Save"], section > div:nth-child(2) svg[aria-label="Remove"]')
-        .first();
+function findPostActionSection($mainElement) {
+    return $mainElement.find('section').filter(function () {
+        return $(this).find('svg[aria-label="Save"], svg[aria-label="Remove"]').length > 0;
+    }).first();
+}
 
-    if ($saveIcon.length > 0) {
-        return $saveIcon.closest('section').children('div').eq(0);
+function insertPostControls($actionSection, controlsMount) {
+    const $saveIcon = $actionSection.find('svg[aria-label="Save"], svg[aria-label="Remove"]').first();
+    const $saveItem = $actionSection.children().filter(function () {
+        return this === $saveIcon[0] || $.contains(this, $saveIcon[0]);
+    }).first();
+    const $groups = $actionSection.children('div');
+
+    if ($groups.length === 2 && $saveItem.is($groups.eq(1))) {
+        $groups.eq(0).append(controlsMount);
+        return;
     }
 
-    return $mainElement.find('section').filter(function () {
-        const $groups = $(this).children('div');
-        return $groups.length === 2 && $groups.eq(0).find('svg').length >= 2 && $groups.eq(1).find('svg').length === 1;
-    }).first().children('div').eq(0);
+    $saveItem.before(controlsMount);
 }
 
 function findPermalinkPostContainer(marker) {
     return $(marker).parents('div').filter(function () {
         const $candidate = $(this);
-        return containsPostMedia($candidate) && findPostActionGroup($candidate).length > 0;
+        return containsPostMedia($candidate) && findPostActionSection($candidate).length > 0;
     }).first()[0];
 }
 
