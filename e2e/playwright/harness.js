@@ -313,7 +313,7 @@ export class IgHelperE2E {
 
     async openSettings(section = 'general') {
         await this.goto(`${OPTIONS_URL}/#/settings`);
-        await this.waitFor(`document.querySelectorAll('[data-settings-section]').length === 7`, 10000);
+        await this.waitFor(`document.querySelectorAll('[data-settings-section]').length === 8`, 10000);
         await this.locateSettingsSection(section);
     }
 

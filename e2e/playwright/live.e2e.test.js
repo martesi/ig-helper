@@ -66,7 +66,8 @@ test.describe('IG Helper live browser E2E', () => {
     });
 
     test('post control bar renders real visible button DOM', async () => {
-        await e2e.ensurePostControls();
+        await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
+            await e2e.ensurePostControls();
 
         const controls = await e2e.json(`(() => {
             const wrapper = document.querySelector('.button_wrapper.IG_CONTROL_BAR');
@@ -93,7 +94,8 @@ test.describe('IG Helper live browser E2E', () => {
         expect(controls.viewerOrThumbnail).toBe(true);
         expect(controls.newTab).toBe(true);
         expect(controls.copy).toBe(true);
-        expect(controls.download).toBe(true);
+            expect(controls.download).toBe(true);
+        });
     });
 
     test('copy current post image writes image data and reports success', async () => {
@@ -175,7 +177,7 @@ test.describe('IG Helper live browser E2E', () => {
             mediaPreview: document.querySelector('#SHOW_MEDIA_PREVIEW')?.checked,
         })`);
         expect(initial.href).toContain('/#/settings');
-        expect(initial.sections).toBe(7);
+        expect(initial.sections).toBe(8);
         expect(initial.switches).toBeGreaterThanOrEqual(16);
         expect(initial.hotkeyRows).toBe(4);
         expect(await e2e.json(`document.querySelectorAll('[data-settings-section="advanced"] input[role="switch"]').length`)).toBeGreaterThanOrEqual(5);
@@ -271,7 +273,7 @@ test.describe('IG Helper live browser E2E', () => {
 
             await debuggerPage.getByRole('link', { name: 'Settings' }).click();
             await debuggerPage.waitForFunction(
-                () => location.hash.startsWith('#/settings') && document.querySelectorAll('[data-settings-section]').length === 7,
+                () => location.hash.startsWith('#/settings') && document.querySelectorAll('[data-settings-section]').length === 8,
                 undefined,
                 { timeout: 5000 },
             );
@@ -308,7 +310,8 @@ test.describe('IG Helper live browser E2E', () => {
     });
 
     test('post action row places native-sized controls beside Save and image viewer supports rotate, zoom, and close', async () => {
-        await e2e.ensurePostControls();
+        await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
+            await e2e.ensurePostControls();
 
         const controls = await e2e.json(`(() => {
             const wrapper = document.querySelector('.button_wrapper');
@@ -385,10 +388,12 @@ test.describe('IG Helper live browser E2E', () => {
 
         await e2e.click(`#${IMAGE_VIEWER_ROOT_ID} #iv_close`);
         await e2e.waitFor(`!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})`, 3000);
+        });
     });
 
     test('open-in-new-tab creates a real Chrome target without mounting the legacy dialog', async () => {
-        await e2e.ensurePostControls();
+        await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
+            await e2e.ensurePostControls();
         await e2e.evaluate(`(() => {
             window.__igHelperLegacyDialogMounted = false;
             window.__igHelperLegacyDialogObserver?.disconnect();
@@ -405,8 +410,9 @@ test.describe('IG Helper live browser E2E', () => {
         expect(created.url()).not.toBe('about:blank');
         expect(await e2e.evaluate('window.__igHelperLegacyDialogMounted')).toBe(false);
         expect(await e2e.evaluate(`!!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`)).toBe(false);
-        await e2e.evaluate('window.__igHelperLegacyDialogObserver?.disconnect()');
-        await created.close();
+            await e2e.evaluate('window.__igHelperLegacyDialogObserver?.disconnect()');
+            await created.close();
+        });
     });
 
     test('download-all bypasses the legacy dialog', async () => {
@@ -491,6 +497,7 @@ test.describe('IG Helper live browser E2E', () => {
         await e2e.withSettings({
             DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
             SHOW_MEDIA_PREVIEW: false,
+            SHOW_OPEN_IN_NEW_TAB_BUTTON: false,
             FORCE_RESOURCE_VIA_MEDIA: false,
         }, async () => {
             await e2e.ensurePostControls();
@@ -506,7 +513,7 @@ test.describe('IG Helper live browser E2E', () => {
                     download: Boolean(root?.querySelector('.IG_DW_MAIN')),
                 };
             })()`);
-            expect(controls).toEqual({ viewer: false, copy: true, newTab: true, download: true });
+            expect(controls).toEqual({ viewer: false, copy: true, newTab: false, download: true });
 
             await e2e.click(`${wrapper} .IG_DW_MAIN`);
             await e2e.waitFor(`!!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})?.shadowRoot?.querySelector('.resource-picker-item img')`, 20000);

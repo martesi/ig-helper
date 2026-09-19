@@ -51,7 +51,6 @@ function ControlApp() {
                     </div>
                     <div class="IG_SETTINGS_HEADER_ACTIONS">
                         <ControlNav active={active} />
-                        {!isDebug && header.version && <span class="IG_SETTINGS_VERSION">v{header.version}</span>}
                     </div>
                 </header>
 

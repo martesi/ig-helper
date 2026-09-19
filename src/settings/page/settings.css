@@ -2,8 +2,10 @@
 @import "tailwindcss/preflight.css" layer(base);
 @import "basecoat-css/base/base.css";
 @import "basecoat-css/components/button";
+@import "basecoat-css/components/button-group";
 @import "basecoat-css/components/checkbox";
 @import "basecoat-css/components/dialog";
+@import "basecoat-css/components/empty";
 @import "basecoat-css/components/input";
 @import "basecoat-css/components/kbd";
 @import "basecoat-css/components/popover";
@@ -271,6 +273,7 @@ body {
 }
 
 .IG_SETTING_COPY label,
+.IG_SETTING_COPY .IG_SETTING_LABEL,
 .IG_HOTKEY_ROW > label {
     font-size: 14px;
     font-weight: 600;
@@ -281,6 +284,12 @@ body {
     margin-top: 3px;
     font-size: 13px;
     line-height: 19px;
+}
+
+.IG_SETTING_VALUE {
+    color: var(--color-muted-foreground);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
 }
 
 .IG_SETTING_ROW_CHILD {
@@ -303,13 +312,6 @@ body {
 
 .IG_SETTINGS_STATUS[role='alert'] {
     color: var(--color-destructive);
-}
-
-.IG_SETTINGS_VERSION {
-    margin-left: auto;
-    color: var(--color-muted-foreground);
-    font-size: 12px;
-    font-weight: 500;
 }
 
 @media (prefers-color-scheme: dark) {

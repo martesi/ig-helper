@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
-import { Button } from '../../shared/ui/components.jsx';
+import { Link } from 'wouter-preact';
+import { Button, IconButton } from '../../shared/ui/components.jsx';
+import { RotateCwIcon } from '../../shared/ui/icons.jsx';
 import { requestDebug } from './client.js';
 import './debug.css';
 
@@ -20,7 +22,9 @@ export function DebuggerApp() {
                 setData(snapshot);
                 setError('');
             } catch (reason) {
-                if (!cancelled) setError(reason.message);
+                if (cancelled) return;
+                setData(null);
+                setError(reason.message);
             }
         }
 
@@ -35,9 +39,12 @@ export function DebuggerApp() {
     async function runCommand(type) {
         try {
             const result = await requestDebug(type);
-            if (type === 'clearLogs' || type === 'getSnapshot') setData(result);
+            if (type === 'clearLogs' || type === 'getSnapshot') {
+                setData(result);
+            }
             setError('');
         } catch (reason) {
+            setData(null);
             setError(reason.message);
         }
     }
@@ -47,20 +54,24 @@ export function DebuggerApp() {
             setDom(await requestDebug('captureDom'));
             setError('');
         } catch (reason) {
+            setData(null);
             setError(reason.message);
         }
     }
 
     return (
         <>
-            {error && <p class="IG_SETTINGS_STATUS" role="alert">{error}</p>}
-
             <section class="IG_DEBUGGER_CONTENT">
                 {!data && !error && <div class="IG_DEBUGGER_PLACEHOLDER"><p>Connecting to Instagram…</p></div>}
                 {!data && error && (
-                    <div class="IG_DEBUGGER_PLACEHOLDER">
-                        <h3>Debugger not attached</h3>
-                        <p>{error}</p>
+                    <div class="empty">
+                        <header>
+                            <h3>Debugger unavailable</h3>
+                            <p>IG Helper could not connect to the userscript.</p>
+                        </header>
+                        <footer>
+                            <Link class="btn" data-variant="secondary" href="/settings">Go to Settings</Link>
+                        </footer>
                     </div>
                 )}
 
@@ -72,9 +83,18 @@ export function DebuggerApp() {
                                 <p>{data.page.url}</p>
                             </div>
                             <div class="IG_DEBUGGER_ACTIONS">
-                                <Button size="sm" variant="outline" onClick={() => runCommand('getSnapshot')}>Refresh</Button>
                                 <Button size="sm" variant="ghost" onClick={() => runCommand('clearLogs')}>Clear logs</Button>
-                                <Button size="sm" variant="primary" onClick={captureDom}>Capture DOM</Button>
+                                {dom ? (
+                                    <div class="button-group">
+                                        <Button size="sm" variant="outline" onClick={() => copyText(dom.html ?? '')}>Copy</Button>
+                                        <Button size="sm" variant="outline"
+                                            onClick={() => downloadText(`DOMTree-${Date.now()}.txt`, dom.html ?? '')}>Download</Button>
+                                        <IconButton icon={RotateCwIcon} label="Capture DOM again" variant="outline"
+                                            onClick={captureDom} />
+                                    </div>
+                                ) : (
+                                    <Button size="sm" variant="primary" onClick={captureDom}>Capture DOM</Button>
+                                )}
                             </div>
                         </section>
 
@@ -102,15 +122,7 @@ export function DebuggerApp() {
                                 <Button size="sm" variant="ghost" onClick={() => copyText(formatEntries(data.logs))}>Copy</Button>
                                 <Button size="sm" variant="ghost" onClick={() => downloadText('ig-helper-debug.json', JSON.stringify(data, null, 2))}>Export</Button>
                             </div>
-                            <pre>{data.logs.length ? formatEntries(data.logs) : 'No log entries.'}</pre>
-                        </DebugSection>
-
-                        <DebugSection title="DOM snapshot">
-                            <div class="IG_DEBUGGER_SECTION_ACTIONS">
-                                <Button size="sm" variant="ghost" disabled={!dom} onClick={() => copyText(dom?.html ?? '')}>Copy</Button>
-                                <Button size="sm" variant="ghost" disabled={!dom} onClick={() => downloadText(`DOMTree-${Date.now()}.txt`, dom?.html ?? '')}>Download</Button>
-                            </div>
-                            <pre>{dom ? dom.html || '(mount is empty)' : 'Capture DOM on demand.'}</pre>
+                            <pre class="IG_DEBUGGER_SCROLL">{data.logs.length ? formatEntries(data.logs) : 'No log entries.'}</pre>
                         </DebugSection>
                     </>
                 )}

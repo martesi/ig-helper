@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { Link } from 'wouter-preact';
 import { Button, Input, Select, Switch } from '../../shared/ui/components.jsx';
 import {
     DIRECT_DOWNLOAD_MODE_OPTIONS,
@@ -26,7 +27,7 @@ const SETTINGS_SECTIONS = [
         id: 'playback',
         key: 'SETTINGS_PLAYBACK',
         descriptionKey: 'SETTINGS_PLAYBACK_DESCRIPTION',
-        settings: ['SHOW_MEDIA_PREVIEW', 'DISABLE_VIDEO_LOOPING', 'HTML5_VIDEO_CONTROL', 'MODIFY_VIDEO_VOLUME', 'SCROLL_BUTTON'],
+        settings: ['SHOW_MEDIA_PREVIEW', 'SHOW_OPEN_IN_NEW_TAB_BUTTON', 'DISABLE_VIDEO_LOOPING', 'HTML5_VIDEO_CONTROL', 'MODIFY_VIDEO_VOLUME', 'SCROLL_BUTTON'],
     },
     {
         id: 'navigation',
@@ -51,6 +52,7 @@ const SECTION_NAV_ITEMS = [
     { id: 'general', key: 'SETTINGS_GENERAL' },
     ...SETTINGS_SECTIONS.map(({ id, key }) => ({ id, key })),
     { id: 'keyboard', key: 'SETTINGS_KEYBOARD' },
+    { id: 'about', key: 'SETTINGS_ABOUT' },
 ];
 
 export function OptionsApp({ onHeaderChange }) {
@@ -63,27 +65,24 @@ export function OptionsApp({ onHeaderChange }) {
     const t = createTranslator(locale);
 
     useEffect(() => {
-        onHeaderChange({
-            title: t('SETTING'),
-            description: t('SETTINGS_DESCRIPTION'),
-            version: data?.version,
-        });
-    }, [data?.version, locale, onHeaderChange]);
-
-    useEffect(() => {
         let cancelled = false;
         requestSettings('getState').then(async result => {
             const resolvedLanguage = resolveLanguage(result.language);
             const translations = await loadLocale(resolvedLanguage);
             if (cancelled) return;
+            const translate = createTranslator(translations);
             setData(result);
             setLanguage(resolvedLanguage);
             setLocale(translations);
+            onHeaderChange({
+                title: translate('SETTING'),
+                description: translate('SETTINGS_DESCRIPTION'),
+            });
         }).catch(reason => {
             if (!cancelled) setError(reason.message);
         });
         return () => { cancelled = true; };
-    }, []);
+    }, [onHeaderChange]);
 
     useEffect(() => {
         if (!data) return;
@@ -122,8 +121,13 @@ export function OptionsApp({ onHeaderChange }) {
         try {
             await requestSettings('setLanguage', { value: resolved });
             const translations = await loadLocale(resolved);
+            const translate = createTranslator(translations);
             setLanguage(resolved);
             setLocale(translations);
+            onHeaderChange({
+                title: translate('SETTING'),
+                description: translate('SETTINGS_DESCRIPTION'),
+            });
             setError('');
         } catch (reason) {
             setError(reason.message);
@@ -165,7 +169,18 @@ export function OptionsApp({ onHeaderChange }) {
 
     return (
         <>
-            {error && <p class="IG_SETTINGS_STATUS" role="alert">{error}</p>}
+            {!data && error && (
+                <div class="empty">
+                    <header>
+                        <h3>Settings unavailable</h3>
+                        <p>IG Helper could not connect to the userscript.</p>
+                    </header>
+                    <footer>
+                        <Link class="btn" data-variant="secondary" href="/">Go home</Link>
+                    </footer>
+                </div>
+            )}
+            {data && error && <p class="IG_SETTINGS_STATUS" role="alert">{error}</p>}
             {!data && !error && <p class="IG_SETTINGS_STATUS">Loading settings…</p>}
 
             {data && (
@@ -187,6 +202,14 @@ export function OptionsApp({ onHeaderChange }) {
                                 onLanguageChange={saveLanguage} onSettingChange={saveSetting}
                                 onVolumeChange={saveVolume} onRenameFormatChange={saveRenameFormat} />
                             <KeyboardSettings data={data} conflict={conflict} t={t} onSave={saveHotkey} />
+                            <SettingsSection id="about" title={t('SETTINGS_ABOUT')} description={t('SETTINGS_ABOUT_DESCRIPTION')}>
+                                <div class="IG_SETTING_ROW">
+                                    <div class="IG_SETTING_COPY">
+                                        <span class="IG_SETTING_LABEL">{t('SETTINGS_VERSION')}</span>
+                                    </div>
+                                    <span class="IG_SETTING_VALUE">v{data.version}</span>
+                                </div>
+                            </SettingsSection>
                         </div>
                     </section>
                 </div>

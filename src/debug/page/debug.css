@@ -118,6 +118,12 @@
     overflow-wrap: anywhere;
 }
 
+.IG_DEBUGGER_SECTION pre.IG_DEBUGGER_SCROLL {
+    max-height: 320px;
+    overflow: auto;
+    scrollbar-gutter: stable;
+}
+
 @media (max-width: 900px) {
     .IG_DEBUGGER_GRID {
         grid-template-columns: repeat(2, minmax(0, 1fr));

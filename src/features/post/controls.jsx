@@ -1,5 +1,5 @@
 import { render } from 'preact';
-import { SVG } from '../../settings/state';
+import { SVG, USER_SETTING } from '../../settings/state';
 import { _i18n } from '../../shared/i18n';
 import { Button } from '../../shared/ui/components.jsx';
 import { CopyIcon } from '../../shared/ui/icons.jsx';
@@ -17,7 +17,9 @@ function PostControls({ showDownloadAll, showMediaPreview, mediaType, actions })
             ) : showMediaPreview ? (
                 <ControlButton class="IG_IMAGE_VIEWER" labelKey="IMAGE_VIEWER" icon={SVG.FULLSCREEN} onClick={actions.view} />
             ) : null}
-            <ControlButton class="IG_NEWTAB_MAIN" labelKey="NEW_TAB" icon={SVG.NEW_TAB} onClick={actions.newTab} />
+            {USER_SETTING.SHOW_OPEN_IN_NEW_TAB_BUTTON && (
+                <ControlButton class="IG_NEWTAB_MAIN" labelKey="NEW_TAB" icon={SVG.NEW_TAB} onClick={actions.newTab} />
+            )}
             <CopyControlButton onClick={actions.copy} />
             {showDownloadAll && <ControlButton class="IG_DW_ALL_MAIN" labelKey="DW_ALL" icon={SVG.DOWNLOAD_ALL} onClick={actions.downloadAll} />}
             <ControlButton class="IG_DW_MAIN" labelKey="DW" icon={SVG.DOWNLOAD} onClick={actions.download} />
