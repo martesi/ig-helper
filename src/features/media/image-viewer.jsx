@@ -116,7 +116,7 @@ function ImageViewer({ imageUrl, returnFocus }) {
     };
 
     return (
-        <div ref={rootRef} id="imageViewer" class="ig-helper-ui" role="dialog" aria-modal="true" aria-label="Image viewer" tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") removeImageViewer(); }} onClick={removeImageViewer} onWheel={event => event.preventDefault()}>
+        <div ref={rootRef} id="imageViewer" class="ig-helper-ui" tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") removeImageViewer(); }} onClick={removeImageViewer} onWheel={event => event.preventDefault()}>
             <ControlBar id="iv_header" onClick={event => event.stopPropagation()}>
                 <IconButton id="rotate_left" icon={RotateCcwIcon} label="Rotate left"
                     onClick={() => setTransform(current => ({ ...current, rotate: current.rotate - 90 }))} />
