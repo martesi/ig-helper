@@ -1,10 +1,39 @@
 import tailwindcss from '@tailwindcss/vite';
+import { readdirSync, readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import monkey from 'vite-plugin-monkey';
 import packageJson from './package.json' with { type: 'json' };
 
 const mediabunnyUrl = 'https://cdn.jsdelivr.net/npm/mediabunny@1.34.5/dist/bundles/mediabunny.min.cjs#sha256-wUFR+x2bDvpqgMAVGy2CvGvULyjTGvGy4UUAm8rae5U=';
 const jqueryUrl = 'https://code.jquery.com/jquery-4.0.0.min.js#sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=';
+const i18nArtifactName = 'i18n.json';
+const i18nReleaseUrl = `https://github.com/martesi/ig-helper/releases/download/v${packageJson.version}/${i18nArtifactName}`;
+
+function i18nArtifactPlugin() {
+    const translationsUrl = new URL('./locale/translations/', import.meta.url);
+
+    return {
+        name: 'ig-helper-i18n-artifact',
+        apply: 'build',
+        generateBundle() {
+            const translations = Object.fromEntries(
+                readdirSync(translationsUrl)
+                    .filter(file => file.endsWith('.json'))
+                    .sort()
+                    .map(file => [
+                        file.slice(0, -'.json'.length),
+                        JSON.parse(readFileSync(new URL(file, translationsUrl), 'utf8')),
+                    ]),
+            );
+
+            this.emitFile({
+                type: 'asset',
+                fileName: i18nArtifactName,
+                source: JSON.stringify(translations),
+            });
+        },
+    };
+}
 
 export default defineConfig(({ command }) => ({
     cacheDir: 'node_modules/.vite/script',
@@ -32,6 +61,7 @@ export default defineConfig(({ command }) => ({
     },
     plugins: [
         tailwindcss(),
+        i18nArtifactPlugin(),
         monkey({
             entry: 'src/app/entry.js',
             userscript: {
@@ -102,9 +132,7 @@ export default defineConfig(({ command }) => ({
                     'cdn.jsdelivr.net',
                     'i.instagram.com',
                 ],
-                resource: {
-                    LOCALE_MANIFEST: 'https://cdn.jsdelivr.net/gh/SN-Koarashi/ig-helper@master/locale/manifest.json',
-                },
+                ...(command === 'build' ? { resource: { I18N: i18nReleaseUrl } } : {}),
                 contributionURL: 'https://ko-fi.com/snkoarashi',
                 icon: 'https://www.google.com/s2/favicons?domain=www.instagram.com&sz=32',
                 license: 'GPL-3.0-only',

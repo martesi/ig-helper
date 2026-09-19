@@ -34,7 +34,6 @@ export const resourceCountSelector = '*:not([data-pagelet])>*:not([role]):not([d
 
 /*******************************/
 export const checkInterval = 250;
-export const locale_manifest = JSON.parse(GM_getResourceText("LOCALE_MANIFEST"));
 
 export const userIdCache = new Map();
 
