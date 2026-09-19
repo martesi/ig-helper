@@ -1,66 +1,41 @@
+@reference "tailwindcss";
+
 [data-ih-locale-title] svg {
-    vertical-align: middle;
+    @apply align-middle;
 }
 
 .IG_POPUP_DIG {
-    position: fixed;
-    left: 0px;
-    right: 0px;
-    bottom: 0px;
-    top: 0px;
-    z-index: 500;
+    @apply fixed inset-0 z-[500];
 }
 
 .IG_POPUP_DIG.hidden {
-    display: none;
+    @apply hidden;
 }
 
 .IG_POPUP_DIG button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
+    @apply pointer-events-none cursor-not-allowed opacity-50;
 }
 
 .IG_POPUP_DIG_BG {
-    position: fixed;
-    left: 0px;
-    right: 0px;
-    bottom: 0px;
-    top: 0px;
-    z-index: 502;
-    background: rgba(0, 0, 0, .75);
+    @apply fixed inset-0 z-[502] bg-black/75;
 }
 
 .IG_POPUP_DIG_MAIN {
-    z-index: 510;
-    padding: 10px 15px;
-    top: 7%;
-    position: absolute;
-    left: 50%;
+    @apply absolute left-1/2 top-[7%] z-[510] w-[500px] rounded-[7px] px-[15px] py-[10px];
     transform: translateX(-50%);
-    width: 500px;
-    background: #fff;
-    background: rgb(var(--ig-secondary-background));
-    color: #000;
-    color: rgb(var(--ig-primary-text));
-    border-radius: 7px;
+    background: rgb(var(--ig-secondary-background, 255, 255, 255));
+    color: rgb(var(--ig-primary-text, 0, 0, 0));
 }
 
 .IG_POPUP_DIG_BODY {
-    min-height: 100px;
-    max-height: 70vh;
-    overflow-y: auto;
+    @apply min-h-[100px] max-h-[70vh] overflow-y-auto;
 }
 
 .IG_POPUP_DIG_BODY a {
-    display: block;
-    padding: 5px 0px;
-    color: #111;
-    color: rgb(var(--ig-primary-text));
+    @apply block rounded-[5px] py-[5px] text-center;
+    color: rgb(var(--ig-primary-text, 17, 17, 17));
     font-size: 1rem;
     line-height: 1rem;
-    text-align: center;
-    border-radius: 5px;
 }
 
 .IG_DW_MAIN,
@@ -68,20 +43,9 @@
 .IG_THUMBNAIL_MAIN,
 .IG_DW_ALL_MAIN,
 .IG_IMAGE_VIEWER {
-    position: relative;
-    top: 0px;
-    padding: 4px;
-    line-height: 0;
-    background: transparent;
-    color: #ffffff;
-    border-radius: 6px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
+    @apply relative top-0 inline-flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-[6px] bg-transparent p-1 text-white;
     box-sizing: border-box;
+    line-height: 0;
     transition: background 0.2s ease;
 }
 
@@ -90,12 +54,11 @@
 .IG_THUMBNAIL_MAIN:hover,
 .IG_DW_ALL_MAIN:hover,
 .IG_IMAGE_VIEWER:hover {
-    background: rgba(255, 255, 255, 0.25);
+    @apply bg-white/25;
 }
 
-
 #_SNLOAD {
-    text-align: center;
+    @apply text-center;
     font-size: 20px;
 }
 
@@ -104,87 +67,48 @@
 .IG_DWHISTORY,
 .IG_DWSTORY_ALL,
 .IG_DWHISTORY_ALL {
-    position: absolute;
-    right: 40px;
-    top: 15px;
-    padding: 2px;
+    @apply absolute right-10 top-[15px] z-[5] cursor-pointer rounded-[5px] bg-white p-[2px];
     line-height: 0;
-    background: #fff;
-    border-radius: 5px;
-    cursor: pointer;
-    z-index: 5;
 }
 
 .IG_REELS_NEWTAB,
 .IG_DWNEWTAB,
 .IG_DWHINEWTAB {
-    position: absolute;
-    right: 40px;
-    top: 47px;
-    padding: 2px;
+    @apply absolute right-10 top-[47px] z-[5] cursor-pointer rounded-[5px] bg-white p-[2px] text-black;
     line-height: 0;
-    background: #fff;
-    border-radius: 5px;
-    cursor: pointer;
-    z-index: 5;
-    color: #000;
 }
 
 .IG_REELS_THUMBNAIL,
 .IG_DWSTORY_THUMBNAIL,
 .IG_DWHISTORY_THUMBNAIL {
-    position: absolute;
-    right: 40px;
-    top: 79px;
-    padding: 2px;
+    @apply absolute right-10 top-[79px] z-[5] cursor-pointer rounded-[5px] bg-white p-[2px];
     line-height: 1;
-    background: #fff;
-    border-radius: 5px;
-    cursor: pointer;
-    z-index: 5;
 }
 
 .IG_DWSTORY_POSITION,
 .IG_DWHISTORY_POSITION {
-    position: absolute;
-    right: -24px;
-    top: 47px;
-    width: 28px;
-    height: 28px;
-    padding: 2px;
+    @apply absolute right-[-24px] top-[47px] z-[5] flex h-7 w-7 cursor-default select-none items-center justify-center whitespace-nowrap rounded-[5px] bg-white p-[2px] text-black;
     box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #fff;
-    border-radius: 5px;
-    color: #000;
-    cursor: default;
     font-size: 10px;
     font-weight: 700;
     line-height: 1;
     letter-spacing: -0.4px;
-    white-space: nowrap;
-    z-index: 5;
-    user-select: none;
 }
 
-*:not(:has(> section[class]))>.IG_DWSTORY,
-*:not(:has(> section[class]))>.IG_DWHISTORY,
-*:not(:has(> section[class]))>.IG_DWSTORY_THUMBNAIL,
-*:not(:has(> section[class]))>.IG_DWHISTORY_THUMBNAIL,
-*:not(:has(> section[class]))>.IG_DWNEWTAB,
-*:not(:has(> section[class]))>.IG_DWHINEWTAB {
-    right: -40px;
-    color: #000;
+*:not(:has(> section[class])) > .IG_DWSTORY,
+*:not(:has(> section[class])) > .IG_DWHISTORY,
+*:not(:has(> section[class])) > .IG_DWSTORY_THUMBNAIL,
+*:not(:has(> section[class])) > .IG_DWHISTORY_THUMBNAIL,
+*:not(:has(> section[class])) > .IG_DWNEWTAB,
+*:not(:has(> section[class])) > .IG_DWHINEWTAB {
+    @apply right-[-40px] text-black;
 }
 
-*:not(:has(> section[class]))>.IG_DWSTORY_ALL,
-*:not(:has(> section[class]))>.IG_DWHISTORY_ALL,
-*:not(:has(> section[class]))>.IG_DWSTORY_POSITION,
-*:not(:has(> section[class]))>.IG_DWHISTORY_POSITION {
-    right: -70px;
-    color: #000;
+*:not(:has(> section[class])) > .IG_DWSTORY_ALL,
+*:not(:has(> section[class])) > .IG_DWHISTORY_ALL,
+*:not(:has(> section[class])) > .IG_DWSTORY_POSITION,
+*:not(:has(> section[class])) > .IG_DWHISTORY_POSITION {
+    @apply right-[-70px] text-black;
 }
 
 .IG_DWSTORY,
@@ -193,184 +117,118 @@
 .IG_DWHISTORY_THUMBNAIL,
 .IG_DWNEWTAB,
 .IG_DWHINEWTAB {
-    right: 6px;
-    color: #000;
+    @apply right-[6px] text-black;
 }
 
 .IG_DWSTORY_ALL,
 .IG_DWHISTORY_ALL {
-    right: -24px;
-    color: #000;
+    @apply right-[-24px] text-black;
 }
 
 .IG_DWPROFILE {
-    position: absolute;
-    right: 0px;
-    top: 0px;
-    padding: 2px;
+    @apply absolute right-0 top-0 cursor-pointer rounded-full bg-white p-[2px];
+    border: 1px solid #ccc;
     line-height: 1;
-    background: #fff;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 1px solid #ccc
 }
 
 .IG_DWPROFILE svg {
-    color: #000;
+    @apply text-black;
 }
 
 .inner_box_wrapper {
-    display: block;
-    position: absolute;
-    left: 0px;
-    top: 0px;
-    width: 50px;
-    height: 100%;
+    @apply absolute left-0 top-0 block h-full w-[50px] cursor-pointer rounded-l-[7px];
     border-right: 1px solid;
-    background: #e7e7e7;
-    background: rgb(var(--ig-secondary-button-hover));
-    cursor: pointer;
-    border-radius: 7px 0px 0px 7px;
+    background: rgb(var(--ig-secondary-button-hover, 231, 231, 231));
 }
 
-.inner_box~span {
-    position: relative;
-    height: 100%;
-    width: 100%;
-    display: block;
-    border-radius: 7px 0px 0px 7px;
+.inner_box ~ span {
+    @apply relative block h-full w-full rounded-l-[7px];
 }
 
-.inner_box:checked~span {
+.inner_box:checked ~ span {
     background: rgb(var(--ig-success));
 }
 
-.inner_box~span:after {
+.inner_box ~ span::after {
+    @apply absolute left-3 top-1/2 hidden h-5 w-2.5 -mt-2;
     content: "";
-    position: absolute;
-    display: none;
-    left: 12px;
-    top: 50%;
-    width: 10px;
-    height: 20px;
-    margin-top: -8px;
-    border: solid black;
     border: solid rgb(var(--ig-primary-text));
     border-width: 0 3px 3px 0;
-    -webkit-transform: rotate(45deg) translateY(-50%);
-    -ms-transform: rotate(45deg) translateY(-50%);
     transform: rotate(45deg) translateY(-50%);
 }
 
-.inner_box:checked~span:after {
-    display: block;
+.inner_box:checked ~ span::after {
+    @apply block;
 }
 
 .inner_box {
-    position: absolute;
-    top: 10px;
-    left: 50%;
+    @apply absolute left-1/2 top-2.5 cursor-pointer appearance-none opacity-0;
     transform: scale(2.5) translateY(-50%);
-    cursor: pointer;
-    appearance: none;
-    opacity: 0;
 }
 
-.IG_POPUP_DIG_BODY>div {
-    position: relative;
-    border: 1px solid #000;
+.IG_POPUP_DIG_BODY > div {
+    @apply relative my-[5px] rounded-[7px];
     border: 1px solid rgb(var(--ig-primary-text));
-    margin: 5px 0px;
-    border-radius: 7px;
 }
 
-.IG_POPUP_DIG_BODY>div:hover {
+.IG_POPUP_DIG_BODY > div:hover {
     background: rgba(var(--ig-hover-overlay));
 }
 
 .IG_POPUP_DIG_TITLE {
-    padding-bottom: 5px;
+    @apply pb-[5px];
 }
 
 .IG_POPUP_DIG_TITLE button {
+    @apply mx-[7px] align-middle;
     font-size: 14px;
-    vertical-align: middle;
-    margin: 0px 7px;
 }
 
 #scrollWrapper {
-    position: fixed;
-    right: 15px;
-    bottom: 15px;
+    @apply fixed bottom-[15px] right-[15px];
 }
 
 #scrollWrapper .button-up,
 #scrollWrapper .button-down {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    background-color: rgba(0, 0, 0, 0.25);
+    @apply my-[5px] h-8 w-8 cursor-pointer rounded-[10px];
+    border: 1px solid rgb(var(--ig-separator));
     background-color: rgba(var(--ig-banner-background));
-    cursor: pointer;
-    margin: 5px 0px;
-    border: 1px solid;
-    border-color: rgb(var(--ig-separator));
 }
 
 #scrollWrapper .button-up:hover,
 #scrollWrapper .button-down:hover {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    background-color: rgba(0, 0, 0, 0.25);
     background-color: rgba(var(--ig-hover-overlay));
-    cursor: pointer;
-    margin: 5px 0px;
 }
 
-#scrollWrapper .button-up>div,
-#scrollWrapper .button-down>div {
-    position: relative;
-    border: solid #000;
+#scrollWrapper .button-up > div,
+#scrollWrapper .button-down > div {
+    @apply relative left-[9.5px] inline-block p-1;
     border: solid rgb(var(--ig-primary-text));
     border-width: 0 4px 4px 0;
-    display: inline-block;
-    padding: 4px;
-    left: 9.5px;
 }
 
-#scrollWrapper .button-up>div {
+#scrollWrapper .button-up > div {
+    @apply top-[9px];
     transform: rotate(-135deg);
-    -webkit-transform: rotate(-135deg);
-    top: 9px;
 }
 
-#scrollWrapper .button-down>div {
+#scrollWrapper .button-down > div {
+    @apply top-[6px];
     transform: rotate(45deg);
-    -webkit-transform: rotate(45deg);
-    top: 6px;
+}
+
+.IG_POPUP_DIG_BODY .newTab,
+.IG_POPUP_DIG_BODY .videoThumbnail {
+    @apply absolute right-0 z-[3] cursor-pointer rounded-[5px] p-[7px];
+    line-height: 0;
 }
 
 .IG_POPUP_DIG_BODY .newTab {
-    position: absolute;
-    right: 0px;
-    top: 0px;
-    z-index: 3;
-    padding: 7px;
-    cursor: pointer;
-    line-height: 0;
-    border-radius: 5px;
+    @apply top-0;
 }
 
 .IG_POPUP_DIG_BODY .videoThumbnail {
-    position: absolute;
-    right: 0px;
-    top: 40px;
-    z-index: 3;
-    padding: 7px;
-    cursor: pointer;
-    line-height: 0;
-    border-radius: 5px;
+    @apply top-10;
 }
 
 .IG_POPUP_DIG_BODY .newTab:hover,
@@ -379,172 +237,111 @@
 }
 
 .IG_POPUP_DIG_BTN {
-    cursor: pointer;
-    position: absolute;
-    right: 0px;
-    top: 0px;
-    padding: 0;
+    @apply absolute right-0 top-0 cursor-pointer bg-transparent p-0 text-inherit;
     border: 0;
-    background: transparent;
-    color: inherit;
     line-height: 0;
 }
 
 #tempWrapper .IG_POPUP_DIG_BTN {
-    right: 5px;
+    @apply right-[5px] top-1/2;
     transform: translateY(-50%);
-    top: 50%;
 }
 
 #tempWrapper #locatePreview {
-    margin-left: 5px;
-    display: inline-block;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    width: 60%;
-    white-space: nowrap;
-    vertical-align: middle;
-    position: relative;
+    @apply relative left-auto top-1/2 ml-[5px] inline-block w-3/5 truncate align-middle;
     transform: translateY(-50%);
-    top: 50%;
 }
 
 #tempWrapper #locateSelect {
+    @apply relative top-1/2 align-middle;
     transform: translateY(-50%);
-    top: 50%;
-    position: relative;
-    vertical-align: middle;
 }
 
-.volume_slider>div {
-    display: none;
+.volume_slider > div {
+    @apply hidden;
 }
 
-div[class]:hover+.volume_slider>div,
-.volume_slider:hover>div {
-    display: block;
+div[class]:hover + .volume_slider > div,
+.volume_slider:hover > div {
+    @apply block;
 }
 
 .volume_slider {
-    position: absolute;
-    height: 30px;
-    left: 0px;
-    right: 40px;
+    @apply absolute left-0 right-10 h-[30px];
 }
 
 .volume_slider.bottom {
-    left: 50px;
-    right: 45px;
-    bottom: 15px;
+    @apply bottom-[15px] left-[50px] right-[45px];
 }
 
 .volume_slider.vertical {
-    top: 80px;
-    right: 25px;
+    @apply right-[25px] top-20;
     transform: rotate(-90deg);
     transform-origin: right center;
 }
 
-.volume_slider>div {
-    width: calc(100% - 20px);
-    position: absolute;
-    right: 10px;
-    top: 0px;
-    height: 30px;
-    background: rgba(0, 0, 0, 0.25);
-    border-radius: 25px;
-    text-align: center;
+.volume_slider > div {
+    @apply absolute right-2.5 top-0 h-[30px] w-[calc(100%-20px)] rounded-[25px] bg-black/25 text-center;
 }
 
 .volume_slider input[type="range"] {
-    overflow: hidden;
-    width: 90%;
-    height: inherit;
-    margin: 0 auto;
-    -webkit-appearance: none;
-    appearance: none;
-    background: transparent;
-    cursor: pointer;
+    @apply mx-auto h-[inherit] w-[90%] cursor-pointer appearance-none overflow-hidden bg-transparent;
 }
 
 .volume_slider input[type="range"]::-webkit-slider-runnable-track {
-    background: rgba(255, 255, 255, 0.35);
-    height: 6px;
-    border-radius: 7px;
-    background: linear-gradient(to right, #fff 0%, #fff var(--ig-track-progress), rgba(255, 255, 255, 0.35) var(--ig-track-progress), rgba(255, 255, 255, 0.35) 100%);
+    @apply h-[6px] rounded-[7px];
+    background: linear-gradient(
+        to right,
+        #fff 0%,
+        #fff var(--ig-track-progress),
+        rgba(255, 255, 255, 0.35) var(--ig-track-progress),
+        rgba(255, 255, 255, 0.35) 100%
+    );
 }
 
 .volume_slider input[type="range"]::-moz-range-track {
-    background: rgba(255, 255, 255, 0.35);
-    height: 6px;
-    border-radius: 7px;
+    @apply h-[6px] rounded-[7px] bg-white/35;
 }
 
 .volume_slider input[type="range"]::-moz-range-progress {
-    background-color: #fff;
-    height: 6px;
-    border-radius: 7px;
+    @apply h-[6px] rounded-[7px] bg-white;
 }
 
 .volume_slider input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    margin-top: -5px;
-    background-color: #fff;
-    height: 16px;
-    width: 16px;
-    border-radius: 50%;
+    @apply -mt-[5px] h-4 w-4 appearance-none rounded-full bg-white;
 }
 
 .volume_slider input[type="range"]::-moz-range-thumb {
-    border: none;
-    border-radius: 0;
-    background-color: #fff;
-    height: 16px;
-    width: 16px;
-    border-radius: 50%;
+    @apply h-4 w-4 rounded-full bg-white;
+    border: 0;
 }
 
 .circle_wrapper {
-    position: fixed;
-    display: flex;
-    right: 15px;
-    bottom: 15px;
-    z-index: 50000;
-    width: fit-content;
-    align-items: center;
-    flex-direction: row;
-    padding: 7px;
-    border-radius: 7px;
-    box-shadow: 0 0 5px #202020;
+    @apply fixed bottom-[15px] right-[15px] z-[50000] flex w-fit flex-row items-center rounded-[7px] p-[7px];
     background: rgb(var(--ig-secondary-background));
+    box-shadow: 0 0 5px #202020;
 }
 
 .circle_wrapper circle {
-    display: inline-block;
+    @apply mx-[5px] inline-block h-6 w-6 rounded-[50px] opacity-90;
     border: 2px solid rgba(255, 152, 0, 0.9);
-    opacity: .9;
-    border-left: 2px solid rgba(0, 0, 0, 0);
-    border-right: 2px solid rgba(0, 0, 0, 0);
-    border-radius: 50px;
-    width: 24px;
-    height: 24px;
-    margin: 0 5px;
+    border-left-color: transparent;
+    border-right-color: transparent;
     animation: spinoffPulse 0.5s infinite linear;
 }
 
 .circle_wrapper span {
-    font-size: 16px;
-    font-family: monospace;
     color: rgb(var(--ig-primary-text));
+    font-family: monospace;
+    font-size: 16px;
 }
 
 @keyframes spinoffPulse {
-    0% {
+    from {
         transform: rotate(0deg);
     }
 
-    100% {
+    to {
         transform: rotate(360deg);
     }
 }
