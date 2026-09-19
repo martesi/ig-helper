@@ -4,7 +4,7 @@ import { _i18n } from '../shared/i18n';
 import { mountLegacyDialog, queryLegacyDialog } from '../shared/ui/dialogs.jsx';
 
 const PAGE_ROOT = import.meta.env.DEV
-    ? 'http://127.0.0.1:9100/#/'
+    ? 'http://127.0.0.1:9000/#/'
     : 'https://martesi.github.io/ig-helper/#/';
 const CONTROL_WINDOW_NAME = 'ig-helper-control';
 

@@ -19,8 +19,8 @@ else throw new Error(`Unknown agent test action: ${action}`);
 async function start() {
     mkdirSync(runtimeDir, { recursive: true });
     await ensureDisplay();
-    if (!await devServersReady()) startDevServers();
-    await waitForDevServers();
+    if (!await devServerReady()) startDevServer();
+    await waitForDevServer();
     runAgentBrowser(['--headed', 'open']);
     await importCookies();
     runAgentBrowser(['open', 'https://www.instagram.com/']);
@@ -52,7 +52,7 @@ async function ensureDisplay() {
     throw new Error(`Xvfb did not become ready; see ${xvfbLogFile}`);
 }
 
-function startDevServers() {
+function startDevServer() {
     if (!hasRunningProcess(devPidFile)) {
         spawnOwned('bun', ['run', 'dev'], devPidFile, devLogFile);
     }
@@ -91,10 +91,10 @@ function stopOwnedProcess(pidFile) {
     rmSync(pidFile, { force: true });
 }
 
-async function devServersReady() {
+async function devServerReady() {
     const urls = [
-        'http://127.0.0.1:9000/__vite-plugin-monkey.install.user.js',
-        'http://127.0.0.1:9100/settings/',
+        'http://127.0.0.1:9000/ig-helper.dev.user.js',
+        'http://127.0.0.1:9000/settings/',
     ];
     const ready = await Promise.all(urls.map(async url => {
         try {
@@ -106,10 +106,10 @@ async function devServersReady() {
     return ready.every(Boolean);
 }
 
-async function waitForDevServers() {
+async function waitForDevServer() {
     const deadline = Date.now() + 10000;
     while (Date.now() < deadline) {
-        if (await devServersReady()) return;
+        if (await devServerReady()) return;
         await sleep(100);
     }
     throw new Error(`Dev servers did not become ready; see ${devLogFile}`);

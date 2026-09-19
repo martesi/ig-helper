@@ -7,14 +7,12 @@
   "author": "SN-Koarashi",
   "license": "GPLv3",
   "scripts": {
-    "dev": "bun run --parallel dev:*",
-    "dev:script": "vite",
-    "dev:pages": "vite --config vite.pages.config.mjs",
+    "dev": "vite",
     "build": "bun run --parallel build:*",
-    "build:script": "vite build",
-    "build:pages": "vite build --config vite.pages.config.mjs",
+    "build:page": "vite build --mode page",
+    "build:script": "vite build --mode script",
     "lint": "eslint .",
-    "preview": "vite preview",
+    "preview": "vite preview --outDir dist/page",
     "test:e2e": "nix develop .#e2e --command bunx playwright test",
     "test:agent:start": "nix develop .#e2e --command bun e2e/agent.js start",
     "test:agent": "nix develop .#e2e --command agent-browser",
@@ -32,7 +30,7 @@
     "globals": "^15.14.0",
     "tailwindcss": "4.3.1",
     "vite": "^8.2.2",
-    "vite-plugin-monkey": "^8.1.1"
+    "vite-userscript-plugin": "^2.5.0"
   },
   "dependencies": {
     "basecoat-css": "1.0.2",

@@ -6,35 +6,37 @@ const MAX_ERRORS = 50;
 const startedAt = Date.now();
 const errors = [];
 
-window.addEventListener('message', event => {
-    if (event.origin !== CONTROL_ORIGIN) return;
-    if (event.data?.channel !== DEBUG_CHANNEL || event.data.direction !== 'request') return;
+export function startDebugReporter() {
+    window.addEventListener('message', event => {
+        if (event.origin !== CONTROL_ORIGIN) return;
+        if (event.data?.channel !== DEBUG_CHANNEL || event.data.direction !== 'request') return;
 
-    const id = Number.isInteger(event.data.id) && event.data.id > 0 ? event.data.id : null;
-    const method = event.data.method;
-    if (id == null || !DEBUG_COMMANDS.has(method) || !event.source) return;
+        const id = Number.isInteger(event.data.id) && event.data.id > 0 ? event.data.id : null;
+        const method = event.data.method;
+        if (id == null || !DEBUG_COMMANDS.has(method) || !event.source) return;
 
-    try {
-        const result = handleRequest(method);
-        event.source.postMessage({ channel: DEBUG_CHANNEL, direction: 'response', id, ok: true, result }, event.origin);
-    } catch (error) {
-        event.source.postMessage({
-            channel: DEBUG_CHANNEL,
-            direction: 'response',
-            id,
-            ok: false,
-            error: error instanceof Error ? error.message : String(error),
-        }, event.origin);
-    }
-});
+        try {
+            const result = handleRequest(method);
+            event.source.postMessage({ channel: DEBUG_CHANNEL, direction: 'response', id, ok: true, result }, event.origin);
+        } catch (error) {
+            event.source.postMessage({
+                channel: DEBUG_CHANNEL,
+                direction: 'response',
+                id,
+                ok: false,
+                error: error instanceof Error ? error.message : String(error),
+            }, event.origin);
+        }
+    });
 
-window.addEventListener('error', event => {
-    rememberError(event.error ?? event.message);
-});
+    window.addEventListener('error', event => {
+        rememberError(event.error ?? event.message);
+    });
 
-window.addEventListener('unhandledrejection', event => {
-    rememberError(event.reason);
-});
+    window.addEventListener('unhandledrejection', event => {
+        rememberError(event.reason);
+    });
+}
 
 function handleRequest(method) {
     if (method === 'getSnapshot') return createSnapshot();

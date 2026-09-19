@@ -11,7 +11,8 @@ export const CDP_HTTP = externalCdpHttp ?? 'http://127.0.0.1:9013';
 export const INSTAGRAM_HOME = process.env.IG_HELPER_E2E_HOME ?? 'https://www.instagram.com/';
 export const PROFILE_URL = process.env.IG_HELPER_E2E_PROFILE ?? 'https://www.instagram.com/instagram/';
 export const VITE_URL = process.env.IG_HELPER_E2E_VITE ?? 'http://127.0.0.1:9000';
-export const OPTIONS_URL = process.env.IG_HELPER_E2E_OPTIONS ?? 'http://127.0.0.1:9100';
+export const OPTIONS_URL = process.env.IG_HELPER_E2E_OPTIONS ?? VITE_URL;
+const INSTALL_URL = `${VITE_URL}/ig-helper.dev.user.js`;
 
 const repoRoot = process.cwd();
 const chromiumPath = process.env.IG_HELPER_E2E_CHROMIUM;
@@ -176,21 +177,20 @@ export class IgHelperE2E {
     }
 
     async ensureDevServer() {
-        const scriptReady = () => this.isReachable(`${VITE_URL}/__vite-plugin-monkey.install.user.js`);
+        const scriptReady = () => this.isReachable(INSTALL_URL);
         const pagesReady = () => this.isReachable(`${OPTIONS_URL}/settings/`);
-        if (!await scriptReady()) this.startDevServer('dev:script');
-        if (!await pagesReady()) this.startDevServer('dev:pages');
+        if (!await scriptReady() || !await pagesReady()) this.startDevServer();
 
         const deadline = Date.now() + 10000;
         while (Date.now() < deadline) {
             if (await scriptReady() && await pagesReady()) return;
             await sleep(100);
         }
-        throw new Error(`Vite did not become ready at ${VITE_URL} and ${OPTIONS_URL}`);
+        throw new Error(`Vite did not become ready at ${VITE_URL}`);
     }
 
-    startDevServer(script) {
-        this.viteProcesses.push(spawn('bun', ['run', script], {
+    startDevServer() {
+        this.viteProcesses.push(spawn('bun', ['run', 'dev'], {
             cwd: repoRoot,
             stdio: 'ignore',
         }));
@@ -214,7 +214,7 @@ export class IgHelperE2E {
     async installUserscript() {
         const page = await this.createPage();
         try {
-            await page.goto(`${VITE_URL}/__vite-plugin-monkey.install.user.js`, { waitUntil: 'domcontentloaded' }).catch(error => {
+            await page.goto(INSTALL_URL, { waitUntil: 'domcontentloaded' }).catch(error => {
                 if (!String(error).includes('ERR_ABORTED')) throw error;
             });
             await this.waitForOn(page, `location.protocol === 'chrome-extension:'`, 5000);

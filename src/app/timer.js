@@ -7,11 +7,14 @@ import { onProfileAvatar, skipSharedWithYouDialog } from "../features/profile";
 import { onHighlightsStory, onHighlightsStoryThumbnail } from "../features/highlight";
 import { onStory } from "../features/story";
 
-// Post-page observer belongs to the post/timer lifecycle, not the settings module.
-state.GL_observer = new MutationObserver(() => onReadyMyDW());
+export let timer;
 
-// Main Timer
-export var timer = setInterval(function () {
+export function startTimer() {
+    // Post-page observer belongs to the post/timer lifecycle, not the settings module.
+    state.GL_observer = new MutationObserver(() => onReadyMyDW());
+
+    // Main Timer
+    timer = setInterval(function () {
     // page loading or unnecessary route
     if ($('div#splash-screen').length > 0 && !$('div#splash-screen').is(':hidden') ||
         location.pathname.match(/^\/(explore(\/.*)?|challenge\/?.*|direct\/?.*|qr\/?|accounts\/.*|emails\/.*|language\/?.*?|your_activity\/?.*|settings\/help(\/.*)?$)$/ig) ||
@@ -207,4 +210,5 @@ export var timer = setInterval(function () {
 
         state.GL_referrer = new URL(location.href).pathname;
     }
-}, checkInterval);
+    }, checkInterval);
+}

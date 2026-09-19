@@ -19,8 +19,9 @@ import {
     removeLegacyDialog,
 } from '../shared/ui/dialogs.jsx';
 
-// Running if document is ready
-$(function () {
+export function registerEvents() {
+    // Running if document is ready
+    $(function () {
     function bindLegacyDialogEvents(root) {
         const $root = $(root);
         const on = (type, selector, handler) => {
@@ -442,4 +443,5 @@ $(function () {
             logger('[element_observer] mount root not found after multiple retries');
         }
     })(20);
-});
+    });
+}
