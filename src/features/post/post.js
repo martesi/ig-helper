@@ -302,7 +302,7 @@ export function createDownloadButton() {
                 const $actionSection = findPostActionSection($mainElement);
                 if ($actionSection.length === 0) return;
 
-                const controlsMount = document.createElement('div');
+                const controlsMount = document.createElement('span');
                 controlsMount.className = 'button_wrapper IG_CONTROL_BAR ig-helper-ui';
                 insertPostControls($actionSection, controlsMount);
 
@@ -1084,12 +1084,12 @@ function insertPostControls($actionSection, controlsMount) {
         return this === $saveIcon[0] || $.contains(this, $saveIcon[0]);
     }).first();
 
-    if ($saveItem.is('div')) {
+    if ($saveItem.length > 0) {
         $saveItem.addClass('IG_POST_SAVE_GROUP').prepend(controlsMount);
         return;
     }
 
-    $saveItem.before(controlsMount);
+    $actionSection.append(controlsMount);
 }
 
 function findPermalinkPostContainer(marker) {
