@@ -62,7 +62,6 @@
     font-size: 20px;
 }
 
-.IG_REELS,
 .IG_DWSTORY,
 .IG_DWHISTORY,
 .IG_DWSTORY_ALL,
@@ -71,14 +70,12 @@
     line-height: 0;
 }
 
-.IG_REELS_NEWTAB,
 .IG_DWNEWTAB,
 .IG_DWHINEWTAB {
     @apply absolute right-10 top-[47px] z-[5] cursor-pointer rounded-[5px] bg-white p-[2px] text-black;
     line-height: 0;
 }
 
-.IG_REELS_THUMBNAIL,
 .IG_DWSTORY_THUMBNAIL,
 .IG_DWHISTORY_THUMBNAIL {
     @apply absolute right-10 top-[79px] z-[5] cursor-pointer rounded-[5px] bg-white p-[2px];

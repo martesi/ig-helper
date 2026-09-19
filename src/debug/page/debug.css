@@ -53,11 +53,6 @@
     gap: 4px;
 }
 
-.IG_DEBUGGER_ACTIONS .btn[data-variant='primary'] {
-    background: var(--color-primary);
-    color: var(--color-primary-foreground);
-}
-
 .IG_DEBUGGER_GRID {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));

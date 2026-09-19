@@ -1,0 +1,57 @@
+:host {
+    position: fixed;
+    inset: 0;
+    z-index: 600001;
+    overflow: hidden;
+}
+
+#imageViewer {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+}
+
+#iv_header {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1;
+    width: auto;
+    height: auto;
+    max-width: calc(100vw - 32px);
+    box-sizing: border-box;
+}
+
+#iv_header svg {
+    fill: none !important;
+    stroke: currentColor !important;
+}
+
+#imageViewer > section {
+    box-sizing: border-box;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 16px;
+}
+
+#iv_image {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    border-radius: 4px;
+    user-select: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}

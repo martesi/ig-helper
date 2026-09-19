@@ -2,6 +2,8 @@ import { render } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { ControlBar, IconButton } from '../../shared/ui/components.jsx';
 import { RotateCcwIcon, RotateCwIcon, XIcon } from '../../shared/ui/icons.jsx';
+import { adoptShadowStyles } from '../../shared/ui/shadow-styles.js';
+import styles from './image-viewer.css?inline';
 
 const VIEWER_ROOT_ID = 'ig-helper-image-viewer-root';
 
@@ -10,13 +12,15 @@ export function openImageViewer(imageUrl) {
     const root = document.createElement('div');
     root.id = VIEWER_ROOT_ID;
     document.body.append(root);
-    render(<ImageViewer imageUrl={imageUrl} returnFocus={document.activeElement} />, root);
+    const shadow = root.attachShadow({ mode: 'open' });
+    adoptShadowStyles(shadow, styles);
+    render(<ImageViewer imageUrl={imageUrl} returnFocus={document.activeElement} />, shadow);
 }
 
 export function removeImageViewer() {
     const root = document.getElementById(VIEWER_ROOT_ID);
     if (!root) return;
-    render(null, root);
+    render(null, root.shadowRoot);
     root.remove();
 }
 
@@ -116,7 +120,7 @@ function ImageViewer({ imageUrl, returnFocus }) {
     };
 
     return (
-        <div ref={rootRef} id="imageViewer" class="ig-helper-ui" tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") removeImageViewer(); }} onClick={removeImageViewer} onWheel={event => event.preventDefault()}>
+        <div ref={rootRef} id="imageViewer" tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") removeImageViewer(); }} onClick={removeImageViewer} onWheel={event => event.preventDefault()}>
             <ControlBar id="iv_header" onClick={event => event.stopPropagation()}>
                 <IconButton id="rotate_left" icon={RotateCcwIcon} label="Rotate left"
                     onClick={() => setTransform(current => ({ ...current, rotate: current.rotate - 90 }))} />

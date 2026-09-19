@@ -1,6 +1,4 @@
 import { render } from 'preact';
-import { Button } from './components.jsx';
-
 export function appendMediaResource(parent, resource) {
     const fragment = document.createDocumentFragment();
     render(<MediaResource resource={resource} />, fragment);
@@ -40,12 +38,12 @@ export function decorateMediaResource(anchor, { icons, labels, includeNewTab = t
     render(
         <>
             {includeNewTab && (
-                <Button class="newTab" variant="ghost" size="icon-sm"
+                <button type="button" class="newTab"
                     data-ih-locale-title="NEW_TAB" title={labels.newTab} aria-label={labels.newTab}
                     dangerouslySetInnerHTML={{ __html: icons.newTab }} />
             )}
             {includeThumbnail && (
-                <Button class="videoThumbnail" variant="ghost" size="icon-sm"
+                <button type="button" class="videoThumbnail"
                     data-ih-locale-title="VIDEO_THUMBNAIL" title={labels.thumbnail} aria-label={labels.thumbnail}
                     dangerouslySetInnerHTML={{ __html: icons.thumbnail }} />
             )}

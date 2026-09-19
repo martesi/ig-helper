@@ -1,0 +1,48 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "basecoat-css/vega";
+
+:host {
+    --radius: 10px;
+    --background: rgb(var(--ig-primary-background, 255, 255, 255));
+    --foreground: rgb(var(--ig-primary-text, 17, 17, 17));
+    --card: var(--background);
+    --card-foreground: var(--foreground);
+    --popover: var(--background);
+    --popover-foreground: var(--foreground);
+    --primary: #0095f6;
+    --primary-foreground: #fff;
+    --secondary: rgb(var(--ig-secondary-background, 245, 245, 245));
+    --secondary-foreground: var(--foreground);
+    --muted: var(--secondary);
+    --muted-foreground: rgb(var(--ig-secondary-text, 115, 115, 115));
+    --accent: rgb(var(--ig-hover-overlay, 239, 239, 239));
+    --accent-foreground: var(--foreground);
+    --destructive: #ed4956;
+    --border: rgb(var(--ig-separator, 219, 219, 219));
+    --input: var(--border);
+    --ring: #0095f6;
+    color: var(--foreground);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.IG_CONTROL_BAR {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px);
+    --foreground: #fff;
+    --muted: rgba(255, 255, 255, 0.18);
+}
+
+.IG_CONTROL_BAR svg {
+    width: 18px;
+    height: 18px;
+    pointer-events: none;
+}

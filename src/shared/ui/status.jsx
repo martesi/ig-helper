@@ -16,7 +16,7 @@ export function showDownloadStatus(status) {
     if (!mount) {
         mount = document.createElement('div');
         mount.id = DOWNLOAD_STATUS_ID;
-        mount.className = 'IG_DOWNLOAD_STATUS ig-helper-ui';
+        mount.className = 'IG_DOWNLOAD_STATUS';
         mount.setAttribute('role', 'status');
         mount.setAttribute('aria-live', 'polite');
         document.body.append(mount);
@@ -52,7 +52,7 @@ export function appendCounter(parent, className) {
 export function appendDownloadProgress(parent, now, total) {
     const fragment = document.createDocumentFragment();
     render(
-        <div class="circle_wrapper ig-helper-ui">
+        <div class="circle_wrapper">
             <circle />
             <span>{now}/{total}</span>
         </div>,

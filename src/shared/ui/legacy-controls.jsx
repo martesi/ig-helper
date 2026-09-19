@@ -1,10 +1,8 @@
 import { render } from 'preact';
-import { Button } from './components.jsx';
-
 export function appendLegacyControl(parent, { className, label, labelKey, icon }) {
     const fragment = document.createDocumentFragment();
     render(
-        <Button class={`IG_LEGACY_CONTROL ${className}`} variant="ghost" size="icon-sm"
+        <button type="button" class={`IG_LEGACY_CONTROL ${className}`}
             data-ih-locale-title={labelKey} title={label} aria-label={label}
             dangerouslySetInnerHTML={{ __html: icon }} />,
         fragment,

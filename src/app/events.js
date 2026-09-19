@@ -9,7 +9,7 @@ import { logger } from "../shared/logger";
 import { onStory, onStoryAll, onStoryThumbnail } from "../features/story";
 import { onProfileAvatar } from "../features/profile";
 import { onHighlightsStory, onHighlightsStoryAll, onHighlightsStoryThumbnail } from "../features/highlight";
-import { onReels, refreshReelsControls } from "../features/reel";
+import { refreshReelsControls } from "../features/reel";
 import { _i18n } from "../shared/i18n";
 import { registerPerformanceObserver } from "../features/media/image-cache";
 import { batchDownloadPostFiles, createDownloadButton } from "../features/post/post";
@@ -178,21 +178,6 @@ export function registerEvents() {
     // Running if user left-click thumbnail download icon in highlight stories
     $body.on('click', '.IG_DWHISTORY_THUMBNAIL', function () {
         onHighlightsStoryThumbnail(true);
-    });
-
-    // Running if user left-click download icon in reels
-    $body.on('click', '.IG_REELS', function () {
-        onReels(true, true);
-    });
-
-    // Running if user left-click newtab icon in reels
-    $body.on('click', '.IG_REELS_NEWTAB', function () {
-        onReels(true, true, true);
-    });
-
-    // Running if user left-click download icon in reels
-    $body.on('click', '.IG_REELS_THUMBNAIL', function () {
-        onReels(true, false);
     });
 
     // Running if user right-click profile picture in stories area

@@ -1,21 +1,6 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
-@import "basecoat-css/base/base.css";
-@import "basecoat-css/components/button";
-@import "basecoat-css/components/button-group";
-@import "basecoat-css/components/checkbox";
-@import "basecoat-css/components/dialog";
-@import "basecoat-css/components/empty";
-@import "basecoat-css/components/input";
-@import "basecoat-css/components/kbd";
-@import "basecoat-css/components/popover";
-@import "basecoat-css/components/select";
-@import "basecoat-css/components/range";
-@import "basecoat-css/components/scrollbar";
-@import "basecoat-css/components/switch";
-@import "basecoat-css/components/tabs";
-@import "basecoat-css/components/textarea";
-@import "basecoat-css/styles/vega";
+@import "basecoat-css/vega";
 @import './settings-ui.css';
 
 @theme {

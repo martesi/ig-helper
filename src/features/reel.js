@@ -154,10 +154,14 @@ export function refreshReelsControls() {
 function appendReelsButton($main) {
     // OPTIMIZATION: cache $main.children() and $main.find('video') usage
     const $mainChildren = $main.children();
-    if (!$mainChildren.find('.IG_REELS').length) {
+    if (!$mainChildren.find('.IG_REEL_CONTROLS').length) {
         $mainChildren.css('position', 'relative');
 
-        mountReelControls($mainChildren[0]);
+        mountReelControls($mainChildren[0], {
+            download: () => onReels(true, true),
+            newTab: () => onReels(true, true, true),
+            thumbnail: () => onReels(true, false),
+        });
     }
 
     const $videos = $main.find('video');

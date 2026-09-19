@@ -3,9 +3,13 @@ import { SVG, USER_SETTING } from '../../settings/state';
 import { _i18n } from '../../shared/i18n';
 import { Button } from '../../shared/ui/components.jsx';
 import { CopyIcon } from '../../shared/ui/icons.jsx';
+import { adoptShadowStyles } from '../../shared/ui/shadow-styles.js';
+import styles from './controls.css?inline';
 
 export function mountPostControls(mount, { showDownloadAll = false, showMediaPreview = USER_SETTING.SHOW_MEDIA_PREVIEW, mediaType = 'image', actions = {} } = {}) {
-    render(<PostControls showDownloadAll={showDownloadAll} showMediaPreview={showMediaPreview} mediaType={mediaType} actions={actions} />, mount);
+    const root = mount.shadowRoot ?? mount.attachShadow({ mode: 'open' });
+    adoptShadowStyles(root, styles);
+    render(<PostControls showDownloadAll={showDownloadAll} showMediaPreview={showMediaPreview} mediaType={mediaType} actions={actions} />, root);
 }
 
 

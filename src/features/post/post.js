@@ -303,7 +303,7 @@ export function createDownloadButton() {
                 if ($actionSection.length === 0) return;
 
                 const controlsMount = document.createElement('span');
-                controlsMount.className = 'button_wrapper IG_CONTROL_BAR ig-helper-ui';
+                controlsMount.className = 'button_wrapper IG_CONTROL_BAR';
                 insertPostControls($actionSection, controlsMount);
 
                 const resource_count = $mainElement.find(resourceCountSelector).length;

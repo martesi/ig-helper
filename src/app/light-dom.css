@@ -1,39 +1,3 @@
-/* Minimal styles for controls mounted directly into Instagram's document. */
-.IG_CONTROL_BAR {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.35);
-    color: #fff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-
-.IG_CONTROL_BAR .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-}
-
-.IG_CONTROL_BAR .btn:hover {
-    background-color: rgba(255, 255, 255, 0.25);
-}
-
-.IG_CONTROL_BAR svg {
-    width: 18px;
-    height: 18px;
-    pointer-events: none;
-}
-
 .button_wrapper.IG_CONTROL_BAR {
     position: static;
     flex-flow: row;
@@ -54,24 +18,6 @@
     display: inline-flex !important;
     align-items: center;
     justify-content: flex-end;
-}
-
-.button_wrapper.IG_CONTROL_BAR svg {
-    width: 24px;
-    height: 24px;
-}
-
-.button_wrapper.IG_CONTROL_BAR .IG_POST_CONTROL {
-    width: 40px;
-    min-height: 40px;
-    height: 40px;
-    padding: 8px;
-    border-radius: 0;
-}
-
-.button_wrapper.IG_CONTROL_BAR .IG_POST_CONTROL:hover {
-    background-color: transparent;
-    transform: scale(1.05);
 }
 
 .IG_LEGACY_CONTROL {

@@ -3,11 +3,10 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/ho
 import { _i18n } from '../i18n';
 import { Button, Checkbox, IconButton } from './components.jsx';
 import { XIcon } from './icons.jsx';
+import { adoptShadowStyles } from './shadow-styles.js';
 import styles from './resource-picker.css?inline';
 
 export const RESOURCE_PICKER_ROOT_ID = 'ig-helper-resource-picker-root';
-const GLOBAL_PROPERTY_STYLE_ID = 'ig-helper-tailwind-properties';
-const PROPERTY_RULE = /@property\s+--[\w-]+\s*\{[^{}]*\}/g;
 
 export function openResourcePicker({ title, resources, onDownload }) {
     removeResourcePicker();
@@ -17,7 +16,7 @@ export function openResourcePicker({ title, resources, onDownload }) {
     document.body.append(host);
 
     const shadow = host.attachShadow({ mode: 'open' });
-    installStyles(shadow);
+    adoptShadowStyles(shadow, styles);
     render(<ResourcePicker title={title} resources={resources} onDownload={onDownload} returnFocus={document.activeElement} />, shadow);
 }
 
@@ -26,22 +25,6 @@ export function removeResourcePicker() {
     if (!host) return;
     render(null, host.shadowRoot);
     host.remove();
-}
-
-function installStyles(shadow) {
-    const isolatedStyles = styles.replaceAll('--tw-', '--ih-tw-');
-    const propertyRules = isolatedStyles.match(PROPERTY_RULE) ?? [];
-
-    if (propertyRules.length > 0 && !document.getElementById(GLOBAL_PROPERTY_STYLE_ID)) {
-        const globalStyle = document.createElement('style');
-        globalStyle.id = GLOBAL_PROPERTY_STYLE_ID;
-        globalStyle.textContent = propertyRules.join('\n');
-        document.head.append(globalStyle);
-    }
-
-    const style = document.createElement('style');
-    style.textContent = isolatedStyles.replace(PROPERTY_RULE, '');
-    shadow.append(style);
 }
 
 function ResourcePicker({ title, resources, onDownload, returnFocus }) {

@@ -14,7 +14,7 @@ export function IconButton({ class: className = '', icon: Icon, label, title = l
 }
 
 export function ControlBar({ class: className = '', children, ...props }) {
-    return <div class={`IG_CONTROL_BAR ig-helper-ui ${className}`.trim()} {...props}>{children}</div>;
+    return <div class={`IG_CONTROL_BAR ${className}`.trim()} {...props}>{children}</div>;
 }
 
 export function Input({ class: className = '', type = 'text', ...props }) {
