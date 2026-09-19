@@ -91,6 +91,19 @@ body {
     box-shadow: 0 12px 40px rgb(0 0 0 / 8%);
 }
 
+.IG_CONTROL_BODY {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.IG_CONTROL_BODY > .IG_SETTINGS_LAYOUT,
+.IG_CONTROL_BODY > .IG_DEBUGGER_CONTENT {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 .IG_SETTINGS_DIALOG .IG_SETTINGS_CONTENT {
     width: 100%;
     max-width: none;

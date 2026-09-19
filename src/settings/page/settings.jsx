@@ -7,9 +7,7 @@ import {
     PARENT_CHILD_MAPPING,
 } from '../schema.js';
 import { requestSettings } from './client.js';
-import { ControlNav } from './control-nav.jsx';
 import { createTranslator, loadLocale, localeManifest, resolveLanguage } from './i18n.js';
-import './settings.css';
 
 const SETTINGS_SECTIONS = [
     {
@@ -56,7 +54,7 @@ const SECTION_NAV_ITEMS = [
     { id: 'keyboard', key: 'SETTINGS_KEYBOARD' },
 ];
 
-export function OptionsApp() {
+export function OptionsApp({ onHeaderChange }) {
     const [data, setData] = useState(null);
     const [language, setLanguage] = useState('en-US');
     const [locale, setLocale] = useState({});
@@ -64,6 +62,14 @@ export function OptionsApp() {
     const [conflict, setConflict] = useState(null);
     const [activeSection, setActiveSection] = useState('general');
     const t = createTranslator(locale);
+
+    useEffect(() => {
+        onHeaderChange({
+            title: t('SETTING'),
+            description: t('SETTINGS_DESCRIPTION'),
+            version: data?.version,
+        });
+    }, [data?.version, locale, onHeaderChange]);
 
     useEffect(() => {
         let cancelled = false;
@@ -159,47 +165,34 @@ export function OptionsApp() {
     }
 
     return (
-        <main class="IG_SETTINGS_DIALOG ig-helper-ui">
-            <div class="IG_SETTINGS_PANEL">
-                <header class="IG_SETTINGS_HEADER">
-                    <div>
-                        <h2>{t('SETTING')}</h2>
-                        <p>{t('SETTINGS_DESCRIPTION')}</p>
-                    </div>
-                    <div class="IG_SETTINGS_HEADER_ACTIONS">
-                        <ControlNav active="settings" />
-                        {data?.version && <span class="IG_SETTINGS_VERSION">v{data.version}</span>}
-                    </div>
-                </header>
+        <>
+            {error && <p class="IG_SETTINGS_STATUS" role="alert">{error}</p>}
+            {!data && !error && <p class="IG_SETTINGS_STATUS">Loading settings…</p>}
 
-                {error && <p class="IG_SETTINGS_STATUS" role="alert">{error}</p>}
-                {!data && !error && <p class="IG_SETTINGS_STATUS">Loading settings…</p>}
+            {data && (
+                <div class="IG_SETTINGS_LAYOUT">
+                    <nav class="IG_SETTINGS_TABS" aria-label={t('SETTINGS_SECTIONS')}>
+                        {SECTION_NAV_ITEMS.map(section => (
+                            <Button key={section.id} class="IG_SETTINGS_LOCATOR" variant="ghost"
+                                data-settings-locator={section.id}
+                                aria-current={activeSection === section.id ? 'location' : undefined}
+                                onClick={() => locateSection(section.id)}>
+                                {t(section.key)}
+                            </Button>
+                        ))}
+                    </nav>
 
-                {data && (
-                    <div class="IG_SETTINGS_LAYOUT">
-                        <nav class="IG_SETTINGS_TABS" aria-label={t('SETTINGS_SECTIONS')}>
-                            {SECTION_NAV_ITEMS.map(section => (
-                                <Button key={section.id} class="IG_SETTINGS_LOCATOR" variant="ghost"
-                                    data-settings-locator={section.id}
-                                    aria-current={activeSection === section.id ? 'location' : undefined}
-                                    onClick={() => locateSection(section.id)}>
-                                    {t(section.key)}
-                                </Button>
-                            ))}
-                        </nav>
-
-                        <section class="IG_SETTINGS_CONTENT">
-                            <div class="IG_SETTINGS_PAGE">
-                                <SettingsSections data={data} language={language} t={t}
-                                    onLanguageChange={saveLanguage} onSettingChange={saveSetting}
-                                    onVolumeChange={saveVolume} onRenameFormatChange={saveRenameFormat} />
-                                <KeyboardSettings data={data} conflict={conflict} t={t} onSave={saveHotkey} />
-                            </div>
-                        </section>
-                    </div>
-                )}
-            </div>
-        </main>
+                    <section class="IG_SETTINGS_CONTENT">
+                        <div class="IG_SETTINGS_PAGE">
+                            <SettingsSections data={data} language={language} t={t}
+                                onLanguageChange={saveLanguage} onSettingChange={saveSetting}
+                                onVolumeChange={saveVolume} onRenameFormatChange={saveRenameFormat} />
+                            <KeyboardSettings data={data} conflict={conflict} t={t} onSave={saveHotkey} />
+                        </div>
+                    </section>
+                </div>
+            )}
+        </>
     );
 }
 

@@ -12,14 +12,14 @@ body {
     margin: 0;
 }
 
-main {
+.IG_LANDING {
     display: grid;
     min-height: 100vh;
     place-items: center;
     padding: 32px;
 }
 
-section {
+.IG_LANDING > section {
     width: min(640px, 100%);
     padding: 40px;
     border: 1px solid #dbdbdb;
@@ -28,34 +28,34 @@ section {
     box-shadow: 0 12px 40px rgb(0 0 0 / 8%);
 }
 
-.eyebrow {
+.IG_LANDING .eyebrow {
     margin: 0 0 8px;
     color: #737373;
     font-size: 13px;
     font-weight: 600;
 }
 
-h1 {
+.IG_LANDING h1 {
     margin: 0;
     font-size: clamp(28px, 6vw, 42px);
     line-height: 1.1;
 }
 
-h1 + p {
+.IG_LANDING h1 + p {
     margin: 16px 0 0;
     color: #737373;
     font-size: 16px;
     line-height: 1.5;
 }
 
-.actions {
+.IG_LANDING .actions {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     margin-top: 28px;
 }
 
-a {
+.IG_LANDING a {
     padding: 9px 14px;
     border: 1px solid #dbdbdb;
     border-radius: 8px;
@@ -65,11 +65,11 @@ a {
     text-decoration: none;
 }
 
-a:hover {
+.IG_LANDING a:hover {
     background: #f5f5f5;
 }
 
-a.primary {
+.IG_LANDING a.primary {
     border-color: #0095f6;
     background: #0095f6;
     color: #fff;
@@ -81,21 +81,21 @@ a.primary {
         background: #0c0c0c;
     }
 
-    section {
+    .IG_LANDING > section {
         border-color: #363636;
         background: #000;
     }
 
-    .eyebrow,
-    h1 + p {
+    .IG_LANDING .eyebrow,
+    .IG_LANDING h1 + p {
         color: #a3a3a3;
     }
 
-    a {
+    .IG_LANDING a {
         border-color: #363636;
     }
 
-    a:hover {
+    .IG_LANDING a:hover {
         background: #171717;
     }
 }
