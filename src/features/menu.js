@@ -4,8 +4,8 @@ import { _i18n } from '../shared/i18n';
 import { mountLegacyDialog, queryLegacyDialog } from '../shared/ui/dialogs.jsx';
 
 const PAGE_ROOT = import.meta.env.DEV
-    ? 'http://127.0.0.1:9100/#/'
-    : 'https://martesi.github.io/ig-helper/#/';
+    ? 'http://127.0.0.1:9100/'
+    : 'https://martesi.github.io/ig-helper/';
 const CONTROL_WINDOW_NAME = 'ig-helper-control';
 
 /**
@@ -66,13 +66,16 @@ export function showDebugger() {
 }
 
 function openPage(path) {
-    const url = `${PAGE_ROOT}${path}`;
-    const controlWindow = window.open(url, CONTROL_WINDOW_NAME);
+    const url = new URL(PAGE_ROOT);
+    url.searchParams.set('openerOrigin', location.origin);
+    url.hash = `/${path}`;
+    const href = url.href;
+    const controlWindow = window.open(href, CONTROL_WINDOW_NAME);
     if (controlWindow) {
         controlWindow.focus();
         return;
     }
 
-    logger('window.open blocked; falling back to GM_openInTab', url);
-    GM_openInTab(url, { active: true });
+    logger('window.open blocked; falling back to GM_openInTab', href);
+    GM_openInTab(href, { active: true });
 }

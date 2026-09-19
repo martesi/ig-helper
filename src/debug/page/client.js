@@ -1,10 +1,11 @@
-import { DEBUG_CHANNEL, INSTAGRAM_ORIGIN } from '../protocol.js';
+import { DEBUG_CHANNEL, normalizeInstagramOrigin } from '../protocol.js';
 
 const pending = new Map();
 let nextId = 0;
+const openerOrigin = normalizeInstagramOrigin(new URLSearchParams(location.search).get('openerOrigin'));
 
 window.addEventListener('message', event => {
-    if (event.origin !== INSTAGRAM_ORIGIN || event.source !== window.opener) return;
+    if (!openerOrigin || event.origin !== openerOrigin || event.source !== window.opener) return;
     if (event.data?.channel !== DEBUG_CHANNEL || event.data.direction !== 'response') return;
 
     const request = pending.get(event.data.id);
@@ -19,7 +20,7 @@ window.addEventListener('message', event => {
 });
 
 export function hasDebugOpener() {
-    return Boolean(window.opener && !window.opener.closed);
+    return Boolean(openerOrigin && window.opener && !window.opener.closed);
 }
 
 export function requestDebug(method) {
@@ -31,7 +32,7 @@ export function requestDebug(method) {
 
         const id = ++nextId;
         const message = { channel: DEBUG_CHANNEL, direction: 'request', id, method };
-        const send = () => window.opener.postMessage(message, INSTAGRAM_ORIGIN);
+        const send = () => window.opener.postMessage(message, openerOrigin);
         const retry = setInterval(send, 100);
         const timer = setTimeout(() => {
             pending.delete(id);

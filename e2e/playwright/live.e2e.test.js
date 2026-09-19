@@ -252,7 +252,8 @@ test.describe('IG Helper live browser E2E', () => {
 
         try {
             await debuggerPage.waitForLoadState('domcontentloaded');
-            expect(debuggerPage.url()).toContain('/#/debug');
+            expect(new URL(debuggerPage.url()).hash).toBe('#/debug');
+            expect(new URL(debuggerPage.url()).searchParams.get('openerOrigin')).toBe(new URL(e2e.page.url()).origin);
             expect(await debuggerPage.evaluate(() => Boolean(window.opener))).toBe(true);
 
             await debuggerPage.waitForFunction(

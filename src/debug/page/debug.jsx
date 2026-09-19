@@ -86,6 +86,7 @@ export function DebuggerApp() {
                                     <Button onClick={() => runCommand('getSnapshot')}>Refresh</Button>
                                     <Button onClick={() => runCommand('clearLogs')}>Clear logs</Button>
                                     <Button onClick={captureDom}>Capture DOM</Button>
+                                    <Button variant="destructive" onClick={() => runCommand('reload')}>Reload tab</Button>
                                 </div>
                             </section>
 
