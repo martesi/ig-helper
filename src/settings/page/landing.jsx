@@ -26,7 +26,6 @@ function Landing() {
                 <p>Download photos and videos from posts, Reels, Stories, highlights, and profiles.</p>
                 <div class="actions">
                     <Link class="primary" href="/settings">Settings</Link>
-                    <Link href="/debug">Debugger</Link>
                     <a href="https://github.com/martesi/ig-helper">GitHub</a>
                 </div>
             </section>
