@@ -265,11 +265,27 @@ test.describe('IG Helper live browser E2E', () => {
             );
 
             await debuggerPage.getByRole('button', { name: 'Capture DOM' }).click();
-            await debuggerPage.waitForFunction(() => {
-                const section = [...document.querySelectorAll('.IG_DEBUGGER_SECTION')]
-                    .find(item => item.querySelector('h4')?.textContent === 'DOM snapshot');
-                return (section?.querySelector('pre')?.textContent || '').length > 1000;
-            }, undefined, { timeout: 5000 });
+            const domActions = debuggerPage.locator('.IG_DEBUGGER_ACTIONS .button-group');
+            await expect(domActions.getByRole('button', { name: 'Copy DOM snapshot' })).toBeVisible();
+            await expect(domActions.getByRole('button', { name: 'Download DOM snapshot' })).toBeVisible();
+            await expect(domActions.getByRole('button', { name: 'Capture DOM again' })).toBeVisible();
+            await expect(domActions.locator('button')).toHaveCount(3);
+            await expect(domActions.locator('button svg')).toHaveCount(3);
+            const groupGeometry = await domActions.locator('button').evaluateAll(buttons => buttons.map(button => {
+                const style = getComputedStyle(button);
+                const rect = button.getBoundingClientRect();
+                return {
+                    left: rect.left,
+                    right: rect.right,
+                    borderLeftWidth: style.borderLeftWidth,
+                    borderTopLeftRadius: style.borderTopLeftRadius,
+                    borderTopRightRadius: style.borderTopRightRadius,
+                };
+            }));
+            expect(groupGeometry[1].left).toBe(groupGeometry[0].right);
+            expect(groupGeometry[1].borderLeftWidth).toBe('0px');
+            expect(groupGeometry[0].borderTopRightRadius).toBe('0px');
+            expect(groupGeometry[1].borderTopLeftRadius).toBe('0px');
 
             await debuggerPage.getByRole('link', { name: 'Settings' }).click();
             await debuggerPage.waitForFunction(

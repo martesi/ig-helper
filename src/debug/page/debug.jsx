@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Link } from 'wouter-preact';
 import { Button, IconButton } from '../../shared/ui/components.jsx';
-import { RotateCwIcon } from '../../shared/ui/icons.jsx';
+import { CopyIcon, DownloadIcon, RotateCwIcon, Trash2Icon } from '../../shared/ui/icons.jsx';
 import { requestDebug } from './client.js';
 import './debug.css';
 
@@ -83,12 +83,12 @@ export function DebuggerApp() {
                                 <p>{data.page.url}</p>
                             </div>
                             <div class="IG_DEBUGGER_ACTIONS">
-                                <Button size="sm" variant="ghost" onClick={() => runCommand('clearLogs')}>Clear logs</Button>
                                 {dom ? (
-                                    <div class="button-group">
-                                        <Button size="sm" variant="outline" onClick={() => copyText(dom.html ?? '')}>Copy</Button>
-                                        <Button size="sm" variant="outline"
-                                            onClick={() => downloadText(`DOMTree-${Date.now()}.txt`, dom.html ?? '')}>Download</Button>
+                                    <div role="group" class="button-group">
+                                        <IconButton icon={CopyIcon} label="Copy DOM snapshot" variant="outline"
+                                            onClick={() => copyText(dom.html ?? '')} />
+                                        <IconButton icon={DownloadIcon} label="Download DOM snapshot" variant="outline"
+                                            onClick={() => downloadText(`DOMTree-${Date.now()}.txt`, dom.html ?? '')} />
                                         <IconButton icon={RotateCwIcon} label="Capture DOM again" variant="outline"
                                             onClick={captureDom} />
                                     </div>
@@ -117,11 +117,14 @@ export function DebuggerApp() {
                             <pre>{data.errors.length ? formatEntries(data.errors) : 'No captured errors.'}</pre>
                         </DebugSection>
 
-                        <DebugSection title={`Logs (latest ${data.logs.length})`}>
-                            <div class="IG_DEBUGGER_SECTION_ACTIONS">
-                                <Button size="sm" variant="ghost" onClick={() => copyText(formatEntries(data.logs))}>Copy</Button>
-                                <Button size="sm" variant="ghost" onClick={() => downloadText('ig-helper-debug.json', JSON.stringify(data, null, 2))}>Export</Button>
+                        <DebugSection title={`Logs (latest ${data.logs.length})`} actions={
+                            <div role="group" class="button-group IG_DEBUGGER_SECTION_ACTIONS">
+                                <IconButton icon={CopyIcon} label="Copy logs" onClick={() => copyText(formatEntries(data.logs))} />
+                                <IconButton icon={DownloadIcon} label="Export debug data"
+                                    onClick={() => downloadText('ig-helper-debug.json', JSON.stringify(data, null, 2))} />
+                                <IconButton icon={Trash2Icon} label="Clear logs" onClick={() => runCommand('clearLogs')} />
                             </div>
+                        }>
                             <pre class="IG_DEBUGGER_SCROLL">{data.logs.length ? formatEntries(data.logs) : 'No log entries.'}</pre>
                         </DebugSection>
                     </>
@@ -140,10 +143,13 @@ function Metric({ label, value }) {
     );
 }
 
-function DebugSection({ title, children }) {
+function DebugSection({ title, actions, children }) {
     return (
         <section class="IG_DEBUGGER_SECTION">
-            <header><h4>{title}</h4></header>
+            <header>
+                <h4>{title}</h4>
+                {actions}
+            </header>
             {children}
         </section>
     );

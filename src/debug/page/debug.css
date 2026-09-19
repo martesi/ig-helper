@@ -46,15 +46,11 @@
     white-space: nowrap;
 }
 
-.IG_DEBUGGER_ACTIONS,
-.IG_DEBUGGER_SECTION_ACTIONS {
+.IG_DEBUGGER_ACTIONS {
     display: flex;
+    flex: none;
     flex-wrap: wrap;
     gap: 4px;
-}
-
-.IG_DEBUGGER_ACTIONS {
-    flex: none;
 }
 
 .IG_DEBUGGER_ACTIONS .btn[data-variant='primary'] {
