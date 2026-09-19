@@ -1,23 +1,32 @@
 import { state, USER_SETTING } from '../settings/state.js';
-import {
-    DEBUG_COMMANDS,
-    DEBUG_ENABLED_KEY,
-    debugCommandKey,
-    debugDomKey,
-    debugTabKey,
-} from './protocol.js';
+import { CONTROL_ORIGIN, DEBUG_CHANNEL, DEBUG_COMMANDS } from './protocol.js';
 
-const HEARTBEAT_MS = 1000;
 const MAX_LOGS = 200;
 const MAX_ERRORS = 50;
-
-const tabId = crypto.randomUUID();
 const startedAt = Date.now();
 const errors = [];
-let active = false;
-let lastCommandId = null;
 
-const heartbeat = setInterval(syncDebugState, HEARTBEAT_MS);
+window.addEventListener('message', event => {
+    if (event.origin !== CONTROL_ORIGIN) return;
+    if (event.data?.channel !== DEBUG_CHANNEL || event.data.direction !== 'request') return;
+
+    const id = Number.isInteger(event.data.id) && event.data.id > 0 ? event.data.id : null;
+    const method = event.data.method;
+    if (id == null || !DEBUG_COMMANDS.has(method) || !event.source) return;
+
+    try {
+        const result = handleRequest(method);
+        event.source.postMessage({ channel: DEBUG_CHANNEL, direction: 'response', id, ok: true, result }, event.origin);
+    } catch (error) {
+        event.source.postMessage({
+            channel: DEBUG_CHANNEL,
+            direction: 'response',
+            id,
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+        }, event.origin);
+    }
+});
 
 window.addEventListener('error', event => {
     rememberError(event.error ?? event.message);
@@ -27,47 +36,28 @@ window.addEventListener('unhandledrejection', event => {
     rememberError(event.reason);
 });
 
-window.addEventListener('visibilitychange', syncDebugState);
-window.addEventListener('pagehide', cleanup);
+function handleRequest(method) {
+    if (method === 'getSnapshot') return createSnapshot();
 
-syncDebugState();
-
-export function publishDebugSnapshot() {
-    syncDebugState();
-}
-
-function syncDebugState() {
-    const enabled = Boolean(GM_getValue(DEBUG_ENABLED_KEY, false));
-    if (!enabled) {
-        if (active) removeSnapshot();
-        active = false;
-        return;
+    if (method === 'clearLogs') {
+        state.GL_logger.length = 0;
+        errors.length = 0;
+        return createSnapshot();
     }
 
-    active = true;
-    const command = GM_getValue(debugCommandKey(tabId), null);
-    if (command?.id && command.id !== lastCommandId && command.tabId === tabId && DEBUG_COMMANDS.has(command.type)) {
-        lastCommandId = command.id;
-        handleCommand(command.type);
-        if (command.type === 'reload') return;
+    if (method === 'captureDom') {
+        return {
+            capturedAt: Date.now(),
+            url: `${location.origin}${location.pathname}`,
+            html: document.querySelector('div[id^="mount"]')?.innerHTML ?? '',
+        };
     }
 
-    publish();
+    throw new Error(`Unsupported debugger command: ${method}`);
 }
 
-function cleanup() {
-    clearInterval(heartbeat);
-    removeSnapshot();
-}
-
-function removeSnapshot() {
-    GM_deleteValue(debugTabKey(tabId));
-    GM_deleteValue(debugDomKey(tabId));
-}
-
-function publish() {
-    GM_setValue(debugTabKey(tabId), {
-        tabId,
+function createSnapshot() {
+    return {
         startedAt,
         updatedAt: Date.now(),
         page: {
@@ -106,31 +96,8 @@ function publish() {
             time: log.time,
             content: serializeValue(log.content),
         })),
-        errors,
-    });
-}
-
-function handleCommand(type) {
-    if (type === 'reload') {
-        location.reload();
-        return;
-    }
-
-    if (type === 'clearLogs') {
-        state.GL_logger.length = 0;
-        errors.length = 0;
-    }
-
-    if (type === 'captureDom') {
-        GM_setValue(debugDomKey(tabId), {
-            tabId,
-            capturedAt: Date.now(),
-            url: `${location.origin}${location.pathname}`,
-            html: document.querySelector('div[id^="mount"]')?.innerHTML ?? '',
-        });
-    }
-
-    publish();
+        errors: [...errors],
+    };
 }
 
 function rememberError(error) {
@@ -140,7 +107,6 @@ function rememberError(error) {
         stack: error instanceof Error ? error.stack ?? '' : '',
     });
     if (errors.length > MAX_ERRORS) errors.splice(0, errors.length - MAX_ERRORS);
-    publish();
 }
 
 function safePath(value) {

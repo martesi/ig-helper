@@ -1,10 +1,11 @@
-const CHANNEL = 'ig-helper:debug';
+import { DEBUG_CHANNEL, INSTAGRAM_ORIGIN } from '../protocol.js';
+
 const pending = new Map();
 let nextId = 0;
 
 window.addEventListener('message', event => {
-    if (event.origin !== location.origin || event.source !== window) return;
-    if (event.data?.channel !== CHANNEL || event.data.direction !== 'response') return;
+    if (event.origin !== INSTAGRAM_ORIGIN || event.source !== window.opener) return;
+    if (event.data?.channel !== DEBUG_CHANNEL || event.data.direction !== 'response') return;
 
     const request = pending.get(event.data.id);
     if (!request) return;
@@ -17,19 +18,28 @@ window.addEventListener('message', event => {
     else request.reject(new Error(event.data.error || 'IG Helper debugger request failed'));
 });
 
-export function requestDebug(method, payload) {
+export function hasDebugOpener() {
+    return Boolean(window.opener && !window.opener.closed);
+}
+
+export function requestDebug(method) {
     return new Promise((resolve, reject) => {
+        if (!hasDebugOpener()) {
+            reject(new Error('Open Settings from Instagram to attach the debugger.'));
+            return;
+        }
+
         const id = ++nextId;
-        const message = { channel: CHANNEL, direction: 'request', id, method, payload };
-        const send = () => window.postMessage(message, location.origin);
+        const message = { channel: DEBUG_CHANNEL, direction: 'request', id, method };
+        const send = () => window.opener.postMessage(message, INSTAGRAM_ORIGIN);
         const retry = setInterval(send, 100);
         const timer = setTimeout(() => {
             pending.delete(id);
             clearInterval(retry);
-            reject(new Error('IG Helper userscript not detected. Enable it and reload this page.'));
+            reject(new Error('The Instagram tab did not respond.'));
         }, 5000);
 
-        pending.set(id, { resolve, reject, timer, retry });
+        pending.set(id, { resolve, reject, retry, timer });
         send();
     });
 }

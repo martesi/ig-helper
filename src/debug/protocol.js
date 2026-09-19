@@ -1,18 +1,8 @@
-export const DEBUG_ENABLED_KEY = 'IG_HELPER_DEBUG_ENABLED';
-export const DEBUG_TAB_PREFIX = 'IG_HELPER_DEBUG_TAB:';
-export const DEBUG_COMMAND_PREFIX = 'IG_HELPER_DEBUG_COMMAND:';
-export const DEBUG_DOM_PREFIX = 'IG_HELPER_DEBUG_DOM:';
+export const DEBUG_CHANNEL = 'ig-helper:debug';
+export const DEBUG_COMMANDS = new Set(['getSnapshot', 'clearLogs', 'captureDom']);
 
-export const DEBUG_COMMANDS = new Set(['refresh', 'clearLogs', 'captureDom', 'reload']);
+export const CONTROL_ORIGIN = import.meta.env.DEV
+    ? 'http://127.0.0.1:9100'
+    : 'https://martesi.github.io';
 
-export function debugTabKey(tabId) {
-    return `${DEBUG_TAB_PREFIX}${tabId}`;
-}
-
-export function debugCommandKey(tabId) {
-    return `${DEBUG_COMMAND_PREFIX}${tabId}`;
-}
-
-export function debugDomKey(tabId) {
-    return `${DEBUG_DOM_PREFIX}${tabId}`;
-}
+export const INSTAGRAM_ORIGIN = 'https://www.instagram.com';

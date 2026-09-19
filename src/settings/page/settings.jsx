@@ -7,6 +7,7 @@ import {
     PARENT_CHILD_MAPPING,
 } from '../schema.js';
 import { requestSettings } from './client.js';
+import { ControlNav } from './control-nav.jsx';
 import { createTranslator, loadLocale, localeManifest, resolveLanguage } from './i18n.js';
 import './settings.css';
 
@@ -165,7 +166,10 @@ export function OptionsApp() {
                         <h2>{t('SETTING')}</h2>
                         <p>{t('SETTINGS_DESCRIPTION')}</p>
                     </div>
-                    {data?.version && <span class="IG_SETTINGS_VERSION">v{data.version}</span>}
+                    <div class="IG_SETTINGS_HEADER_ACTIONS">
+                        <ControlNav active="settings" />
+                        {data?.version && <span class="IG_SETTINGS_VERSION">v{data.version}</span>}
+                    </div>
                 </header>
 
                 {error && <p class="IG_SETTINGS_STATUS" role="alert">{error}</p>}

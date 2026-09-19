@@ -1,7 +1,8 @@
 import { initSettings } from "../shared/general";
 import { logger } from "../shared/logger";
 import { getTranslationText, repaintingTranslations } from "../shared/i18n";
-import { state } from "../settings/state";
+import { state, USER_SETTING } from "../settings/state";
+import { HOTKEY_SETTINGS, SETTINGS_STORAGE_KEYS } from "../settings/schema";
 import { purgeCache } from "../features/media/image-cache";
 import { registerMenuCommand } from "../features/menu";
 
@@ -22,7 +23,7 @@ getTranslationText(state.lang).then((res) => {
 });
 
 let activeLanguage = state.lang;
-window.addEventListener('focus', async () => {
+async function syncSettings() {
     initSettings();
     if (state.lang === activeLanguage) return;
 
@@ -36,7 +37,18 @@ window.addEventListener('focus', async () => {
     }
     repaintingTranslations();
     registerMenuCommand();
-});
+}
+
+const settingsStorageKeys = [
+    ...Object.keys(USER_SETTING),
+    ...Object.values(SETTINGS_STORAGE_KEYS),
+    ...HOTKEY_SETTINGS.map(config => config.storageKey),
+];
+for (const key of settingsStorageKeys) {
+    GM_addValueChangeListener(key, () => {
+        void syncSettings();
+    });
+}
 
 logger('Script Loaded', GM_info.script.name, 'version:', GM_info.script.version);
 purgeCache();

@@ -238,7 +238,7 @@ test.describe('IG Helper live browser E2E', () => {
         await e2e.closeSettings();
     });
 
-    test('configured debug hotkey opens the hosted debugger and captures the live DOM tree', async () => {
+    test('configured debug hotkey opens the attached control window and captures the live DOM tree', async () => {
         if (!hotkeys) {
             await e2e.openSettings();
             hotkeys = await e2e.readHotkeys();
@@ -249,25 +249,14 @@ test.describe('IG Helper live browser E2E', () => {
         const debuggerPagePromise = e2e.context.waitForEvent('page', { timeout: 5000 });
         await e2e.pressLegacyHotkey(hotkeys.debug);
         const debuggerPage = await debuggerPagePromise;
-        let secondInstagram = null;
 
         try {
             await debuggerPage.waitForLoadState('domcontentloaded');
             expect(debuggerPage.url()).toContain('/#/debug');
-
-            const enable = debuggerPage.getByRole('button', { name: 'Enable debugger' });
-            if (await enable.isVisible().catch(() => false)) await enable.click();
+            expect(await debuggerPage.evaluate(() => Boolean(window.opener))).toBe(true);
 
             await debuggerPage.waitForFunction(
-                () => document.querySelectorAll('.IG_DEBUGGER_SESSION').length > 0,
-                undefined,
-                { timeout: 5000 },
-            );
-
-            secondInstagram = await e2e.createPage();
-            await secondInstagram.goto(INSTAGRAM_HOME, { waitUntil: 'domcontentloaded' });
-            await debuggerPage.waitForFunction(
-                () => document.querySelectorAll('.IG_DEBUGGER_SESSION').length >= 2,
+                () => document.querySelector('.IG_DEBUGGER_TITLE h3')?.textContent?.length > 0,
                 undefined,
                 { timeout: 5000 },
             );
@@ -279,12 +268,39 @@ test.describe('IG Helper live browser E2E', () => {
                 return (section?.querySelector('pre')?.textContent || '').length > 1000;
             }, undefined, { timeout: 5000 });
 
-            expect(await debuggerPage.locator('.IG_DEBUGGER_SESSION').count()).toBeGreaterThanOrEqual(2);
+            await debuggerPage.getByRole('link', { name: 'Settings' }).click();
+            await debuggerPage.waitForFunction(
+                () => location.hash.startsWith('#/settings') && document.querySelectorAll('[data-settings-section]').length === 7,
+                undefined,
+                { timeout: 5000 },
+            );
 
-            const disable = debuggerPage.getByRole('button', { name: 'Disable debugger' });
-            if (await disable.isVisible().catch(() => false)) await disable.click();
+            const originalMediaPreview = await debuggerPage.evaluate(() => document.querySelector('#SHOW_MEDIA_PREVIEW')?.checked);
+            await debuggerPage.locator('label[for="SHOW_MEDIA_PREVIEW"]').click();
+            const nextMediaPreview = !originalMediaPreview;
+            await debuggerPage.waitForFunction(
+                expected => document.querySelector('#SHOW_MEDIA_PREVIEW')?.checked === expected,
+                nextMediaPreview,
+                { timeout: 3000 },
+            );
+            await debuggerPage.waitForFunction(async expected => {
+                const { requestDebug } = await import('/src/debug/page/client.js');
+                return (await requestDebug('getSnapshot')).settings.SHOW_MEDIA_PREVIEW === expected;
+            }, nextMediaPreview, { timeout: 5000 });
+
+            await debuggerPage.locator('label[for="SHOW_MEDIA_PREVIEW"]').click();
+            await debuggerPage.waitForFunction(async expected => {
+                const { requestDebug } = await import('/src/debug/page/client.js');
+                return (await requestDebug('getSnapshot')).settings.SHOW_MEDIA_PREVIEW === expected;
+            }, originalMediaPreview, { timeout: 5000 });
+
+            await debuggerPage.getByRole('link', { name: 'Debugger' }).click();
+            await debuggerPage.waitForFunction(
+                () => location.hash === '#/debug' && document.querySelector('.IG_DEBUGGER_TITLE h3'),
+                undefined,
+                { timeout: 5000 },
+            );
         } finally {
-            await secondInstagram?.close().catch(() => {});
             await debuggerPage.close().catch(() => {});
             await e2e.page.bringToFront();
         }

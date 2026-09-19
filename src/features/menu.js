@@ -1,4 +1,3 @@
-import { DEBUG_ENABLED_KEY } from '../debug/protocol.js';
 import { state } from '../settings/state';
 import { logger } from '../shared/logger';
 import { _i18n } from '../shared/i18n';
@@ -7,6 +6,7 @@ import { mountLegacyDialog, queryLegacyDialog } from '../shared/ui/dialogs.jsx';
 const PAGE_ROOT = import.meta.env.DEV
     ? 'http://127.0.0.1:9100/#/'
     : 'https://martesi.github.io/ig-helper/#/';
+const CONTROL_WINDOW_NAME = 'ig-helper-control';
 
 /**
  * IG_createDM
@@ -50,7 +50,6 @@ export function registerMenuCommand() {
 
     state.registerMenuIds.push(
         GM_registerMenuCommand(_i18n('SETTING'), showSetting, { accessKey: 'w' }),
-        GM_registerMenuCommand(debuggerMenuLabel(), toggleDebugger, { accessKey: 'z' }),
     );
 }
 
@@ -66,17 +65,14 @@ export function showDebugger() {
     openPage('debug');
 }
 
-export function toggleDebugger() {
-    const enabled = !GM_getValue(DEBUG_ENABLED_KEY, false);
-    GM_setValue(DEBUG_ENABLED_KEY, enabled);
-    registerMenuCommand();
-    if (enabled) showDebugger();
-}
-
-function debuggerMenuLabel() {
-    return `${GM_getValue(DEBUG_ENABLED_KEY, false) ? '✓' : '○'} ${_i18n('DEBUG')}`;
-}
-
 function openPage(path) {
-    GM_openInTab(`${PAGE_ROOT}${path}`, { active: true });
+    const url = `${PAGE_ROOT}${path}`;
+    const controlWindow = window.open(url, CONTROL_WINDOW_NAME);
+    if (controlWindow) {
+        controlWindow.focus();
+        return;
+    }
+
+    logger('window.open blocked; falling back to GM_openInTab', url);
+    GM_openInTab(url, { active: true });
 }

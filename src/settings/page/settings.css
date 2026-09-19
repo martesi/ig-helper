@@ -123,6 +123,26 @@ body {
     line-height: 20px;
 }
 
+.IG_SETTINGS_HEADER_ACTIONS,
+.IG_CONTROL_NAV {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.IG_SETTINGS_HEADER_ACTIONS {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.IG_CONTROL_NAV_LINK {
+    text-decoration: none;
+}
+
+.IG_CONTROL_NAV .btn {
+    white-space: nowrap;
+}
+
 .IG_SETTINGS_DIALOG .IG_SETTINGS_LAYOUT {
     grid-template-columns: 220px minmax(0, 1fr);
     min-height: 0;
