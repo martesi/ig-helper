@@ -83,6 +83,7 @@ test.describe('IG Helper live browser E2E', () => {
                 ),
                 viewerOrThumbnail: Boolean(wrapper?.querySelector('.IG_IMAGE_VIEWER, .IG_THUMBNAIL_MAIN')),
                 newTab: Boolean(wrapper?.querySelector('.IG_NEWTAB_MAIN')),
+                copy: Boolean(wrapper?.querySelector('.IG_COPY_MAIN')),
                 download: Boolean(wrapper?.querySelector('.IG_DW_MAIN')),
             };
         })()`);
@@ -91,7 +92,74 @@ test.describe('IG Helper live browser E2E', () => {
         expect(controls.allButtons).toBe(true);
         expect(controls.viewerOrThumbnail).toBe(true);
         expect(controls.newTab).toBe(true);
+        expect(controls.copy).toBe(true);
         expect(controls.download).toBe(true);
+    });
+
+    test('copy current post image writes image data and reports success', async () => {
+        await e2e.ensurePostControls();
+        const selector = '.button_wrapper:has(.IG_IMAGE_VIEWER) .IG_COPY_MAIN';
+        await e2e.waitFor(`!!document.querySelector('${selector}')`, 15000);
+
+        await e2e.evaluate(`(() => {
+            window.__igHelperCopyMessage = '';
+            window.__igHelperCopyWrites = 0;
+            window.__igHelperCopyType = '';
+            window.__igHelperCopyBlobType = '';
+            window.__igHelperCopyMocks = {
+                alert: window.alert,
+                clipboard: Object.getOwnPropertyDescriptor(navigator, 'clipboard'),
+                clipboardItem: Object.getOwnPropertyDescriptor(window, 'ClipboardItem'),
+            };
+            window.alert = message => { window.__igHelperCopyMessage = String(message); };
+            Object.defineProperty(window, 'ClipboardItem', {
+                configurable: true,
+                writable: true,
+                value: class {
+                    static supports(type) { return type.startsWith('image/'); }
+                    constructor(items) {
+                        this.items = items;
+                        window.__igHelperCopyType = Object.keys(items)[0] || '';
+                    }
+                },
+            });
+            Object.defineProperty(navigator, 'clipboard', {
+                configurable: true,
+                value: {
+                    write: async items => {
+                        window.__igHelperCopyWrites += items.length;
+                        const blobs = await Promise.all(items.flatMap(item => Object.values(item.items)));
+                        window.__igHelperCopyBlobType = blobs[0]?.type || '';
+                    },
+                },
+            });
+        })()`);
+
+        try {
+            await e2e.click(selector);
+            await e2e.waitFor(`window.__igHelperCopyWrites === 1 && window.__igHelperCopyMessage.length > 0`, 3000);
+            const result = await e2e.json(`({
+                writes: window.__igHelperCopyWrites,
+                message: window.__igHelperCopyMessage,
+                type: window.__igHelperCopyType,
+                blobType: window.__igHelperCopyBlobType,
+            })`);
+            expect(result.writes).toBe(1);
+            expect(result.message).toBe('Media copied to clipboard.');
+            expect(result.type).toMatch(/^image\//);
+            expect(result.blobType).toBe(result.type);
+        } finally {
+            await e2e.evaluate(`(() => {
+                const mocks = window.__igHelperCopyMocks;
+                if (!mocks) return;
+                window.alert = mocks.alert;
+                if (mocks.clipboardItem) Object.defineProperty(window, 'ClipboardItem', mocks.clipboardItem);
+                else delete window.ClipboardItem;
+                if (mocks.clipboard) Object.defineProperty(navigator, 'clipboard', mocks.clipboard);
+                else delete navigator.clipboard;
+                delete window.__igHelperCopyMocks;
+            })()`);
+        }
     });
 
     test('settings render as one continuous page, persist a real preference, and expose shortcut configuration', async () => {
@@ -104,10 +172,11 @@ test.describe('IG Helper live browser E2E', () => {
             switches: document.querySelectorAll('input[role="switch"]').length,
             hotkeyRows: document.querySelectorAll('.IG_HOTKEY_ROW').length,
             directDownloadMode: document.querySelector('#DIRECT_DOWNLOAD_MODE-value')?.value,
+            mediaPreview: document.querySelector('#SHOW_MEDIA_PREVIEW')?.checked,
         })`);
         expect(initial.href).toContain('/#/settings');
         expect(initial.sections).toBe(7);
-        expect(initial.switches).toBeGreaterThanOrEqual(15);
+        expect(initial.switches).toBeGreaterThanOrEqual(16);
         expect(initial.hotkeyRows).toBe(4);
         expect(await e2e.json(`document.querySelectorAll('[data-settings-section="advanced"] input[role="switch"]').length`)).toBeGreaterThanOrEqual(5);
         expect(await e2e.evaluate(`document.querySelector('[data-settings-locator="general"]')?.getAttribute('aria-current')`)).toBe('location');
@@ -122,14 +191,22 @@ test.describe('IG Helper live browser E2E', () => {
         const nextDownloadMode = initial.directDownloadMode === DIRECT_DOWNLOAD_MODE_OPTIONS.ASK
             ? DIRECT_DOWNLOAD_MODE_OPTIONS.ALL
             : DIRECT_DOWNLOAD_MODE_OPTIONS.ASK;
-        await e2e.setSettings({ DIRECT_DOWNLOAD_MODE: nextDownloadMode });
+        await e2e.setSettings({ SHOW_MEDIA_PREVIEW: true });
+        const nextMediaPreview = false;
+        await e2e.setSettings({ DIRECT_DOWNLOAD_MODE: nextDownloadMode, SHOW_MEDIA_PREVIEW: nextMediaPreview });
+        const bridgePreview = await e2e.evaluate(`import('/src/settings/page/client.js').then(({ requestSettings }) => requestSettings('getState')).then(result => result.settings.SHOW_MEDIA_PREVIEW)`);
+        expect(bridgePreview).toBe(nextMediaPreview);
         await e2e.reload();
         await e2e.showGeneralSection();
 
-        const persisted = await e2e.evaluate(`document.querySelector('#DIRECT_DOWNLOAD_MODE-value')?.value`);
-        expect(persisted).toBe(nextDownloadMode);
+        const persisted = await e2e.json(`({
+            directDownloadMode: document.querySelector('#DIRECT_DOWNLOAD_MODE-value')?.value,
+            mediaPreview: document.querySelector('#SHOW_MEDIA_PREVIEW')?.checked,
+        })`);
+        expect(persisted.directDownloadMode).toBe(nextDownloadMode);
+        expect(persisted.mediaPreview).toBe(nextMediaPreview);
 
-        await e2e.setSettings({ DIRECT_DOWNLOAD_MODE: initial.directDownloadMode });
+        await e2e.setSettings({ DIRECT_DOWNLOAD_MODE: initial.directDownloadMode, SHOW_MEDIA_PREVIEW: initial.mediaPreview });
         await e2e.showKeyboardTab();
         hotkeys = await e2e.readHotkeys();
 
@@ -379,6 +456,36 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
+
+    test('preview setting hides only the lightbox button', async () => {
+        await e2e.withSettings({
+            DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
+            SHOW_MEDIA_PREVIEW: false,
+            FORCE_FETCH_ALL_RESOURCES: false,
+            FORCE_RESOURCE_VIA_MEDIA: false,
+        }, async () => {
+            await e2e.ensurePostControls();
+            const wrapper = '.button_wrapper.IG_CONTROL_BAR:not(:has(.IG_THUMBNAIL_MAIN))';
+            await e2e.waitFor(`!!document.querySelector('${wrapper}')`, 15000);
+
+            const controls = await e2e.json(`(() => {
+                const root = document.querySelector('${wrapper}');
+                return {
+                    viewer: Boolean(root?.querySelector('.IG_IMAGE_VIEWER')),
+                    copy: Boolean(root?.querySelector('.IG_COPY_MAIN')),
+                    newTab: Boolean(root?.querySelector('.IG_NEWTAB_MAIN')),
+                    download: Boolean(root?.querySelector('.IG_DW_MAIN')),
+                };
+            })()`);
+            expect(controls).toEqual({ viewer: false, copy: true, newTab: true, download: true });
+
+            await e2e.click(`${wrapper} .IG_DW_MAIN`);
+            await e2e.waitFor(`!!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})?.shadowRoot?.querySelector('.resource-picker-item img')`, 20000);
+            expect(await e2e.shadowJson(RESOURCE_PICKER_ROOT_ID, `root.querySelectorAll('.resource-picker-item img').length`)).toBeGreaterThan(0);
+
+            await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-header .btn[data-size="icon-sm"]');
+        });
+    });
 
     test('invalid post paths reject before issuing requests', async () => {
         const page = await e2e.context.newPage();

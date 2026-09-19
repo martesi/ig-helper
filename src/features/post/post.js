@@ -312,10 +312,11 @@ export function createDownloadButton() {
                     view: () => openPostImageViewer(controlsMount),
                     thumbnail: () => openPostVideoThumbnail(controlsMount),
                     newTab: () => openPostResourceInNewTab(controlsMount),
+                    copy: () => copyPostResourceToClipboard(controlsMount),
                     downloadAll: () => downloadAllPostResources(controlsMount),
                     download: () => downloadPostResource(controlsMount),
                 };
-                mountPostControls(controlsMount, { showDownloadAll, mediaType: 'image', actions: postControlActions });
+                mountPostControls(controlsMount, { showDownloadAll, showMediaPreview: USER_SETTING.SHOW_MEDIA_PREVIEW, mediaType: 'image', actions: postControlActions });
 
                 setTimeout(() => {
                     // eslint-disable-next-line no-unused-vars
@@ -422,6 +423,16 @@ export function createDownloadButton() {
 
 
 function openPostImageViewer(target) {
+    const url = getCurrentPostImageUrl(target);
+
+    if (url) {
+        openImageViewer(url);
+    } else {
+        alert("Cannot find resource url.");
+    }
+}
+
+function getCurrentPostImageUrl(target) {
     const $article = getPostContainerFromButton(target);
     let url = $article.data('igHelper_displayResourceURL');
 
@@ -432,10 +443,66 @@ function openPostImageViewer(target) {
         }).first().attr('src');
     }
 
-    if (url) {
-        openImageViewer(url);
-    } else {
-        alert("Cannot find resource url.");
+    return url || null;
+}
+
+async function copyPostResourceToClipboard(target) {
+    if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+        alert(_i18n('COPY_MEDIA_CLIPBOARD_UNAVAILABLE'));
+        return;
+    }
+
+    if ($(target).find('.IG_THUMBNAIL_MAIN').length > 0) {
+        alert(_i18n('COPY_MEDIA_UNSUPPORTED'));
+        return;
+    }
+
+    const url = getCurrentPostImageUrl(target);
+    if (!url) {
+        alert(_i18n('COPY_MEDIA_FAILED'));
+        return;
+    }
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const blob = await response.blob();
+        const type = blob.type === 'image/png' || ClipboardItem.supports?.(blob.type)
+            ? blob.type
+            : 'image/png';
+        const data = type === blob.type ? blob : await toClipboardPng(blob);
+
+        await navigator.clipboard.write([new ClipboardItem({ [type]: data })]);
+        alert(_i18n('COPY_MEDIA_SUCCESS'));
+    }
+    catch (err) {
+        logger('copyPostResourceToClipboard', err);
+        alert(_i18n('COPY_MEDIA_FAILED'));
+    }
+}
+
+async function toClipboardPng(blob) {
+    if (blob.type === 'image/png') return blob;
+
+    const bitmap = await createImageBitmap(blob);
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Canvas 2D context unavailable');
+        context.drawImage(bitmap, 0, 0);
+
+        return await new Promise((resolve, reject) => {
+            canvas.toBlob(
+                result => result ? resolve(result) : reject(new Error('PNG conversion failed')),
+                'image/png',
+            );
+        });
+    }
+    finally {
+        bitmap.close();
     }
 }
 

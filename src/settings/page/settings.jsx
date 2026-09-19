@@ -27,7 +27,7 @@ const SETTINGS_SECTIONS = [
         id: 'playback',
         key: 'SETTINGS_PLAYBACK',
         descriptionKey: 'SETTINGS_PLAYBACK_DESCRIPTION',
-        settings: ['DISABLE_VIDEO_LOOPING', 'HTML5_VIDEO_CONTROL', 'MODIFY_VIDEO_VOLUME', 'SCROLL_BUTTON'],
+        settings: ['SHOW_MEDIA_PREVIEW', 'DISABLE_VIDEO_LOOPING', 'HTML5_VIDEO_CONTROL', 'MODIFY_VIDEO_VOLUME', 'SCROLL_BUTTON'],
     },
     {
         id: 'navigation',
