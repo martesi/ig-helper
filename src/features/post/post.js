@@ -724,7 +724,7 @@ async function downloadPostResource(target) {
             let s = 0;
             const $resourceItems = $article.find(resourceCountSelector);
             let multiple = $resourceItems.length;
-            let blob = USER_SETTING.FORCE_FETCH_ALL_RESOURCES;
+            let blob = false;
             const publish_time = new Date(
                 $article.find('a[href] time[datetime]').filter(function () {
                     let href = $(this).parents("a[href]").attr("href");

@@ -10,7 +10,6 @@
 **Simple and fast download of resources from Instagram (posts, reels, stories, and more).**
 
 ## 🎉 Features
-- Force the fetching of all resources in the post.
 - Download the resources in the post with one click.
 - Download the resources currently displayed in the post with one click.
 - Open the resource in a new window.

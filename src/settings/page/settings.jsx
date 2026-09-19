@@ -39,7 +39,6 @@ const SETTINGS_SECTIONS = [
         key: 'SETTINGS_ADVANCED',
         descriptionKey: 'SETTINGS_ADVANCED_DESCRIPTION',
         settings: [
-            'FORCE_FETCH_ALL_RESOURCES',
             'FORCE_RESOURCE_VIA_MEDIA',
             'CAPTURE_IMAGE_VIA_MEDIA_CACHE',
             'MODIFY_RESOURCE_EXIF',

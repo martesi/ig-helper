@@ -491,7 +491,6 @@ test.describe('IG Helper live browser E2E', () => {
         await e2e.withSettings({
             DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
             SHOW_MEDIA_PREVIEW: false,
-            FORCE_FETCH_ALL_RESOURCES: false,
             FORCE_RESOURCE_VIA_MEDIA: false,
         }, async () => {
             await e2e.ensurePostControls();
@@ -671,7 +670,6 @@ test.describe('IG Helper live browser E2E', () => {
     test('resource picker selection works and a real post media download completes on disk', async () => {
         const requiredSettings = {
             DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
-            FORCE_FETCH_ALL_RESOURCES: false,
             FORCE_RESOURCE_VIA_MEDIA: false,
             USE_EXTERNAL_DOWNLOAD_MODE: false,
             MODIFY_RESOURCE_EXIF: false,
@@ -799,8 +797,7 @@ test.describe('IG Helper live browser E2E', () => {
 
             await e2e.withSettings({
                 DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
-                FORCE_FETCH_ALL_RESOURCES: false,
-                FORCE_RESOURCE_VIA_MEDIA: false,
+                    FORCE_RESOURCE_VIA_MEDIA: false,
             }, async () => {
                 await e2e.ensurePostControls();
                 await e2e.click('.button_wrapper .IG_DW_MAIN');
