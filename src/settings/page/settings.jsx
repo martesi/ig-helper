@@ -15,19 +15,13 @@ const SETTINGS_SECTIONS = [
         id: 'downloads',
         key: 'SETTINGS_DOWNLOADS',
         descriptionKey: 'SETTINGS_DOWNLOADS_DESCRIPTION',
-        settings: ['DIRECT_DOWNLOAD_MODE', 'DIRECT_DOWNLOAD_STORY', 'FORCE_FETCH_ALL_RESOURCES', 'USE_EXTERNAL_DOWNLOAD_MODE'],
+        settings: ['DIRECT_DOWNLOAD_MODE', 'DIRECT_DOWNLOAD_STORY'],
     },
     {
         id: 'files',
         key: 'SETTINGS_FILES',
         descriptionKey: 'SETTINGS_FILES_DESCRIPTION',
-        settings: ['AUTO_RENAME', 'MODIFY_RESOURCE_EXIF'],
-    },
-    {
-        id: 'media',
-        key: 'SETTINGS_MEDIA',
-        descriptionKey: 'SETTINGS_MEDIA_DESCRIPTION',
-        settings: ['FORCE_RESOURCE_VIA_MEDIA', 'CAPTURE_IMAGE_VIA_MEDIA_CACHE'],
+        settings: ['AUTO_RENAME'],
     },
     {
         id: 'playback',
@@ -40,6 +34,18 @@ const SETTINGS_SECTIONS = [
         key: 'SETTINGS_NAVIGATION',
         descriptionKey: 'SETTINGS_NAVIGATION_DESCRIPTION',
         settings: ['REDIRECT_CLICK_USER_STORY_PICTURE', 'SKIP_VIEW_STORY_CONFIRM', 'SKIP_SHARED_WITH_YOU_DIALOG'],
+    },
+    {
+        id: 'advanced',
+        key: 'SETTINGS_ADVANCED',
+        descriptionKey: 'SETTINGS_ADVANCED_DESCRIPTION',
+        settings: [
+            'FORCE_FETCH_ALL_RESOURCES',
+            'FORCE_RESOURCE_VIA_MEDIA',
+            'CAPTURE_IMAGE_VIA_MEDIA_CACHE',
+            'MODIFY_RESOURCE_EXIF',
+            'USE_EXTERNAL_DOWNLOAD_MODE',
+        ],
     },
 ];
 

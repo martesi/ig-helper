@@ -149,11 +149,11 @@
   }
 
   .resource-picker-footer {
-    @apply grid grid-cols-2 gap-x-2 gap-y-1 px-4 py-2;
+    @apply grid grid-cols-2 gap-x-2 gap-y-1 px-4 py-1;
   }
 
   .resource-picker-footer .btn {
-    @apply h-auto min-h-11 w-full min-w-0 whitespace-normal py-1.5 text-xs leading-4;
+    @apply h-auto min-h-10 w-full min-w-0 whitespace-normal py-1.5 text-xs leading-4;
   }
 
   .resource-picker-count {

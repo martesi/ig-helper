@@ -17,6 +17,8 @@ const english = {
     SETTINGS_PLAYBACK_DESCRIPTION: 'Video playback and helper controls shown inside Instagram.',
     SETTINGS_NAVIGATION: 'Navigation',
     SETTINGS_NAVIGATION_DESCRIPTION: 'Story, shared-link, and profile navigation behavior.',
+    SETTINGS_ADVANCED: 'Advanced',
+    SETTINGS_ADVANCED_DESCRIPTION: 'Compatibility, API, caching, and metadata controls.',
     SETTINGS_KEYBOARD_DESCRIPTION: 'Choose the Alt shortcut for each IG Helper action.',
     SETTINGS_SECTIONS: 'Settings sections',
     SETTINGS_PREFERENCES: 'Preferences',

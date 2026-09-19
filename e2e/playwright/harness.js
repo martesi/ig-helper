@@ -313,7 +313,7 @@ export class IgHelperE2E {
 
     async openSettings(section = 'general') {
         await this.goto(`${OPTIONS_URL}/#/settings`);
-        await this.waitFor(`document.querySelectorAll('[data-settings-section]').length === 7`, 5000);
+        await this.waitFor(`document.querySelectorAll('[data-settings-section]').length === 7`, 10000);
         await this.locateSettingsSection(section);
     }
 
@@ -333,12 +333,12 @@ export class IgHelperE2E {
 
     async locateSettingsSection(section) {
         const target = `[data-settings-section="${section}"]`;
-        await this.waitFor(`!!document.querySelector(${JSON.stringify(`[data-settings-locator="${section}"]`)}) && !!document.querySelector(${JSON.stringify(target)})`, 3000);
+        await this.waitFor(`!!document.querySelector(${JSON.stringify(`[data-settings-locator="${section}"]`)}) && !!document.querySelector(${JSON.stringify(target)})`, 10000);
         await this.click(`[data-settings-locator="${section}"]`);
         await this.waitFor(`(() => {
             const rect = document.querySelector(${JSON.stringify(target)})?.getBoundingClientRect();
             return !!rect && rect.top >= 0 && rect.top < innerHeight / 2;
-        })()`, 3000);
+        })()`, 5000);
     }
 
     async readHotkeys() {

@@ -4,7 +4,7 @@ import { USER_SETTING, state, userIdCache, $body } from "../settings/state";
 import { _i18n } from "./i18n";
 import { getPostOwner, getMediaInfo, getUserId } from "./api";
 import { getImageFromCache } from "../features/media/image-cache";
-import { appendCounter, appendDownloadProgress, appendVolumeSlider, updateLoadingBar } from "./ui/status.jsx";
+import { appendCounter, appendDownloadProgress, appendVolumeSlider, showDownloadStatus, updateLoadingBar } from "./ui/status.jsx";
 import { logger } from "./logger";
 import { queryLegacyDialog } from './ui/dialogs.jsx';
 import {
@@ -343,9 +343,16 @@ export function saveFiles(downloadLink, metadata) {
     return new Promise(resolve => {
         setTimeout(() => {
             updateLoadingBar(true);
+            showDownloadStatus('started');
 
             const downloadName = getSaveFileName(downloadLink, metadata);
             const { filetype, shortcode, sourceType } = metadata;
+
+            const finish = success => {
+                updateLoadingBar(false);
+                showDownloadStatus(success ? 'complete' : 'failed');
+                resolve(success);
+            };
 
             if (
                 USER_SETTING.MODIFY_RESOURCE_EXIF &&
@@ -358,51 +365,39 @@ export function saveFiles(downloadLink, metadata) {
                         if (!res.ok) throw new Error(`Download failed with HTTP ${res.status}`);
                         return res.blob();
                     })
-                    .then(dwel => {
-                        updateLoadingBar(false);
-                        return createSaveFileElement(downloadLink, dwel, metadata);
-                    })
-                    .then(() => resolve(true))
+                    .then(dwel => createSaveFileElement(downloadLink, dwel, metadata))
+                    .then(() => finish(true))
                     .catch(err => {
-                        updateLoadingBar(false);
                         console.error('saveFiles failed', err);
-                        resolve(false);
+                        finish(false);
                     });
-            } else {
-                if (USER_SETTING.USE_EXTERNAL_DOWNLOAD_MODE) {
-                    GM_download({
-                        url: downloadLink,
-                        name: downloadName,
-                        onload: () => {
-                            updateLoadingBar(false);
-                            resolve(true);
-                        },
-                        // eslint-disable-next-line no-unused-vars
-                        onerror: (err) => {
-                            updateLoadingBar(false);
-                            resolve(true);
-                        },
-                    });
-                }
-                else {
-                    updateLoadingBar(true);
-                    fetch(downloadLink)
-                        .then(res => {
-                            if (!res.ok) throw new Error(`Download failed with HTTP ${res.status}`);
-                            return res.blob();
-                        })
-                        .then(dwel => {
-                            updateLoadingBar(false);
-                            return createSaveFileElement(downloadLink, dwel, metadata);
-                        })
-                        .then(() => resolve(true))
-                        .catch(err => {
-                            updateLoadingBar(false);
-                            console.error('saveFiles failed:', err);
-                            resolve(false);
-                        });
-                }
+                return;
             }
+
+            if (USER_SETTING.USE_EXTERNAL_DOWNLOAD_MODE) {
+                GM_download({
+                    url: downloadLink,
+                    name: downloadName,
+                    onload: () => finish(true),
+                    onerror: err => {
+                        console.error('saveFiles failed:', err);
+                        finish(false);
+                    },
+                });
+                return;
+            }
+
+            fetch(downloadLink)
+                .then(res => {
+                    if (!res.ok) throw new Error(`Download failed with HTTP ${res.status}`);
+                    return res.blob();
+                })
+                .then(dwel => createSaveFileElement(downloadLink, dwel, metadata))
+                .then(() => finish(true))
+                .catch(err => {
+                    console.error('saveFiles failed:', err);
+                    finish(false);
+                });
         }, 50);
     });
 }

@@ -10,7 +10,7 @@ import { logger } from "../shared/logger";
 import { onStory, onStoryAll, onStoryThumbnail } from "../features/story";
 import { onProfileAvatar } from "../features/profile";
 import { onHighlightsStory, onHighlightsStoryAll, onHighlightsStoryThumbnail } from "../features/highlight";
-import { onReels } from "../features/reel";
+import { onReels, refreshReelsControls } from "../features/reel";
 import { _i18n } from "../shared/i18n";
 import { registerPerformanceObserver } from "../features/media/image-cache";
 import { batchDownloadPostFiles, createDownloadButton } from "../features/post/post";
@@ -303,6 +303,11 @@ $(function () {
             mutation.target.closest?.('article') ||
             [...mutation.addedNodes].some((node) => node.matches?.('article') || node.querySelector?.('article'))
         );
+        const hasReelMutation = location.pathname.startsWith('/reels/') && mutationsList.some((mutation) =>
+            [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
+                node.matches?.('video, .IG_REEL_CONTROLS') || node.querySelector?.('video, .IG_REEL_CONTROLS')
+            )
+        );
 
         for (const mutation of mutationsList) {
             if (mutation.type === 'childList') {
@@ -493,6 +498,7 @@ $(function () {
         }
 
         if (hasPostMutation) createDownloadButton();
+        if (hasReelMutation) refreshReelsControls();
     });
 
     (function installElementObserver(attempts) {

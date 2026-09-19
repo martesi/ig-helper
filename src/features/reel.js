@@ -1,12 +1,12 @@
 import $ from 'jquery';
-import { USER_SETTING, SVG, state } from "../settings/state";
-import { appendLegacyControl, appendReelScrollControls } from "../shared/ui/legacy-controls.jsx";
+import { USER_SETTING, state } from "../settings/state";
+import { appendReelScrollControls } from "../shared/ui/legacy-controls.jsx";
 import { saveFiles, openNewTab, toggleVolumeSilder, triggerReactClickHandler } from "../shared/general";
 import { updateLoadingBar } from "../shared/ui/status.jsx";
 import { logger } from "../shared/logger";
 import { getBlobMedia } from "../shared/api";
 import { filterResourceData } from "./post/post";
-import { _i18n } from "../shared/i18n";
+import { mountReelControls } from "./reel/controls.jsx";
 
 /**
  * onReels
@@ -126,17 +126,7 @@ export async function onReels(isDownload, isVideo, isPreview) {
                         });
                     }
 
-                    $('div[aria-busy][tabindex]').children('div').each(function () {
-                        const $this = $(this);
-                        if (
-                            $this.children().length > 0 &&
-                            $this.width() > window.innerWidth * 0.8 &&
-                            $this.height() > window.innerHeight * 0.8 &&
-                            $this.find('video').length > 0
-                        ) {
-                            appendReelsButton($this);
-                        }
-                    });
+                    refreshReelsControls();
                 }
             }, 250);
         }
@@ -146,51 +136,65 @@ export async function onReels(isDownload, isVideo, isPreview) {
     }
 }
 
+export function refreshReelsControls() {
+    if (!location.pathname.startsWith('/reels/')) return;
+
+    const seen = new Set();
+    $('video:visible').each(function () {
+        const rect = this.getBoundingClientRect();
+        if (rect.width < 240 || rect.height < 240) return;
+
+        const main = this.parentElement?.parentElement;
+        if (!main || seen.has(main)) return;
+        seen.add(main);
+        appendReelsButton($(main));
+    });
+}
+
 function appendReelsButton($main) {
     // OPTIMIZATION: cache $main.children() and $main.find('video') usage
     const $mainChildren = $main.children();
     if (!$mainChildren.find('.IG_REELS').length) {
         $mainChildren.css('position', 'relative');
 
-        appendLegacyControl($mainChildren[0], { className: "IG_REELS", labelKey: "DW", label: _i18n("DW"), icon: SVG.DOWNLOAD });
-        appendLegacyControl($mainChildren[0], { className: "IG_REELS_NEWTAB", labelKey: "NEW_TAB", label: _i18n("NEW_TAB"), icon: SVG.NEW_TAB });
-        appendLegacyControl($mainChildren[0], { className: "IG_REELS_THUMBNAIL", labelKey: "VIDEO_THUMBNAIL", label: _i18n("VIDEO_THUMBNAIL"), icon: SVG.THUMBNAIL });
+        mountReelControls($mainChildren[0]);
+    }
 
-        const $videos = $main.find('video');
+    const $videos = $main.find('video');
 
-        $videos.each(function () {
-            $(this).off('fullscreenchange.IG_videoControl').on('fullscreenchange.IG_videoControl', function () {
-                const $vid = $(this);
-                if (($vid.attr('style') ?? '').includes('object-fit')) {
-                    if (document.fullscreenElement == this) {
-                        $vid.css('object-fit', 'contain');
-                    }
-                    else {
-                        $vid.css('object-fit', 'cover');
-                    }
+    $videos.each(function () {
+        $(this).off('fullscreenchange.IG_videoControl').on('fullscreenchange.IG_videoControl', function () {
+            const $vid = $(this);
+            if (($vid.attr('style') ?? '').includes('object-fit')) {
+                if (document.fullscreenElement == this) {
+                    $vid.css('object-fit', 'contain');
                 }
-            });
+                else {
+                    $vid.css('object-fit', 'cover');
+                }
+            }
         });
+    });
 
-        // Reloading the helper can revisit the same video node after controls are rebuilt.
-        $videos.off('ended.igHelperLoop');
-        if (USER_SETTING.DISABLE_VIDEO_LOOPING) {
-            $videos.on('ended.igHelperLoop', function () {
-                const $this = $(this);
-                const $element_play_button = $this.next().find('div[role="presentation"] > div svg > path[d^="M5.888"]').parents('button[role="button"], div[role="button"]');
-                if ($element_play_button.length > 0) {
-                    $element_play_button.trigger("click");
-                    logger('(reel) Stop video playing #loop, then paused click()');
-                    return;
-                }
+    // Reloading the helper can revisit the same video node after controls are rebuilt.
+    $videos.off('ended.igHelperLoop');
+    if (USER_SETTING.DISABLE_VIDEO_LOOPING) {
+        $videos.on('ended.igHelperLoop', function () {
+            const $this = $(this);
+            const $element_play_button = $this.next().find('div[role="presentation"] > div svg > path[d^="M5.888"]').parents('button[role="button"], div[role="button"]');
+            if ($element_play_button.length > 0) {
+                $element_play_button.trigger("click");
+                logger('(reel) Stop video playing #loop, then paused click()');
+                return;
+            }
 
-                $this.parent().find('.xpgaw4o').removeAttr('style');
-                this.pause();
-                logger('(reel) Stop video playing #loop, then paused pause()');
-            });
-        }
+            $this.parent().find('.xpgaw4o').removeAttr('style');
+            this.pause();
+            logger('(reel) Stop video playing #loop, then paused pause()');
+        });
+    }
 
-        if (USER_SETTING.HTML5_VIDEO_CONTROL) {
+    if (USER_SETTING.HTML5_VIDEO_CONTROL) {
 
             const handleSwitchController = function (e) {
                 e.preventDefault();
@@ -289,9 +293,10 @@ function appendReelsButton($main) {
                     $video.data('controls', true);
                 }
             });
-        }
+    }
 
-        var $buttonParent = $main.find('div[role="presentation"] > div[role="button"] > div').first();
+    const $buttonParent = $main.find('div[role="presentation"] > div[role="button"] > div').first();
+    if ($buttonParent.find('div.volume_slider').length === 0) {
         toggleVolumeSilder($videos, $buttonParent, 'reel');
     }
 }

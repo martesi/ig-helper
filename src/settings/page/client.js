@@ -27,7 +27,7 @@ export function requestSettings(method, payload) {
             pending.delete(id);
             clearInterval(retry);
             reject(new Error('IG Helper userscript not detected. Enable it and reload this page.'));
-        }, 2000);
+        }, 5000);
 
         pending.set(id, { resolve, reject, retry, timer });
         send();

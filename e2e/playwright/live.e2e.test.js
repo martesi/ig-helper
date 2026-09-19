@@ -109,6 +109,7 @@ test.describe('IG Helper live browser E2E', () => {
         expect(initial.sections).toBe(7);
         expect(initial.switches).toBeGreaterThanOrEqual(15);
         expect(initial.hotkeyRows).toBe(4);
+        expect(await e2e.json(`document.querySelectorAll('[data-settings-section="advanced"] input[role="switch"]').length`)).toBeGreaterThanOrEqual(5);
         expect(await e2e.evaluate(`document.querySelector('[data-settings-locator="general"]')?.getAttribute('aria-current')`)).toBe('location');
 
         await e2e.evaluate(`(() => {
@@ -378,6 +379,49 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
+    test('download status reports failed fetches', async () => {
+        const page = await e2e.context.newPage();
+        try {
+            await page.goto(`${VITE_URL}/src/shared/general.js`, { waitUntil: 'domcontentloaded' });
+            const result = await page.evaluate(async () => {
+                globalThis.GM_getResourceText = () => '{}';
+                globalThis.GM_getValue = (_key, fallback) => fallback;
+                globalThis.GM_setValue = () => {};
+                globalThis.GM_info = { script: { version: 'e2e' } };
+
+                const { saveFiles } = await import('/src/shared/general.js?e2e-download-failure=1');
+                const originalFetch = globalThis.fetch;
+                globalThis.fetch = async () => new Response('', { status: 503 });
+
+                try {
+                    const success = await saveFiles('https://example.invalid/fail.jpg', {
+                        username: 'e2e',
+                        sourceType: 'photo',
+                        timestamp: Date.now(),
+                        filetype: 'jpg',
+                        shortcode: 'failure',
+                    });
+                    const status = document.getElementById('ig-helper-download-status');
+                    return {
+                        success,
+                        state: status?.dataset.status,
+                        role: status?.getAttribute('role'),
+                        text: status?.textContent,
+                    };
+                } finally {
+                    globalThis.fetch = originalFetch;
+                }
+            });
+
+            expect(result.success).toBe(false);
+            expect(result.state).toBe('failed');
+            expect(result.role).toBe('status');
+            expect(result.text).toBe('Download failed');
+        } finally {
+            await page.close();
+        }
+    });
+
     test('resource picker selection works and a real post media download completes on disk', async () => {
         const requiredSettings = {
             DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
@@ -466,6 +510,20 @@ test.describe('IG Helper live browser E2E', () => {
                 return root?.querySelector('.resource-picker-count')?.textContent?.includes('1');
             })()`, 3000);
 
+            await e2e.evaluate(`(() => {
+                window.__igHelperDownloadStates = [];
+                window.__igHelperDownloadStatusObserver?.disconnect();
+                window.__igHelperDownloadStatusObserver = new MutationObserver(() => {
+                    const status = document.getElementById('ig-helper-download-status')?.dataset.status;
+                    if (status) window.__igHelperDownloadStates.push(status);
+                });
+                window.__igHelperDownloadStatusObserver.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['data-status'],
+                });
+            })()`);
             await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-footer .btn[data-variant="primary"]');
             await e2e.waitFor(`!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})`, 3000);
 
@@ -476,6 +534,11 @@ test.describe('IG Helper live browser E2E', () => {
             expect(complete.filePath).toBeTruthy();
             expect(complete.totalBytes).toBeGreaterThan(1000);
             expect(complete.receivedBytes).toBe(complete.totalBytes);
+            await e2e.waitFor(`window.__igHelperDownloadStates?.includes('complete')`, 3000);
+            const downloadStates = await e2e.json('window.__igHelperDownloadStates');
+            expect(downloadStates).toContain('started');
+            expect(downloadStates).toContain('complete');
+            await e2e.evaluate('window.__igHelperDownloadStatusObserver?.disconnect()');
 
         });
     });
@@ -530,6 +593,72 @@ test.describe('IG Helper live browser E2E', () => {
         expect(profile.href).toBe(PROFILE_URL);
         expect(profile.controls).toBeGreaterThan(0);
         expect(profile.visible).toBe(true);
+    });
+
+    test('Reels controls remount after Instagram replaces the helper subtree', async () => {
+        await e2e.goto('https://www.instagram.com/reels/');
+        await e2e.waitFor(`document.querySelectorAll('.IG_REELS').length > 0`, 20000);
+
+        const initial = await e2e.json(`({
+            hosts: document.querySelectorAll('.IG_REEL_CONTROLS').length,
+            downloads: document.querySelectorAll('.IG_REELS').length,
+            newTabs: document.querySelectorAll('.IG_REELS_NEWTAB').length,
+            thumbnails: document.querySelectorAll('.IG_REELS_THUMBNAIL').length,
+            legacy: document.querySelectorAll('.IG_REELS.IG_LEGACY_CONTROL').length,
+        })`);
+        expect(initial.hosts).toBeGreaterThan(0);
+        expect(initial.downloads).toBeGreaterThan(0);
+        expect(initial.newTabs).toBeGreaterThan(0);
+        expect(initial.thumbnails).toBeGreaterThan(0);
+        expect(initial.legacy).toBe(0);
+
+        await e2e.evaluate(`(() => {
+            window.__igHelperReelSlider = document.querySelector('div.volume_slider');
+            document.querySelector('.IG_REEL_CONTROLS')?.remove();
+        })()`);
+        await e2e.waitFor(`document.querySelectorAll('.IG_REEL_CONTROLS').length >= ${initial.hosts}`, 5000);
+
+        const remounted = await e2e.json(`({
+            hosts: document.querySelectorAll('.IG_REEL_CONTROLS').length,
+            controlsComplete: [...document.querySelectorAll('.IG_REEL_CONTROLS')].every(host =>
+                host.querySelectorAll('.IG_REELS').length === 1 &&
+                host.querySelectorAll('.IG_REELS_NEWTAB').length === 1 &&
+                host.querySelectorAll('.IG_REELS_THUMBNAIL').length === 1
+            ),
+            sliderPreserved: !window.__igHelperReelSlider || window.__igHelperReelSlider.isConnected,
+        })`);
+        expect(remounted.hosts).toBe(initial.hosts);
+        expect(remounted.controlsComplete).toBe(true);
+        expect(remounted.sliderPreserved).toBe(true);
+    });
+
+    test('Story controls mount when the authenticated home feed exposes a live story', async () => {
+        await e2e.goto(INSTAGRAM_HOME);
+        const storyUrl = await e2e.evaluate(`(() => {
+            const link = [...document.querySelectorAll('a[href^="/stories/"]')]
+                .find(anchor => !anchor.getAttribute('href')?.startsWith('/stories/highlights/'));
+            return link ? new URL(link.href, location.origin).href : '';
+        })()`);
+        test.skip(!storyUrl, 'No live story is available in the authenticated feed');
+
+        await e2e.goto(storyUrl);
+        await e2e.waitFor(`document.querySelectorAll('.IG_DWSTORY').length > 0`, 15000);
+        expect(await e2e.json(`document.querySelectorAll('.IG_DWSTORY').length`)).toBeGreaterThan(0);
+        expect(await e2e.json(`document.querySelectorAll('.IG_DWNEWTAB').length`)).toBeGreaterThan(0);
+    });
+
+    test('Highlight controls mount when the profile exposes a highlight', async () => {
+        await e2e.goto(PROFILE_URL);
+        const highlightUrl = await e2e.evaluate(`(() => {
+            const link = document.querySelector('a[href^="/stories/highlights/"]');
+            return link ? new URL(link.href, location.origin).href : '';
+        })()`);
+        test.skip(!highlightUrl, 'No highlight is available on the configured profile');
+
+        await e2e.goto(highlightUrl);
+        await e2e.waitFor(`document.querySelectorAll('.IG_DWHISTORY').length > 0`, 15000);
+        expect(await e2e.json(`document.querySelectorAll('.IG_DWHISTORY').length`)).toBeGreaterThan(0);
+        expect(await e2e.json(`document.querySelectorAll('.IG_DWHINEWTAB').length`)).toBeGreaterThan(0);
     });
 
 });

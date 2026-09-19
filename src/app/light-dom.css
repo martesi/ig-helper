@@ -85,3 +85,21 @@
     width: 20px;
     height: 20px;
 }
+
+.IG_DOWNLOAD_STATUS {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    z-index: 2147483647;
+    transform: translateX(-50%);
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.82);
+    color: #fff;
+    font: 600 13px/1.2 system-ui, sans-serif;
+    pointer-events: none;
+}
+
+.IG_DOWNLOAD_STATUS[hidden] {
+    display: none;
+}
