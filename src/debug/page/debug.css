@@ -1,0 +1,214 @@
+.IG_DEBUGGER_PAGE .IG_SETTINGS_PANEL {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+}
+
+.IG_DEBUGGER_PAGE .IG_SETTINGS_STATUS {
+    margin: 0;
+    padding: 10px 32px;
+    border-block: 1px solid var(--color-border);
+}
+
+.IG_DEBUGGER_HEADER {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.IG_DEBUGGER_LAYOUT {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    min-height: 0;
+}
+
+.IG_DEBUGGER_SIDEBAR {
+    min-height: 0;
+    overflow: auto;
+    padding: 16px 12px;
+    border-right: 1px solid var(--color-border);
+    background: var(--color-sidebar);
+}
+
+.IG_DEBUGGER_SIDEBAR_HEADING {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 8px 12px;
+    color: var(--color-muted-foreground);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.IG_DEBUGGER_SESSION {
+    display: grid;
+    width: 100%;
+    gap: 2px;
+    padding: 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-foreground);
+    text-align: left;
+    cursor: pointer;
+}
+
+.IG_DEBUGGER_SESSION:hover,
+.IG_DEBUGGER_SESSION[aria-current='true'] {
+    background: var(--color-sidebar-accent);
+}
+
+.IG_DEBUGGER_SESSION strong,
+.IG_DEBUGGER_SESSION span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.IG_DEBUGGER_SESSION span,
+.IG_DEBUGGER_EMPTY,
+.IG_DEBUGGER_PLACEHOLDER p,
+.IG_DEBUGGER_TITLE p,
+.IG_DEBUGGER_METRIC span {
+    color: var(--color-muted-foreground);
+    font-size: 12px;
+}
+
+.IG_DEBUGGER_EMPTY {
+    padding: 8px;
+}
+
+.IG_DEBUGGER_CONTENT {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    padding: 28px 32px 48px;
+}
+
+.IG_DEBUGGER_PLACEHOLDER {
+    display: grid;
+    min-height: 280px;
+    place-content: center;
+    text-align: center;
+}
+
+.IG_DEBUGGER_PLACEHOLDER h3,
+.IG_DEBUGGER_TITLE h3,
+.IG_DEBUGGER_SECTION h4 {
+    margin: 0;
+}
+
+.IG_DEBUGGER_TITLE {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 22px;
+}
+
+.IG_DEBUGGER_TITLE p {
+    margin: 4px 0 0;
+}
+
+.IG_DEBUGGER_ACTIONS,
+.IG_DEBUGGER_SECTION_ACTIONS {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.IG_DEBUGGER_GRID {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 22px;
+}
+
+.IG_DEBUGGER_METRIC {
+    display: grid;
+    gap: 5px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-card);
+}
+
+.IG_DEBUGGER_METRIC strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+.IG_DEBUGGER_SECTION {
+    position: relative;
+    margin-top: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.IG_DEBUGGER_SECTION > header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-muted);
+}
+
+.IG_DEBUGGER_SECTION_ACTIONS {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+}
+
+.IG_DEBUGGER_SECTION pre {
+    max-height: 320px;
+    margin: 0;
+    overflow: auto;
+    padding: 14px;
+    background: var(--color-background);
+    font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+    .IG_DEBUGGER_PAGE {
+        padding: 0;
+    }
+
+    .IG_DEBUGGER_PAGE .IG_SETTINGS_PANEL {
+        height: 100dvh;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .IG_DEBUGGER_LAYOUT {
+        grid-template-columns: 1fr;
+    }
+
+    .IG_DEBUGGER_SIDEBAR {
+        display: flex;
+        gap: 8px;
+        border-right: 0;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .IG_DEBUGGER_SIDEBAR_HEADING,
+    .IG_DEBUGGER_EMPTY {
+        display: none;
+    }
+
+    .IG_DEBUGGER_SESSION {
+        width: auto;
+        min-width: 160px;
+    }
+
+    .IG_DEBUGGER_GRID {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .IG_DEBUGGER_TITLE {
+        display: grid;
+    }
+}

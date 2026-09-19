@@ -1,5 +1,5 @@
 import { render } from 'preact';
-import { Button, Checkbox, IconButton, Textarea } from './components.jsx';
+import { Button, Checkbox, IconButton } from './components.jsx';
 import { XIcon } from './icons.jsx';
 
 export const LEGACY_DIALOG_ROOT_ID = 'ig-helper-legacy-dialog-root';
@@ -26,14 +26,6 @@ export function mountLegacyDialog({ hidden = false, hasCheckbox = false, labels,
     document.body.append(root);
     render(<LegacyDialog hidden={hidden} hasCheckbox={hasCheckbox} labels={labels} version={version} />, root);
     return root.querySelector('.IG_POPUP_DIG');
-}
-
-export function mountDebugPanel(root, labels) {
-    render(<DebugPanel labels={labels} />, root);
-}
-
-export function mountFeedbackPanel(root, labels) {
-    render(<FeedbackPanel labels={labels} />, root);
 }
 
 function LegacyDialog({ hidden, hasCheckbox, labels, version }) {
@@ -71,31 +63,3 @@ function LegacyDialog({ hidden, hasCheckbox, labels, version }) {
     );
 }
 
-function DebugPanel({ labels }) {
-    return (
-        <div class="IG_LEGACY_PANEL">
-            <Textarea class="IG_DEBUG_TEXTAREA" readOnly />
-            <div class="IG_LEGACY_DIALOG_ACTIONS">
-                <Button class="IG_DISPLAY_DOM_TREE">{labels.showTree}</Button>
-                <Button class="IG_SELECT_DOM_TREE">{labels.copyTree}</Button>
-                <Button class="IG_DOWNLOAD_DOM_TREE">{labels.downloadTree}</Button>
-            </div>
-            <div class="IG_LEGACY_DIALOG_ACTIONS">
-                <a class="btn IG_REPORT_GITHUB" data-variant="outline" href="https://github.com/SN-Koarashi/ig-helper/issues" target="_blank" rel="noreferrer">{labels.github}</a>
-                <a class="btn IG_REPORT_DISCORD" data-variant="outline" href="https://discord.gg/q3KT4hdq8x" target="_blank" rel="noreferrer">{labels.discord}</a>
-            </div>
-        </div>
-    );
-}
-
-function FeedbackPanel({ labels }) {
-    return (
-        <div class="IG_LEGACY_PANEL">
-            <div class="IG_LEGACY_DIALOG_ACTIONS">
-                <a class="btn IG_REPORT_FORK" data-variant="outline" href="https://greasyfork.org/en/scripts/404535-ig-helper/feedback" target="_blank" rel="noreferrer">{labels.fork}</a>
-                <a class="btn IG_REPORT_GITHUB" data-variant="outline" href="https://github.com/SN-Koarashi/ig-helper/issues" target="_blank" rel="noreferrer">{labels.github}</a>
-                <a class="btn IG_REPORT_DISCORD" data-variant="outline" href="https://discord.gg/q3KT4hdq8x" target="_blank" rel="noreferrer">{labels.discord}</a>
-            </div>
-        </div>
-    );
-}

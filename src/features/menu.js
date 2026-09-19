@@ -1,18 +1,12 @@
-import { state } from "../settings/state";
-import { reloadScript } from "../shared/general";
-import { logger } from "../shared/logger";
-import { _i18n } from "../shared/i18n";
-import {
-    mountDebugPanel,
-    mountFeedbackPanel,
-    mountLegacyDialog,
-    queryLegacyDialog,
-    removeLegacyDialog,
-} from '../shared/ui/dialogs.jsx';
+import { DEBUG_ENABLED_KEY } from '../debug/protocol.js';
+import { state } from '../settings/state';
+import { logger } from '../shared/logger';
+import { _i18n } from '../shared/i18n';
+import { mountLegacyDialog, queryLegacyDialog } from '../shared/ui/dialogs.jsx';
 
-const SETTINGS_PAGE_URL = import.meta.env.DEV
-    ? 'http://127.0.0.1:9100/#/settings/'
-    : 'https://martesi.github.io/ig-helper/#/settings/';
+const PAGE_ROOT = import.meta.env.DEV
+    ? 'http://127.0.0.1:9100/#/'
+    : 'https://martesi.github.io/ig-helper/#/';
 
 /**
  * IG_createDM
@@ -47,13 +41,6 @@ export function IG_setDM(hasHidden) {
     queryLegacyDialog('.IG_POPUP_DIG')?.classList.toggle('hidden', Boolean(hasHidden));
 }
 
-
-/**
- * registerMenuCommand
- * @description Register script menu command.
- *
- * @return {void}
- */
 export function registerMenuCommand() {
     for (const id of state.registerMenuIds) {
         logger('GM_unregisterMenuCommand', id);
@@ -61,73 +48,35 @@ export function registerMenuCommand() {
     }
     state.registerMenuIds.length = 0;
 
-    const commands = [
-        ['SETTING', showSetting, 'w'],
-        ['HOTKEY_KEY_SETTINGS_KEY', showHotkeySetting, 'q'],
-        ['DONATE', () => GM_openInTab("https://ko-fi.com/snkoarashi", { active: true }), 'd'],
-        ['DEBUG', showDebugDOM, 'z'],
-        ['FEEDBACK', showFeedbackDOM, 'f'],
-        ['RELOAD_SCRIPT', reloadScript, 'r'],
-    ];
-    state.registerMenuIds.push(...commands.map(([label, action, accessKey]) =>
-        GM_registerMenuCommand(_i18n(label), action, { accessKey })
-    ));
+    state.registerMenuIds.push(
+        GM_registerMenuCommand(_i18n('SETTING'), showSetting, { accessKey: 'w' }),
+        GM_registerMenuCommand(debuggerMenuLabel(), toggleDebugger, { accessKey: 'z' }),
+    );
+}
+
+export function showSetting() {
+    openPage('settings/preferences');
 }
 
 export function showHotkeySetting() {
-    openSettingsPage('keyboard');
+    openPage('settings/keyboard');
 }
 
-/**
- * showSetting
- * @description Show script settings window.
- *
- * @return {void}
- */
-export function showSetting() {
-    openSettingsPage('preferences');
+export function showDebugger() {
+    openPage('debug');
 }
 
-function openSettingsPage(tab) {
-    GM_openInTab(`${SETTINGS_PAGE_URL}${tab}`, { active: true });
+export function toggleDebugger() {
+    const enabled = !GM_getValue(DEBUG_ENABLED_KEY, false);
+    GM_setValue(DEBUG_ENABLED_KEY, enabled);
+    registerMenuCommand();
+    if (enabled) showDebugger();
 }
 
-/**
- * showDebugDOM
- * @description Show full DOM tree.
- *
- * @return {void}
- */
-export function showDebugDOM() {
-    removeLegacyDialogs();
-    IG_createDM();
-    queryLegacyDialog('.IG_POPUP_DIG #post_info').textContent = 'IG Debug DOM Tree';
-    mountDebugPanel(queryLegacyDialog('.IG_POPUP_DIG .IG_POPUP_DIG_BODY'), {
-        showTree: _i18n('SHOW_DOM_TREE'),
-        copyTree: _i18n('SELECT_AND_COPY'),
-        downloadTree: _i18n('DOWNLOAD_DOM_TREE'),
-        github: _i18n('REPORT_GITHUB'),
-        discord: _i18n('REPORT_DISCORD'),
-    });
+function debuggerMenuLabel() {
+    return `${GM_getValue(DEBUG_ENABLED_KEY, false) ? '✓' : '○'} ${_i18n('DEBUG')}`;
 }
 
-/**
- * showFeedbackDOM
- * @description Show feedback options.
- *
- * @return {void}
- */
-export function showFeedbackDOM() {
-    removeLegacyDialogs();
-    IG_createDM();
-    queryLegacyDialog('.IG_POPUP_DIG #post_info').textContent = 'Feedback Options';
-    mountFeedbackPanel(queryLegacyDialog('.IG_POPUP_DIG .IG_POPUP_DIG_BODY'), {
-        fork: _i18n('REPORT_FORK'),
-        github: _i18n('REPORT_GITHUB'),
-        discord: _i18n('REPORT_DISCORD'),
-    });
-}
-
-function removeLegacyDialogs() {
-    removeLegacyDialog();
+function openPage(path) {
+    GM_openInTab(`${PAGE_ROOT}${path}`, { active: true });
 }

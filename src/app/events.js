@@ -1,7 +1,6 @@
 import $ from 'jquery';
 import { state, USER_SETTING, $body } from "../settings/state";
 import {
-    reloadScript,
     triggerLinkElement, openNewTab, saveMediaThumbnail, toggleVolumeSilder, updatePopupSelectionSummary,
     replaceSameOriginHost, setTimeElementDateAndLocaleTime, getHighlightCurrentTimeElement,
     triggerReactClickHandler
@@ -14,7 +13,7 @@ import { onReels, refreshReelsControls } from "../features/reel";
 import { _i18n } from "../shared/i18n";
 import { registerPerformanceObserver } from "../features/media/image-cache";
 import { batchDownloadPostFiles, createDownloadButton } from "../features/post/post";
-import { showDebugDOM, showHotkeySetting, showSetting } from "../features/menu";
+import { showDebugger, showHotkeySetting, showSetting } from "../features/menu";
 import {
     queryLegacyDialog,
     removeLegacyDialog,
@@ -22,40 +21,6 @@ import {
 
 // Running if document is ready
 $(function () {
-    function ConvertDOM(domEl) {
-        var obj = [];
-        for (var ele of domEl) {
-            obj.push({
-                tagName: ele.tagName,
-                id: ele.id,
-                className: ele.className
-            });
-        }
-
-        return obj;
-    }
-
-    function setDOMTreeContent(root) {
-        const text = $('div[id^="mount"]')[0];
-        let loggerStr = "";
-        state.GL_logger.forEach(log => {
-            const jsonData = JSON.stringify(log.content, function (key, value) {
-                if (Array.isArray(this)) {
-                    if (typeof value === "object" && value instanceof $) {
-                        return ConvertDOM(value);
-                    }
-                    return value;
-                }
-                return value;
-            }, "\t");
-            loggerStr += `${new Date(log.time).toISOString()}: ${jsonData}\n`;
-        });
-
-        $(root).find('.IG_POPUP_DIG_BODY textarea').text(
-            "Logger:\n" + loggerStr + "\n-----\n\nLocation: " + location.pathname + "\nDOM Tree with div#mount:\n" + text.innerHTML
-        );
-    }
-
     function bindLegacyDialogEvents(root) {
         const $root = $(root);
         const on = (type, selector, handler) => {
@@ -65,36 +30,6 @@ $(function () {
                 handler.call(target, event);
             });
         };
-
-        on('click', '.IG_DISPLAY_DOM_TREE', () => setDOMTreeContent(root));
-
-        on('click', '.IG_SELECT_DOM_TREE', function () {
-            const $textarea = $root.find('.IG_POPUP_DIG_BODY textarea');
-            const textContent = $textarea.val() || $textarea.text();
-            $textarea.trigger('select');
-
-            if (navigator.clipboard?.writeText) {
-                navigator.clipboard.writeText(textContent).catch(err => {
-                    logger('Clipboard API failed, falling back to execCommand:', err);
-                    try { document.execCommand('copy'); } catch (e) { logger('execCommand fallback failed:', e); }
-                });
-                return;
-            }
-
-            try { document.execCommand('copy'); } catch (e) { logger('execCommand failed:', e); }
-        });
-
-        on('click', '.IG_DOWNLOAD_DOM_TREE', function () {
-            const $textarea = $root.find('.IG_POPUP_DIG_BODY textarea');
-            if ($textarea.text().length === 0) setDOMTreeContent(root);
-
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([$textarea.text()], { type: 'text/plain' }));
-            a.download = `DOMTree-${Date.now()}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        });
 
         on('click', '.IG_POPUP_DIG_BTN, .IG_POPUP_DIG_BG', () => {
             removeLegacyDialog();
@@ -176,16 +111,10 @@ $(function () {
             e.preventDefault();
         }
 
-        // Hot key [Alt+Z] to open the debug DOM - use custom keycode if enabled, fallback to default Alt+Z(90)
+        // Hot key [Alt+Z] to open debugger - use custom keycode if enabled, fallback to default Alt+Z(90)
         let debugKeyCode = state.debugHotkeyKeyCode || 90;
         if (e.altKey && keyCode === debugKeyCode) {
-            showDebugDOM();
-            e.preventDefault();
-        }
-
-        // Hot key [Alt+R] to reload script (fixed, not customizable)
-        if (keyCode === 82 && e.altKey) {
-            reloadScript();
+            showDebugger();
             e.preventDefault();
         }
 

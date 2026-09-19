@@ -21,6 +21,8 @@ export default [
         GM_addStyle: 'readable',
         GM_setValue: 'readable',
         GM_getValue: 'readable',
+        GM_deleteValue: 'readable',
+        GM_listValues: 'readable',
         GM_xmlhttpRequest: 'readable',
         GM_registerMenuCommand: 'readable',
         GM_unregisterMenuCommand: 'readable',

@@ -872,27 +872,6 @@ export function openNewTab(link) {
 }
 
 /**
- * reloadScript
- * @description Re-register main timer.
- *
- * @return {void}
- */
-export function reloadScript() {
-    clearInterval(state.GL_repeat);
-
-    $('.button_wrapper').remove();
-    $('.IG_DWPROFILE, .IG_DWPROFILE, .IG_DWSTORY, .IG_DWSTORY_ALL, .IG_DWSTORY_THUMBNAIL, .IG_DWSTORY_POSITION, .IG_DWNEWTAB, .IG_DWHISTORY, .IG_DWHISTORY_ALL, .IG_DWHINEWTAB, .IG_DWHISTORY_THUMBNAIL, .IG_DWHISTORY_POSITION, .IG_REELS, .IG_REELS_NEWTAB, .IG_REELS_THUMBNAIL').remove();
-    $('[data-snig]').removeAttr('data-snig');
-
-    state.pageLoaded = false;
-    state.firstStarted = false;
-    state.currentURL = location.href;
-    state.GL_observer?.disconnect();
-
-    logger('main timer re-register completed');
-}
-
-/**
  * initSettings
  * @description Initialize preferences.
  *

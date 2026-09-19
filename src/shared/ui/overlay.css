@@ -107,25 +107,6 @@
     margin-top: 10px;
 }
 
-.IG_LEGACY_PANEL {
-    display: grid;
-    gap: 12px;
-}
-
-.ig-helper-ui .IG_DEBUG_TEXTAREA {
-    box-sizing: border-box;
-    width: 100%;
-    min-height: 300px;
-    padding: 10px;
-    border: 1px solid var(--color-border);
-    border-radius: 10px;
-    background: var(--color-background);
-    color: var(--color-foreground);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    resize: vertical;
-}
-
-
 #ig-helper-image-viewer-root {
     position: fixed;
     inset: 0;

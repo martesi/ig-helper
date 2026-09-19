@@ -238,7 +238,7 @@ test.describe('IG Helper live browser E2E', () => {
         await e2e.closeSettings();
     });
 
-    test('configured debug hotkey opens the Shadow DOM dialog and captures the live DOM tree', async () => {
+    test('configured debug hotkey opens the hosted debugger and captures the live DOM tree', async () => {
         if (!hotkeys) {
             await e2e.openSettings();
             hotkeys = await e2e.readHotkeys();
@@ -246,35 +246,48 @@ test.describe('IG Helper live browser E2E', () => {
         }
 
         await e2e.waitFor(`document.querySelectorAll('.button_wrapper .IG_DW_MAIN').length > 0`, 15000);
+        const debuggerPagePromise = e2e.context.waitForEvent('page', { timeout: 5000 });
         await e2e.pressLegacyHotkey(hotkeys.debug);
-        await e2e.waitFor(`!!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`, 3000);
+        const debuggerPage = await debuggerPagePromise;
+        let secondInstagram = null;
 
-        const opened = await e2e.json(`(() => {
-            const root = document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)});
-            return {
-                debug: !!root?.querySelector('.IG_LEGACY_PANEL'),
-                textarea: !!root?.querySelector('.IG_POPUP_DIG_BODY textarea'),
-            };
-        })()`);
-        expect(opened.debug).toBe(true);
-        expect(opened.textarea).toBe(true);
+        try {
+            await debuggerPage.waitForLoadState('domcontentloaded');
+            expect(debuggerPage.url()).toContain('/#/debug');
 
-        await e2e.click(`#${LEGACY_DIALOG_ROOT_ID} .IG_DISPLAY_DOM_TREE`);
-        await e2e.waitFor(`(() => {
-            const root = document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)});
-            const area = root?.querySelector('.IG_POPUP_DIG_BODY textarea');
-            return (area?.value || area?.textContent || '').length > 1000;
-        })()`, 5000);
+            const enable = debuggerPage.getByRole('button', { name: 'Enable debugger' });
+            if (await enable.isVisible().catch(() => false)) await enable.click();
 
-        const treeLength = await e2e.json(`(() => {
-            const root = document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)});
-            const area = root?.querySelector('.IG_POPUP_DIG_BODY textarea');
-            return (area?.value || area?.textContent || '').length;
-        })()`);
-        expect(treeLength).toBeGreaterThan(1000);
+            await debuggerPage.waitForFunction(
+                () => document.querySelectorAll('.IG_DEBUGGER_SESSION').length > 0,
+                undefined,
+                { timeout: 5000 },
+            );
 
-        await e2e.pressLegacyHotkey(81);
-        await e2e.waitFor(`!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`, 3000);
+            secondInstagram = await e2e.createPage();
+            await secondInstagram.goto(INSTAGRAM_HOME, { waitUntil: 'domcontentloaded' });
+            await debuggerPage.waitForFunction(
+                () => document.querySelectorAll('.IG_DEBUGGER_SESSION').length >= 2,
+                undefined,
+                { timeout: 5000 },
+            );
+
+            await debuggerPage.getByRole('button', { name: 'Capture DOM' }).click();
+            await debuggerPage.waitForFunction(() => {
+                const section = [...document.querySelectorAll('.IG_DEBUGGER_SECTION')]
+                    .find(item => item.querySelector('h4')?.textContent === 'DOM snapshot');
+                return (section?.querySelector('pre')?.textContent || '').length > 1000;
+            }, undefined, { timeout: 5000 });
+
+            expect(await debuggerPage.locator('.IG_DEBUGGER_SESSION').count()).toBeGreaterThanOrEqual(2);
+
+            const disable = debuggerPage.getByRole('button', { name: 'Disable debugger' });
+            if (await disable.isVisible().catch(() => false)) await disable.click();
+        } finally {
+            await secondInstagram?.close().catch(() => {});
+            await debuggerPage.close().catch(() => {});
+            await e2e.page.bringToFront();
+        }
     });
 
     test('post action row places native-sized controls beside Save and image viewer supports rotate, zoom, and close', async () => {

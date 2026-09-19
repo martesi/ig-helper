@@ -87,10 +87,12 @@ export default defineConfig(({ command }) => ({
                 ],
                 grant: [
                     'GM_addStyle',
+                    'GM_deleteValue',
                     'GM_download',
                     'GM_getResourceText',
                     'GM_getValue',
                     'GM_info',
+                    'GM_listValues',
                     'GM_openInTab',
                     'GM_registerMenuCommand',
                     'GM_setValue',
