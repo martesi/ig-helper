@@ -17,7 +17,7 @@ getTranslationText(state.lang).then((res) => {
     registerMenuCommand();
 
     if (!state.lang.startsWith('en')) {
-        console.error('getTranslationText catch error:', err);
+        logger('getTranslationText()', 'failed', err);
     }
 });
 
@@ -31,7 +31,7 @@ window.addEventListener('focus', async () => {
         try {
             state.locale[state.lang] = await getTranslationText(state.lang);
         } catch (err) {
-            console.error('getTranslationText focus sync failed:', err);
+            logger('getTranslationText()', 'focus sync failed', err);
         }
     }
     repaintingTranslations();

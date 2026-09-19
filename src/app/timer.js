@@ -24,7 +24,7 @@ export var timer = setInterval(function () {
     }
 
     if (state.currentURL != location.href || !state.firstStarted || !state.pageLoaded) {
-        console.log('Main Timer', 'trigging');
+        logger('Main Timer', 'trigging');
 
         clearInterval(state.GL_repeat);
         state.pageLoaded = false;

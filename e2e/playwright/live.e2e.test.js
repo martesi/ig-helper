@@ -379,6 +379,115 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
+
+    test('invalid post paths reject before issuing requests', async () => {
+        const page = await e2e.context.newPage();
+        try {
+            await page.goto(`${VITE_URL}/src/shared/api.js`, { waitUntil: 'domcontentloaded' });
+            const result = await page.evaluate(async () => {
+                globalThis.GM_getResourceText = () => '{}';
+                globalThis.GM_getValue = (_key, fallback) => fallback;
+
+                let requests = 0;
+                const request = () => { requests += 1; };
+                globalThis.GM_xmlhttpRequest = request;
+
+                const { getBlobMedia, getBlobMediaWithQueryID, getPostOwner } =
+                    await import('/src/shared/api.js?e2e-invalid-path=1');
+
+                const rejected = [];
+                for (const call of [
+                    () => getPostOwner(''),
+                    () => getBlobMedia('', request),
+                    () => getBlobMediaWithQueryID('', request),
+                ]) {
+                    try {
+                        await call();
+                    } catch (error) {
+                        rejected.push(error instanceof Error && error.message === 'NOPATH');
+                    }
+                }
+
+                return { requests, rejected };
+            });
+
+            expect(result).toEqual({ requests: 0, rejected: [true, true, true] });
+        } finally {
+            await page.close();
+        }
+    });
+
+    test('GM download failures propagate to saveFiles', async () => {
+        const page = await e2e.context.newPage();
+        try {
+            await page.goto(`${VITE_URL}/src/shared/download.js`, { waitUntil: 'domcontentloaded' });
+            const result = await page.evaluate(async () => {
+                globalThis.GM_getResourceText = () => '{}';
+                globalThis.GM_getValue = (_key, fallback) => fallback;
+                globalThis.GM_setValue = () => {};
+                globalThis.GM_info = { script: { version: 'e2e' } };
+                globalThis.GM_download = options => queueMicrotask(() => options.onerror(new Error('blocked')));
+
+                const { USER_SETTING } = await import('/src/settings/state.js?e2e-gm-download-state=1');
+                USER_SETTING.USE_EXTERNAL_DOWNLOAD_MODE = true;
+                const { saveFiles } = await import('/src/shared/download.js?e2e-gm-download-failure=1');
+
+                return saveFiles('https://example.invalid/file.jpg', {
+                    username: 'e2e',
+                    sourceType: 'photo',
+                    timestamp: Date.now(),
+                    filetype: 'jpg',
+                    shortcode: '',
+                });
+            });
+
+            expect(result).toBe(false);
+        } finally {
+            await page.close();
+        }
+    });
+
+    test('resource picker manages modal focus', async () => {
+        const page = await e2e.context.newPage();
+        try {
+            await page.goto(`${VITE_URL}/src/shared/ui/resource-picker.jsx`, { waitUntil: 'domcontentloaded' });
+            const result = await page.evaluate(async () => {
+                globalThis.GM_getResourceText = () => '{}';
+                globalThis.GM_getValue = (_key, fallback) => fallback;
+
+                const returnButton = document.createElement('button');
+                returnButton.id = 'return-focus';
+                document.body.append(returnButton);
+                returnButton.focus();
+
+                const { openResourcePicker, removeResourcePicker, RESOURCE_PICKER_ROOT_ID } =
+                    await import('/src/shared/ui/resource-picker.jsx?e2e-focus=1');
+
+                openResourcePicker({
+                    title: 'Pick media',
+                    resources: [],
+                    onDownload: async () => {},
+                });
+                await new Promise(resolve => requestAnimationFrame(resolve));
+
+                const host = document.getElementById(RESOURCE_PICKER_ROOT_ID);
+                const dialog = host.shadowRoot.querySelector('[role="dialog"]');
+                const focusedDialog = host.shadowRoot.activeElement === dialog;
+                removeResourcePicker();
+
+                return {
+                    modal: dialog.getAttribute('aria-modal'),
+                    focusedDialog,
+                    restored: document.activeElement === returnButton,
+                };
+            });
+
+            expect(result).toEqual({ modal: 'true', focusedDialog: true, restored: true });
+        } finally {
+            await page.close();
+        }
+    });
+
     test('download status reports failed fetches', async () => {
         const page = await e2e.context.newPage();
         try {

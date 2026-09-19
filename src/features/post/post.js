@@ -52,7 +52,7 @@ export function onReadyMyDW(NoDialog, hasReferrer) {
 
                 if (i > maxCall) {
                     //alert('Trying to call button creation method reached to maximum try times. If you want to re-register method, please open script menu and press "Reload Script" button or hotkey "R" to reload main timer.');
-                    console.warn('onReadyMyDW() Timer', 'maximum number of repetitions reached, terminated');
+                    logger('onReadyMyDW()', 'maximum number of repetitions reached, terminated');
                 }
             }
 
@@ -994,7 +994,7 @@ export async function batchDownloadPostFiles($elements) {
         try {
             await triggerLinkElement($(element), false);
         } catch (err) {
-            console.error('batchDownloadPostFiles failed:', err, element?.dataset?.href);
+            logger('batchDownloadPostFiles()', 'failed', err);
         }
 
         index++;

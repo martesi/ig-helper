@@ -8,20 +8,22 @@ import {
     resolveDirectDownloadMode,
     SETTINGS_STORAGE_KEYS,
 } from './schema';
+import { parseSettingsRequest } from './message-schema.js';
 
 const CHANNEL = 'ig-helper:settings';
 const hotkeysByStateKey = new Map(HOTKEY_SETTINGS.map(config => [config.stateKey, config]));
 
 window.addEventListener('message', async event => {
-    if (event.origin !== location.origin) return;
-    const message = event.data;
-    if (message?.channel !== CHANNEL || message.direction !== 'request') return;
+    if (event.origin !== location.origin || event.source !== window) return;
+    if (event.data?.channel !== CHANNEL || event.data.direction !== 'request') return;
 
+    const id = Number.isInteger(event.data.id) && event.data.id > 0 ? event.data.id : null;
     try {
+        const message = parseSettingsRequest(event.data);
         const result = await handleRequest(message.method, message.payload);
         respond(message.id, true, result);
     } catch (error) {
-        respond(message.id, false, null, error instanceof Error ? error.message : String(error));
+        if (id != null) respond(id, false, null, error instanceof Error ? error.message : String(error));
     }
 });
 

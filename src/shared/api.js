@@ -1,6 +1,13 @@
 import { userIdCache } from "../settings/state";
 import { updateLoadingBar } from "./ui/status.jsx";
 import { logger } from "./logger";
+import * as z from "zod/mini";
+
+const objectResponseSchema = z.record(z.string(), z.unknown());
+
+function parseResponse(response) {
+    return z.parse(objectResponseSchema, JSON.parse(response.response));
+}
 function getAppID() {
     for (const script of document.querySelectorAll('script[type="application/json"]')) {
         const match = script.textContent?.match(/"APP_ID":"([0-9]+)"/i);
@@ -26,7 +33,7 @@ export function getHighlightStories(highlightId) {
             url: getURL,
             onload: function (response) {
                 try {
-                    let obj = JSON.parse(response.response);
+                    const obj = parseResponse(response);
                     resolve(obj);
                 }
                 catch (err) {
@@ -58,8 +65,8 @@ export function getStories(userId) {
             url: getURL,
             onload: function (response) {
                 try {
-                    let obj = JSON.parse(response.response);
-                    logger('getStories()', obj);
+                    const obj = parseResponse(response);
+                    logger('getStories()', 'success');
                     resolve(obj);
                 }
                 catch (err) {
@@ -85,7 +92,7 @@ export function getStories(userId) {
 export function getUserId(username) {
     return new Promise((resolve, reject) => {
         if (userIdCache.has(username)) {
-            logger('getUserId()', 'return from cache:', userIdCache.get(username));
+            logger('getUserId()', 'cache hit');
             resolve(userIdCache.get(username));
             return;
         }
@@ -98,7 +105,7 @@ export function getUserId(username) {
             onload: function (response) {
                 try {
                     // Fix search issue by Discord: sno_w_
-                    let obj = JSON.parse(response.response);
+                    const obj = parseResponse(response);
                     let result = null;
                     (obj.users ?? []).forEach(pos => {
                         if (pos.user.username?.toLowerCase() === username?.toLowerCase()) {
@@ -107,7 +114,7 @@ export function getUserId(username) {
                     });
 
                     if (result != null) {
-                        logger('getUserId()', result);
+                        logger('getUserId()', 'success');
                         userIdCache.set(username, result);
                         resolve(result);
                     }
@@ -156,13 +163,13 @@ export function getUserIdWithAgent(username) {
             },
             onload: function (response) {
                 try {
-                    let obj = JSON.parse(response.response);
+                    const obj = parseResponse(response);
                     let hasUser = obj?.data?.user;
 
                     if (hasUser != null) {
                         let userInfo = obj?.data;
                         userInfo.user.pk = userInfo.user.id;
-                        logger('getUserIdWithAgent()', obj);
+                        logger('getUserIdWithAgent()', 'success');
                         resolve(userInfo);
                     }
                     else {
@@ -202,13 +209,13 @@ export function getUserHighSizeProfile(userId) {
             },
             onload: function (response) {
                 try {
-                    let obj = JSON.parse(response.response);
+                    const obj = parseResponse(response);
                     if (obj.status !== 'ok') {
-                        logger('getUserHighSizeProfile()', 'reject', obj);
+                        logger('getUserHighSizeProfile()', 'reject', obj.status);
                         reject('faild');
                     }
                     else {
-                        logger('getUserHighSizeProfile()', obj);
+                        logger('getUserHighSizeProfile()', 'success');
                         resolve(obj.user.hd_profile_pic_url_info?.url);
                     }
                 }
@@ -234,7 +241,10 @@ export function getUserHighSizeProfile(userId) {
  */
 export function getPostOwner(postPath) {
     return new Promise((resolve, reject) => {
-        if (!postPath) reject("NOPATH");
+        if (!postPath) {
+            reject(new Error("NOPATH"));
+            return;
+        }
         const postShortCode = postPath;
         const getURL = `https://www.instagram.com/graphql/query/?query_hash=2c4c2e343a8f64c625ba02b2aa12c7f8&variables=%7B%22shortcode%22:%22${postShortCode}%22}`;
 
@@ -243,8 +253,8 @@ export function getPostOwner(postPath) {
             url: getURL,
             onload: function (response) {
                 try {
-                    let obj = JSON.parse(response.response);
-                    logger('getPostOwner()', obj);
+                    const obj = parseResponse(response);
+                    logger('getPostOwner()', 'success');
                     resolve(obj.data.shortcode_media.owner.username);
                 }
                 catch (err) {
@@ -269,7 +279,10 @@ export function getPostOwner(postPath) {
  */
 export function getBlobMedia(postPath, request = GM_xmlhttpRequest) {
     return new Promise((resolve, reject) => {
-        if (!postPath) reject("NOPATH");
+        if (!postPath) {
+            reject(new Error("NOPATH"));
+            return;
+        }
         const postShortCode = postPath;
         const getURL = `https://www.instagram.com/graphql/query/?query_hash=2c4c2e343a8f64c625ba02b2aa12c7f8&variables=%7B%22shortcode%22:%22${postShortCode}%22}`;
 
@@ -281,8 +294,8 @@ export function getBlobMedia(postPath, request = GM_xmlhttpRequest) {
             },
             onload: function (response) {
                 try {
-                    let obj = JSON.parse(response.response);
-                    logger(obj);
+                    const obj = parseResponse(response);
+                    logger('getBlobMedia()', 'response received');
 
                     if (obj.status === 'fail') {
                         // alert(`Request failed with API response:\n${obj.message}: ${obj.feedback_message}`);
@@ -348,7 +361,10 @@ function toQueryIdBlobMedia(response) {
  */
 export function getBlobMediaWithQueryID(postPath, request = GM_xmlhttpRequest) {
     return new Promise((resolve, reject) => {
-        if (!postPath) reject("NOPATH");
+        if (!postPath) {
+            reject(new Error("NOPATH"));
+            return;
+        }
         const postShortCode = postPath;
         const getURL = `https://www.instagram.com/graphql/query/?query_id=9496392173716084&variables={%22shortcode%22:%22${postShortCode}%22,%22__relay_internal__pv__PolarisFeedShareMenurelayprovider%22:true,%22__relay_internal__pv__PolarisIsLoggedInrelayprovider%22:true}`;
 
@@ -361,16 +377,16 @@ export function getBlobMediaWithQueryID(postPath, request = GM_xmlhttpRequest) {
             },
             onload: function (response) {
                 try {
-                    let obj = JSON.parse(response.response);
-                    logger(obj);
+                    const obj = parseResponse(response);
+                    logger('getBlobMediaWithQueryID()', 'response received');
 
                     if (obj.status === 'fail') {
                         alert(`getBlobMediaWithQueryID(): Request failed with API response:\n${obj.message}: ${obj.feedback_message}`);
-                        logger(`Request failed with API response ${obj.message}: ${obj.feedback_message}`);
+                        logger('getBlobMediaWithQueryID()', 'API rejected request', obj.message);
                         reject(response);
                     }
                     else {
-                        logger('getBlobMediaWithQueryID()', obj.data);
+                        logger('getBlobMediaWithQueryID()', 'success');
                         resolve(obj.data);
                     }
                 }
@@ -424,8 +440,8 @@ export function getMediaInfo(mediaId) {
             },
             onload: function (response) {
                 if (response.finalUrl == getURL) {
-                    let obj = JSON.parse(response.response);
-                    logger('getMediaInfo()', obj);
+                    const obj = parseResponse(response);
+                    logger('getMediaInfo()', 'success');
                     resolve(obj);
                 }
                 else {
@@ -444,7 +460,7 @@ export function getMediaInfo(mediaId) {
             },
             onerror: function (err) {
                 logger('getMediaInfo()', 'reject', err);
-                resolve(err);
+                reject(err);
             }
         });
     });

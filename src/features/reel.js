@@ -132,7 +132,7 @@ export async function onReels(isDownload, isVideo, isPreview) {
         }
     }
     catch (err) {
-        console.error("[reels]", err);
+        logger('onReels()', 'failed', err);
     }
 }
 

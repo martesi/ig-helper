@@ -246,7 +246,7 @@ export async function onHighlightsStory(isDownload, isPreview) {
                     alert('Fetch failed from Media API. API response message: ' + result.message);
                 }
 
-                logger(result);
+                logger('onHighlightsStory()', 'Media API rejected request', result?.message);
             }
         }
         else {
@@ -488,7 +488,7 @@ export async function onHighlightsStoryThumbnail(isDownload) {
                     alert('Fetch failed from Media API. API response message: ' + result.message);
                 }
 
-                logger(result);
+                logger('onHighlightsStoryThumbnail()', 'Media API rejected request', result?.message);
             }
         }
         else {

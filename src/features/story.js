@@ -70,7 +70,7 @@ export async function createStoryListDOM(obj, type) {
         updateLoadingBar(false);
     }
     catch (err) {
-        console.error('createStoryListDOM()', err);
+        logger('createStoryListDOM()', 'failed', err);
     }
 }
 
@@ -341,7 +341,7 @@ export async function onStory(isDownload, isForce, isPreview) {
                 else {
                     alert('Fetch failed from Media API. API response message: ' + result.message);
                 }
-                logger(result);
+                logger('onStory()', 'Media API rejected request', result?.message);
             }
 
             updateLoadingBar(false);
@@ -771,7 +771,7 @@ export async function onStoryThumbnail(isDownload, isForce) {
                     alert('Fetch failed from Media API. API response message: ' + result.message);
                 }
 
-                logger(result);
+                logger('onStoryThumbnail()', 'Media API rejected request', result?.message);
             }
 
             updateLoadingBar(false);

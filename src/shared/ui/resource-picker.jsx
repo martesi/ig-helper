@@ -1,5 +1,5 @@
 import { render } from 'preact';
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { _i18n } from '../i18n';
 import { Button, Checkbox, IconButton } from './components.jsx';
 import { XIcon } from './icons.jsx';
@@ -18,7 +18,7 @@ export function openResourcePicker({ title, resources, onDownload }) {
 
     const shadow = host.attachShadow({ mode: 'open' });
     installStyles(shadow);
-    render(<ResourcePicker title={title} resources={resources} onDownload={onDownload} />, shadow);
+    render(<ResourcePicker title={title} resources={resources} onDownload={onDownload} returnFocus={document.activeElement} />, shadow);
 }
 
 export function removeResourcePicker() {
@@ -44,7 +44,8 @@ function installStyles(shadow) {
     shadow.append(style);
 }
 
-function ResourcePicker({ title, resources, onDownload }) {
+function ResourcePicker({ title, resources, onDownload, returnFocus }) {
+    const dialogRef = useRef(null);
     const [selected, setSelected] = useState(() => new Set());
 
     const selectedResources = useMemo(
@@ -57,9 +58,38 @@ function ResourcePicker({ title, resources, onDownload }) {
     const selectedCount = _i18n(selected.size === 1 ? 'SELECTED_COUNT_SINGULAR' : 'SELECTED_COUNT_PLURAL')
         .replace('%COUNT%', selected.size);
 
+    useLayoutEffect(() => {
+        dialogRef.current?.focus();
+        return () => {
+            if (returnFocus instanceof HTMLElement && returnFocus.isConnected) returnFocus.focus();
+        };
+    }, [returnFocus]);
+
     useEffect(() => {
         function onKeyDown(event) {
-            if (event.key === 'Escape') removeResourcePicker();
+            if (event.key === 'Escape') {
+                removeResourcePicker();
+                return;
+            }
+            if (event.key !== 'Tab') return;
+
+            const focusable = Array.from(dialogRef.current?.querySelectorAll(
+                'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+            ) ?? []);
+            if (focusable.length === 0) {
+                event.preventDefault();
+                return;
+            }
+
+            const first = focusable[0];
+            const last = focusable.at(-1);
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
         }
 
         document.addEventListener('keydown', onKeyDown);
@@ -90,7 +120,7 @@ function ResourcePicker({ title, resources, onDownload }) {
         <div class="resource-picker-backdrop" onClick={event => {
             if (event.target === event.currentTarget) removeResourcePicker();
         }}>
-            <section class="resource-picker" role="dialog" aria-modal="true" aria-label={title}>
+            <section ref={dialogRef} class="resource-picker" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}>
                 <header class="resource-picker-header">
                     <div class="resource-picker-title">
                         <strong>{title}</strong>

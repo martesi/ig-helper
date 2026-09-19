@@ -1,5 +1,5 @@
 import { render } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { ControlBar, IconButton } from '../../shared/ui/components.jsx';
 import { RotateCcwIcon, RotateCwIcon, XIcon } from '../../shared/ui/icons.jsx';
 
@@ -10,7 +10,7 @@ export function openImageViewer(imageUrl) {
     const root = document.createElement('div');
     root.id = VIEWER_ROOT_ID;
     document.body.append(root);
-    render(<ImageViewer imageUrl={imageUrl} />, root);
+    render(<ImageViewer imageUrl={imageUrl} returnFocus={document.activeElement} />, root);
 }
 
 export function removeImageViewer() {
@@ -20,12 +20,20 @@ export function removeImageViewer() {
     root.remove();
 }
 
-function ImageViewer({ imageUrl }) {
+function ImageViewer({ imageUrl, returnFocus }) {
+    const rootRef = useRef(null);
     const sectionRef = useRef(null);
     const transformRef = useRef(null);
     const dragRef = useRef(null);
     const didDragRef = useRef(false);
     const [transform, setTransform] = useState({ rotate: 0, scale: 1, x: 0, y: 0 });
+
+    useLayoutEffect(() => {
+        rootRef.current?.focus();
+        return () => {
+            if (returnFocus instanceof HTMLElement && returnFocus.isConnected) returnFocus.focus();
+        };
+    }, [returnFocus]);
 
     useEffect(() => {
         function moveImage(event) {
@@ -108,7 +116,7 @@ function ImageViewer({ imageUrl }) {
     };
 
     return (
-        <div id="imageViewer" class="ig-helper-ui" onClick={removeImageViewer} onWheel={event => event.preventDefault()}>
+        <div ref={rootRef} id="imageViewer" class="ig-helper-ui" role="dialog" aria-modal="true" aria-label="Image viewer" tabIndex={-1} onKeyDown={event => { if (event.key === "Escape") removeImageViewer(); }} onClick={removeImageViewer} onWheel={event => event.preventDefault()}>
             <ControlBar id="iv_header" onClick={event => event.stopPropagation()}>
                 <IconButton id="rotate_left" icon={RotateCcwIcon} label="Rotate left"
                     onClick={() => setTransform(current => ({ ...current, rotate: current.rotate - 90 }))} />
@@ -119,9 +127,12 @@ function ImageViewer({ imageUrl }) {
             <section ref={sectionRef} onWheel={zoomAt}>
                 <div ref={transformRef} id="iv_transform" style={translateStyle}>
                     <div id="iv_rotate" style={rotateStyle}>
-                        <img id="iv_image" src={imageUrl} alt="" draggable={false}
+                        <img id="iv_image" src={imageUrl} alt="" draggable={false} role="button" tabIndex={0}
+                            aria-label="Toggle image zoom"
                             style={{ cursor: transform.scale === 1 ? 'zoom-in' : 'grab' }}
-                            onClick={toggleZoom} onMouseDown={startDragging}
+                            onClick={toggleZoom} onKeyDown={event => {
+                                if (event.key === 'Enter' || event.key === ' ') toggleZoom(event);
+                            }} onMouseDown={startDragging}
                             onDragStart={event => event.preventDefault()}
                             onDrop={event => event.preventDefault()} />
                     </div>

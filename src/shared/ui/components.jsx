@@ -103,8 +103,9 @@ export function Select({ class: className = '', children, id, value, onValueChan
 
     return (
         <div ref={rootRef} id={id} class={`select ${className}`.trim()} {...props}>
-            <button ref={triggerRef} id={`${id}-trigger`} type="button" aria-haspopup="listbox" aria-expanded={open}
-                aria-controls={listboxId} onClick={() => open ? setOpen(false) : openAt()} onKeyDown={handleKeyDown}>
+            <button ref={triggerRef} id={`${id}-trigger`} type="button" role="combobox" aria-haspopup="listbox" aria-expanded={open}
+                aria-controls={listboxId} aria-activedescendant={open ? `${id}-option-${activeIndex}` : undefined}
+                onClick={() => open ? setOpen(false) : openAt()} onKeyDown={handleKeyDown}>
                 <span class="truncate">{selected?.props.children}</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
