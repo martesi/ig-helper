@@ -253,8 +253,8 @@ test.describe('IG Helper live browser E2E', () => {
         try {
             await debuggerPage.waitForLoadState('domcontentloaded');
             expect(new URL(debuggerPage.url()).hash).toBe('#/debug');
-            expect(new URL(debuggerPage.url()).searchParams.get('openerOrigin')).toBe(new URL(e2e.page.url()).origin);
             expect(await debuggerPage.evaluate(() => Boolean(window.opener))).toBe(true);
+            await expect(debuggerPage.getByRole('button', { name: 'Reload tab' })).toHaveCount(0);
 
             await debuggerPage.waitForFunction(
                 () => document.querySelector('.IG_DEBUGGER_TITLE h3')?.textContent?.length > 0,

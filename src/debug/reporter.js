@@ -53,11 +53,6 @@ function handleRequest(method) {
         };
     }
 
-    if (method === 'reload') {
-        setTimeout(() => location.reload(), 0);
-        return null;
-    }
-
     throw new Error(`Unsupported debugger command: ${method}`);
 }
 
