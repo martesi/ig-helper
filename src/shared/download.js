@@ -1,20 +1,18 @@
 import { USER_SETTING, state, userIdCache } from '../settings/state';
 import { getUserId } from './api';
 import { logger } from './logger';
-import { showDownloadStatus, updateLoadingBar } from './ui/status.jsx';
+import { updateLoadingBar } from './ui/status.jsx';
 
 export function saveFiles(downloadLink, metadata) {
     return new Promise(resolve => {
         setTimeout(() => {
             updateLoadingBar(true);
-            showDownloadStatus('started');
 
             const downloadName = getSaveFileName(downloadLink, metadata);
             const { filetype, shortcode, sourceType } = metadata;
 
             const finish = success => {
                 updateLoadingBar(false);
-                showDownloadStatus(success ? 'complete' : 'failed');
                 resolve(success);
             };
 

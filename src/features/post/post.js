@@ -4,11 +4,10 @@ import {
     openNewTab,
     toggleVolumeSilder, triggerLinkElement,
     replaceSameOriginHost,
-    setDownloadProgress,
     saveMediaThumbnail,
     triggerReactClickHandler
 } from "../../shared/general";
-import { updateLoadingBar } from "../../shared/ui/status.jsx";
+import { setDownloadProgress, updateLoadingBar } from "../../shared/ui/status.jsx";
 import { logger } from "../../shared/logger";
 import { getBlobMedia, getMediaInfo } from "../../shared/api";
 import { _i18n } from "../../shared/i18n";

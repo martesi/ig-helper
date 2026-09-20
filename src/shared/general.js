@@ -4,7 +4,7 @@ import { USER_SETTING, state, $body } from "../settings/state";
 import { _i18n } from "./i18n";
 import { getPostOwner, getMediaInfo } from "./api";
 import { getImageFromCache } from "../features/media/image-cache";
-import { appendCounter, appendDownloadProgress, appendVolumeSlider, updateLoadingBar } from "./ui/status.jsx";
+import { appendCounter, appendVolumeSlider, updateLoadingBar } from "./ui/status.jsx";
 import { logger } from "./logger";
 import { createSaveFileElement, saveFiles } from "./download";
 export { saveFiles } from "./download";
@@ -298,31 +298,6 @@ export function setStoryProgressIndexByUsername($element, username, className) {
 
     let $header = getStoryProgress(username);
     setStoryProgressIndexText($element, $header, className);
-}
-
-/**
- * setDownloadProgress
- * @description Show and set download circle progress.
- *
- * @param  {Integer}  now
- * @param  {Integer}  total
- * @return {Void}
- */
-export function setDownloadProgress(now, total) {
-    // OPTIMIZATION: cache the circle wrapper lookup
-    const $circle = $('.circle_wrapper');
-    if ($circle.length) {
-        $circle.find('span').text(`${now}/${total}`);
-
-        if (now >= total) {
-            $circle.fadeOut(250, function () {
-                $(this).remove();
-            });
-        }
-    }
-    else {
-        appendDownloadProgress(document.body, now, total);
-    }
 }
 
 /**

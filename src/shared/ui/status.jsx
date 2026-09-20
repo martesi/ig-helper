@@ -1,8 +1,7 @@
 import { render } from 'preact';
-import { _i18n } from '../i18n';
 
-const DOWNLOAD_STATUS_ID = 'ig-helper-download-status';
-let downloadStatusTimer;
+const DOWNLOAD_PROGRESS_ID = 'ig-helper-download-progress';
+let downloadProgressTimer;
 
 export function updateLoadingBar(isLoading) {
     const mount = document.querySelector('div[id^="mount"] > div > div > div');
@@ -11,53 +10,38 @@ export function updateLoadingBar(isLoading) {
     mount.style.zIndex = isLoading ? '20000' : '';
 }
 
-export function showDownloadStatus(status) {
-    let mount = document.getElementById(DOWNLOAD_STATUS_ID);
+export function setDownloadProgress(now, total) {
+    let mount = document.getElementById(DOWNLOAD_PROGRESS_ID);
     if (!mount) {
         mount = document.createElement('div');
-        mount.id = DOWNLOAD_STATUS_ID;
-        mount.className = 'IG_DOWNLOAD_STATUS';
-        mount.setAttribute('role', 'status');
-        mount.setAttribute('aria-live', 'polite');
+        mount.id = DOWNLOAD_PROGRESS_ID;
         document.body.append(mount);
     }
 
-    const key = {
-        started: 'DOWNLOAD_STARTED',
-        complete: 'DOWNLOAD_COMPLETE',
-        failed: 'DOWNLOAD_FAILED',
-    }[status];
-    if (!key) return;
+    const complete = now >= total;
+    render(<DownloadProgress now={now} total={total} complete={complete} />, mount);
 
-    mount.dataset.status = status;
-    mount.textContent = _i18n(key);
-    mount.hidden = false;
-
-    clearTimeout(downloadStatusTimer);
-    if (status !== 'started') {
-        downloadStatusTimer = setTimeout(() => {
-            mount.hidden = true;
-        }, 2200);
+    clearTimeout(downloadProgressTimer);
+    if (complete) {
+        downloadProgressTimer = setTimeout(() => {
+            render(null, mount);
+            mount.remove();
+        }, 250);
     }
+}
+
+function DownloadProgress({ now, total, complete }) {
+    return (
+        <div class="circle_wrapper" style={{ opacity: complete ? 0 : 1, transition: 'opacity 250ms' }}>
+            <circle />
+            <span>{now}/{total}</span>
+        </div>
+    );
 }
 
 export function appendCounter(parent, className) {
     const fragment = document.createDocumentFragment();
     render(<div class={className} />, fragment);
-    const element = fragment.firstChild;
-    parent.append(element);
-    return element;
-}
-
-export function appendDownloadProgress(parent, now, total) {
-    const fragment = document.createDocumentFragment();
-    render(
-        <div class="circle_wrapper">
-            <circle />
-            <span>{now}/{total}</span>
-        </div>,
-        fragment,
-    );
     const element = fragment.firstChild;
     parent.append(element);
     return element;

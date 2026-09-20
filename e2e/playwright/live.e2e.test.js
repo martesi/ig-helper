@@ -661,7 +661,7 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
-    test('download status reports failed fetches', async () => {
+    test('download failures do not create a toast', async () => {
         const page = await e2e.context.newPage();
         try {
             await page.goto(`${VITE_URL}/src/shared/general.js`, { waitUntil: 'domcontentloaded' });
@@ -683,12 +683,9 @@ test.describe('IG Helper live browser E2E', () => {
                         filetype: 'jpg',
                         shortcode: 'failure',
                     });
-                    const status = document.getElementById('ig-helper-download-status');
                     return {
                         success,
-                        state: status?.dataset.status,
-                        role: status?.getAttribute('role'),
-                        text: status?.textContent,
+                        hasToast: Boolean(document.getElementById('ig-helper-download-status')),
                     };
                 } finally {
                     globalThis.fetch = originalFetch;
@@ -696,9 +693,33 @@ test.describe('IG Helper live browser E2E', () => {
             });
 
             expect(result.success).toBe(false);
-            expect(result.state).toBe('failed');
-            expect(result.role).toBe('status');
-            expect(result.text).toBe('Download failed');
+            expect(result.hasToast).toBe(false);
+        } finally {
+            await page.close();
+        }
+    });
+
+    test('download progress bar updates and clears', async () => {
+        const page = await e2e.context.newPage();
+        try {
+            await page.goto(`${VITE_URL}/src/shared/ui/status.jsx`, { waitUntil: 'domcontentloaded' });
+            const result = await page.evaluate(async () => {
+                const { setDownloadProgress } = await import('/src/shared/ui/status.jsx?e2e-download-progress=1');
+                setDownloadProgress(0, 2);
+                const first = document.querySelector('#ig-helper-download-progress .circle_wrapper');
+                setDownloadProgress(1, 2);
+                const second = document.querySelector('#ig-helper-download-progress .circle_wrapper');
+                const text = second?.textContent;
+                setDownloadProgress(2, 2);
+                await new Promise(resolve => setTimeout(resolve, 300));
+                return {
+                    reused: first === second,
+                    text,
+                    removed: !document.getElementById('ig-helper-download-progress'),
+                };
+            });
+
+            expect(result).toEqual({ reused: true, text: '1/2', removed: true });
         } finally {
             await page.close();
         }
@@ -791,20 +812,6 @@ test.describe('IG Helper live browser E2E', () => {
                 return root?.querySelector('.resource-picker-count')?.textContent?.includes('1');
             })()`, 3000);
 
-            await e2e.evaluate(`(() => {
-                window.__igHelperDownloadStates = [];
-                window.__igHelperDownloadStatusObserver?.disconnect();
-                window.__igHelperDownloadStatusObserver = new MutationObserver(() => {
-                    const status = document.getElementById('ig-helper-download-status')?.dataset.status;
-                    if (status) window.__igHelperDownloadStates.push(status);
-                });
-                window.__igHelperDownloadStatusObserver.observe(document.body, {
-                    childList: true,
-                    subtree: true,
-                    attributes: true,
-                    attributeFilter: ['data-status'],
-                });
-            })()`);
             await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-footer .btn[data-variant="primary"]');
             await e2e.waitFor(`!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})`, 3000);
 
@@ -815,12 +822,7 @@ test.describe('IG Helper live browser E2E', () => {
             expect(complete.filePath).toBeTruthy();
             expect(complete.totalBytes).toBeGreaterThan(1000);
             expect(complete.receivedBytes).toBe(complete.totalBytes);
-            await e2e.waitFor(`window.__igHelperDownloadStates?.includes('complete')`, 3000);
-            const downloadStates = await e2e.json('window.__igHelperDownloadStates');
-            expect(downloadStates).toContain('started');
-            expect(downloadStates).toContain('complete');
-            await e2e.evaluate('window.__igHelperDownloadStatusObserver?.disconnect()');
-
+            expect(await e2e.json('Boolean(document.getElementById("ig-helper-download-status"))')).toBe(false);
         });
     });
 
