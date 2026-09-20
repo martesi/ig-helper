@@ -281,7 +281,6 @@ export class IgHelperE2E {
 
     async clickShadow(hostId, selector, index = 0) {
         const locator = this.page.locator(`#${hostId}`).locator(selector).nth(index);
-        await locator.scrollIntoViewIfNeeded();
         await this.actionDelay();
         await locator.click();
     }
@@ -289,7 +288,6 @@ export class IgHelperE2E {
     async click(selector, index = 0) {
         await this.dismissInstagramNotificationPrompt();
         const locator = this.page.locator(selector).nth(index);
-        await locator.scrollIntoViewIfNeeded();
         await this.actionDelay();
         await locator.click();
     }
@@ -416,7 +414,10 @@ export class IgHelperE2E {
 
     async ensurePostControls() {
         await this.goto(INSTAGRAM_HOME);
-        await this.waitFor(`document.querySelectorAll('.button_wrapper .IG_DW_MAIN').length > 0`, 15000);
+        await this.page.locator('.button_wrapper.IG_CONTROL_BAR').first().locator('.IG_DW_MAIN').waitFor({
+            state: 'visible',
+            timeout: 15000,
+        });
     }
 
     async configureDownloads() {

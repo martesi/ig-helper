@@ -15,7 +15,7 @@ const SETTINGS_SECTIONS = [
         id: 'downloads',
         key: 'SETTINGS_DOWNLOADS',
         descriptionKey: 'SETTINGS_DOWNLOADS_DESCRIPTION',
-        settings: ['DIRECT_DOWNLOAD_MODE', 'DIRECT_DOWNLOAD_STORY'],
+        settings: ['DIRECT_DOWNLOAD_MODE'],
     },
     {
         id: 'files',

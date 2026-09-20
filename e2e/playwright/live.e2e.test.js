@@ -71,7 +71,8 @@ test.describe('IG Helper live browser E2E', () => {
 
         const controls = await e2e.json(`(() => {
             const wrapper = document.querySelector('.button_wrapper.IG_CONTROL_BAR');
-            const buttons = [...(wrapper?.children || [])];
+            const root = wrapper?.shadowRoot;
+            const buttons = [...(root?.children || [])];
             return {
                 wrapper: Boolean(wrapper),
                 allButtons: buttons.length > 0 && buttons.every(button =>
@@ -82,10 +83,10 @@ test.describe('IG Helper live browser E2E', () => {
                     button.getBoundingClientRect().width > 0 &&
                     button.getBoundingClientRect().height > 0
                 ),
-                viewerOrThumbnail: Boolean(wrapper?.querySelector('.IG_IMAGE_VIEWER, .IG_THUMBNAIL_MAIN')),
-                newTab: Boolean(wrapper?.querySelector('.IG_NEWTAB_MAIN')),
-                copy: Boolean(wrapper?.querySelector('.IG_COPY_MAIN')),
-                download: Boolean(wrapper?.querySelector('.IG_DW_MAIN')),
+                viewerOrThumbnail: Boolean(root?.querySelector('.IG_IMAGE_VIEWER, .IG_THUMBNAIL_MAIN')),
+                newTab: Boolean(root?.querySelector('.IG_NEWTAB_MAIN')),
+                copy: Boolean(root?.querySelector('.IG_COPY_MAIN')),
+                download: Boolean(root?.querySelector('.IG_DW_MAIN')),
             };
         })()`);
 
@@ -100,8 +101,11 @@ test.describe('IG Helper live browser E2E', () => {
 
     test('copy current post image writes image data and reports success', async () => {
         await e2e.ensurePostControls();
-        const selector = '.button_wrapper:has(.IG_IMAGE_VIEWER) .IG_COPY_MAIN';
-        await e2e.waitFor(`!!document.querySelector('${selector}')`, 15000);
+        const imageControls = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR')
+            .filter({ has: e2e.page.locator('.IG_IMAGE_VIEWER') })
+            .first();
+        const copyButton = imageControls.locator('.IG_COPY_MAIN');
+        await copyButton.waitFor({ state: 'visible', timeout: 15000 });
 
         await e2e.evaluate(`(() => {
             window.__igHelperCopyMessage = '';
@@ -138,7 +142,9 @@ test.describe('IG Helper live browser E2E', () => {
         })()`);
 
         try {
-            await e2e.click(selector);
+            await e2e.dismissInstagramNotificationPrompt();
+            await e2e.actionDelay();
+            await copyButton.click();
             await e2e.waitFor(`window.__igHelperCopyWrites === 1 && window.__igHelperCopyMessage.length > 0`, 3000);
             const result = await e2e.json(`({
                 writes: window.__igHelperCopyWrites,
@@ -247,7 +253,10 @@ test.describe('IG Helper live browser E2E', () => {
             await e2e.closeSettings();
         }
 
-        await e2e.waitFor(`document.querySelectorAll('.button_wrapper .IG_DW_MAIN').length > 0`, 15000);
+        await e2e.page.locator('.button_wrapper.IG_CONTROL_BAR').first().locator('.IG_DW_MAIN').waitFor({
+            state: 'visible',
+            timeout: 15000,
+        });
         const debuggerPagePromise = e2e.context.waitForEvent('page', { timeout: 5000 });
         await e2e.pressLegacyHotkey(hotkeys.debug);
         const debuggerPage = await debuggerPagePromise;
@@ -331,6 +340,7 @@ test.describe('IG Helper live browser E2E', () => {
 
         const controls = await e2e.json(`(() => {
             const wrapper = document.querySelector('.button_wrapper');
+            const root = wrapper?.shadowRoot;
             const section = wrapper?.closest('section');
             const groups = section ? [...section.children].filter(child => child.tagName === 'DIV') : [];
             const saveIcon = section?.querySelector('svg[aria-label="Save"], svg[aria-label="Remove"]');
@@ -338,13 +348,13 @@ test.describe('IG Helper live browser E2E', () => {
             const saveItem = saveIcon?.closest('[role="button"]');
             const wrapperRect = wrapper?.getBoundingClientRect();
             const saveRect = saveIcon?.getBoundingClientRect();
-            const buttonRects = [...(wrapper?.querySelectorAll('.IG_POST_CONTROL') || [])]
+            const buttonRects = [...(root?.querySelectorAll('.IG_POST_CONTROL') || [])]
                 .map(button => button.getBoundingClientRect());
             return {
                 wrappers: document.querySelectorAll('.button_wrapper').length,
-                viewer: document.querySelectorAll('.button_wrapper .IG_IMAGE_VIEWER').length,
-                newTab: document.querySelectorAll('.button_wrapper .IG_NEWTAB_MAIN').length,
-                download: document.querySelectorAll('.button_wrapper .IG_DW_MAIN').length,
+                viewer: Boolean(root?.querySelector('.IG_IMAGE_VIEWER')),
+                newTab: Boolean(root?.querySelector('.IG_NEWTAB_MAIN')),
+                download: Boolean(root?.querySelector('.IG_DW_MAIN')),
                 besideSave: Boolean(
                     saveIcon &&
                     saveGroup &&
@@ -362,9 +372,9 @@ test.describe('IG Helper live browser E2E', () => {
             };
         })()`);
         expect(controls.wrappers).toBeGreaterThan(0);
-        expect(controls.viewer).toBeGreaterThan(0);
-        expect(controls.newTab).toBeGreaterThan(0);
-        expect(controls.download).toBeGreaterThan(0);
+        expect(controls.viewer).toBe(true);
+        expect(controls.newTab).toBe(true);
+        expect(controls.download).toBe(true);
         expect(controls.besideSave).toBe(true);
         expect(controls.nativeButtonSize).toBe(true);
         expect(controls.saveGap).toBe(8);
@@ -373,36 +383,33 @@ test.describe('IG Helper live browser E2E', () => {
         expect(controls.saveItem).toBe(true);
         expect(controls.position).toBe('static');
 
-        await e2e.page.locator('.button_wrapper .IG_DW_MAIN').first().hover();
-        const hoverStyle = await e2e.json(`(() => {
-            const style = getComputedStyle(document.querySelector('.button_wrapper .IG_DW_MAIN'));
-            return { transform: style.transform, background: style.backgroundColor };
-        })()`);
-        expect(hoverStyle.transform).toContain('1.05');
-        expect(hoverStyle.background).toBe('rgba(0, 0, 0, 0)');
+        const downloadButton = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR').first().locator('.IG_DW_MAIN');
+        await downloadButton.hover();
+        await expect(downloadButton).toHaveCSS('transform', 'matrix(1.05, 0, 0, 1.05, 0, 0)');
+        await expect(downloadButton).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
 
         await e2e.click('.button_wrapper .IG_IMAGE_VIEWER');
         await e2e.waitFor(`!!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})`, 3000);
 
-        await e2e.click(`#${IMAGE_VIEWER_ROOT_ID} #rotate_right`);
-        await e2e.waitFor(`document.querySelector('#${IMAGE_VIEWER_ROOT_ID} #iv_rotate')?.style.transform.includes('90deg')`, 3000);
+        await e2e.clickShadow(IMAGE_VIEWER_ROOT_ID, '#rotate_right');
+        await e2e.waitFor(`document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})?.shadowRoot?.querySelector('#iv_rotate')?.style.transform.includes('90deg')`, 3000);
 
         await e2e.waitFor(`(() => {
-            const image = document.querySelector('#${IMAGE_VIEWER_ROOT_ID} #iv_image');
+            const image = document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})?.shadowRoot?.querySelector('#iv_image');
             const rect = image?.getBoundingClientRect();
             return image?.complete && image.naturalWidth > 0 && rect?.width > 0;
         })()`, 10000);
-        await e2e.click(`#${IMAGE_VIEWER_ROOT_ID} #iv_image`);
-        await e2e.waitFor(`document.querySelector('#${IMAGE_VIEWER_ROOT_ID} #iv_transform')?.style.transform.includes('scale(2.25)')`, 3000);
+        await e2e.clickShadow(IMAGE_VIEWER_ROOT_ID, '#iv_image');
+        await e2e.waitFor(`document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})?.shadowRoot?.querySelector('#iv_transform')?.style.transform.includes('scale(2.25)')`, 3000);
 
-        const transform = await e2e.json(`({
-            rotate: document.querySelector('#${IMAGE_VIEWER_ROOT_ID} #iv_rotate')?.style.transform,
-            zoom: document.querySelector('#${IMAGE_VIEWER_ROOT_ID} #iv_transform')?.style.transform,
+        const transform = await e2e.shadowJson(IMAGE_VIEWER_ROOT_ID, `({
+            rotate: root.querySelector('#iv_rotate')?.style.transform,
+            zoom: root.querySelector('#iv_transform')?.style.transform,
         })`);
         expect(transform.rotate).toContain('90deg');
         expect(transform.zoom).toContain('scale(2.25)');
 
-        await e2e.click(`#${IMAGE_VIEWER_ROOT_ID} #iv_close`);
+        await e2e.clickShadow(IMAGE_VIEWER_ROOT_ID, '#iv_close');
         await e2e.waitFor(`!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})`, 3000);
         });
     });
@@ -434,7 +441,8 @@ test.describe('IG Helper live browser E2E', () => {
     test('download-all bypasses the legacy dialog', async () => {
         await e2e.withSettings({ DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE }, async () => {
             await e2e.goto(PERMALINK_URL);
-            await e2e.waitFor(`!!document.querySelector('.button_wrapper .IG_DW_ALL_MAIN')`, 15000);
+            const downloadAllButton = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR').first().locator('.IG_DW_ALL_MAIN');
+            await downloadAllButton.waitFor({ state: 'visible', timeout: 15000 });
             await e2e.evaluate(`(() => {
                 window.__igHelperLegacyDialogMounted = false;
                 window.__igHelperLegacyDialogObserver?.disconnect();
@@ -446,7 +454,9 @@ test.describe('IG Helper live browser E2E', () => {
                 window.__igHelperLegacyDialogObserver.observe(document.body, { childList: true });
             })()`);
 
-            await e2e.click('.button_wrapper .IG_DW_ALL_MAIN');
+            await e2e.dismissInstagramNotificationPrompt();
+            await e2e.actionDelay();
+            await downloadAllButton.click();
             await e2e.page.waitForTimeout(1000);
 
             const legacyDialog = await e2e.json(`({
@@ -517,21 +527,25 @@ test.describe('IG Helper live browser E2E', () => {
             FORCE_RESOURCE_VIA_MEDIA: false,
         }, async () => {
             await e2e.ensurePostControls();
-            const wrapper = '.button_wrapper.IG_CONTROL_BAR:not(:has(.IG_THUMBNAIL_MAIN))';
-            await e2e.waitFor(`!!document.querySelector('${wrapper}')`, 15000);
+            const wrapper = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR')
+                .filter({ hasNot: e2e.page.locator('.IG_THUMBNAIL_MAIN') })
+                .first();
+            await wrapper.waitFor({ state: 'visible', timeout: 15000 });
 
-            const controls = await e2e.json(`(() => {
-                const root = document.querySelector('${wrapper}');
+            const controls = await wrapper.evaluate(host => {
+                const root = host.shadowRoot;
                 return {
                     viewer: Boolean(root?.querySelector('.IG_IMAGE_VIEWER')),
                     copy: Boolean(root?.querySelector('.IG_COPY_MAIN')),
                     newTab: Boolean(root?.querySelector('.IG_NEWTAB_MAIN')),
                     download: Boolean(root?.querySelector('.IG_DW_MAIN')),
                 };
-            })()`);
+            });
             expect(controls).toEqual({ viewer: false, copy: true, newTab: false, download: true });
 
-            await e2e.click(`${wrapper} .IG_DW_MAIN`);
+            await e2e.dismissInstagramNotificationPrompt();
+            await e2e.actionDelay();
+            await wrapper.locator('.IG_DW_MAIN').click();
             await e2e.waitFor(`!!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})?.shadowRoot?.querySelector('.resource-picker-item img')`, 20000);
             expect(await e2e.shadowJson(RESOURCE_PICKER_ROOT_ID, `root.querySelectorAll('.resource-picker-item img').length`)).toBeGreaterThan(0);
 
@@ -908,9 +922,10 @@ test.describe('IG Helper live browser E2E', () => {
         test.skip(!storyUrl, 'No live story is available in the authenticated feed');
 
         await e2e.goto(storyUrl);
-        await e2e.waitFor(`document.querySelectorAll('.IG_DWSTORY').length > 0`, 15000);
-        expect(await e2e.json(`document.querySelectorAll('.IG_DWSTORY').length`)).toBeGreaterThan(0);
-        expect(await e2e.json(`document.querySelectorAll('.IG_DWNEWTAB').length`)).toBeGreaterThan(0);
+        await e2e.waitFor(`document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN')`, 15000);
+        expect(await e2e.json(`Boolean(document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN'))`)).toBe(true);
+        expect(await e2e.json(`Boolean(document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN'))`)).toBe(true);
+        expect(await e2e.json(`document.querySelectorAll('#ig-helper-legacy-dialog-root').length`)).toBe(0);
     });
 
     test('Highlight controls mount when the profile exposes a highlight', async () => {
@@ -922,9 +937,10 @@ test.describe('IG Helper live browser E2E', () => {
         test.skip(!highlightUrl, 'No highlight is available on the configured profile');
 
         await e2e.goto(highlightUrl);
-        await e2e.waitFor(`document.querySelectorAll('.IG_DWHISTORY').length > 0`, 15000);
-        expect(await e2e.json(`document.querySelectorAll('.IG_DWHISTORY').length`)).toBeGreaterThan(0);
-        expect(await e2e.json(`document.querySelectorAll('.IG_DWHINEWTAB').length`)).toBeGreaterThan(0);
+        await e2e.waitFor(`document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN')`, 15000);
+        expect(await e2e.json(`Boolean(document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN'))`)).toBe(true);
+        expect(await e2e.json(`Boolean(document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN'))`)).toBe(true);
+        expect(await e2e.json(`document.querySelectorAll('#ig-helper-legacy-dialog-root').length`)).toBe(0);
     });
 
 });

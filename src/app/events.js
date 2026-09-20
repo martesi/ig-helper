@@ -1,102 +1,25 @@
 import $ from 'jquery';
 import { state, USER_SETTING, $body } from "../settings/state";
 import {
-    triggerLinkElement, openNewTab, saveMediaThumbnail, toggleVolumeSilder, updatePopupSelectionSummary,
-    replaceSameOriginHost, setTimeElementDateAndLocaleTime, getHighlightCurrentTimeElement,
+    toggleVolumeSilder,
+    setTimeElementDateAndLocaleTime,
+    getHighlightCurrentTimeElement,
     triggerReactClickHandler
 } from "../shared/general";
 import { logger } from "../shared/logger";
-import { onStory, onStoryAll, onStoryThumbnail } from "../features/story";
+import { onStoryDownload, onStoryThumbnail } from "../features/story";
 import { onProfileAvatar } from "../features/profile";
-import { onHighlightsStory, onHighlightsStoryAll, onHighlightsStoryThumbnail } from "../features/highlight";
+import { onHighlightsStoryDownload, onHighlightsStoryThumbnail } from "../features/highlight";
 import { refreshReelsControls } from "../features/reel";
-import { _i18n } from "../shared/i18n";
 import { registerPerformanceObserver } from "../features/media/image-cache";
-import { batchDownloadPostFiles, createDownloadButton } from "../features/post/post";
+import { createDownloadButton } from "../features/post/post";
 import { showDebugger, showHotkeySetting, showSetting } from "../features/menu";
-import {
-    queryLegacyDialog,
-    removeLegacyDialog,
-} from '../shared/ui/dialogs.jsx';
 
 export function registerEvents() {
     // Running if document is ready
     $(function () {
-    function bindLegacyDialogEvents(root) {
-        const $root = $(root);
-        const on = (type, selector, handler) => {
-            root.addEventListener(type, event => {
-                const target = event.target instanceof Element ? event.target.closest(selector) : null;
-                if (!target || !root.contains(target)) return;
-                handler.call(target, event);
-            });
-        };
-
-        on('click', '.IG_POPUP_DIG_BTN, .IG_POPUP_DIG_BG', () => {
-            removeLegacyDialog();
-        });
-
-        on('click', 'a[data-needed="direct"]', function (e) {
-            e.preventDefault();
-            triggerLinkElement($(this), false);
-        });
-
-        on('click', '.IG_POPUP_DIG_BODY .newTab', function () {
-            const $linkA = $(this).parent().children('a');
-            if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && USER_SETTING.NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST) {
-                triggerLinkElement($linkA.first()[0], true);
-                return;
-            }
-            openNewTab(replaceSameOriginHost($linkA.data('href')));
-        });
-
-        on('click', '.IG_POPUP_DIG_BODY .videoThumbnail', function () {
-            const $linkA = $(this).parent().children('a');
-            const postPath = $linkA.data('path') ?? $(queryLegacyDialog('#article-id')).text();
-            void saveMediaThumbnail($linkA, postPath);
-        });
-
-        on('change', '.IG_POPUP_DIG_TITLE .IG_SELECT_ALL', function () {
-            const isChecked = $(this).find('input').prop('checked');
-            $root.find('.IG_POPUP_DIG_BODY .inner_box').prop('checked', isChecked);
-            updatePopupSelectionSummary($root.find('.IG_POPUP_DIG'));
-        });
-
-        on('change', '.IG_POPUP_DIG_BODY .inner_box', () => {
-            updatePopupSelectionSummary($root.find('.IG_POPUP_DIG'));
-        });
-
-        on('click', '#batch_download_selected', function () {
-            if ($root.find('#_SNLOAD').length > 0) return;
-
-            const links = $root.find('.IG_POPUP_DIG_BODY a[data-needed="direct"]').filter(function () {
-                return $(this).prev().children('input').prop('checked');
-            }).map(function () { return $(this); }).get();
-
-            if (links.length === 0) {
-                alert(_i18n('NO_CHECK_RESOURCE'));
-                return;
-            }
-            batchDownloadPostFiles(links);
-        });
-
-        on('click', '#batch_download_direct', function () {
-            if ($root.find('#_SNLOAD').length > 0) return;
-            const links = $root.find('.IG_POPUP_DIG_BODY a[data-needed="direct"]').map(function () { return $(this); }).get();
-            batchDownloadPostFiles(links);
-        });
-    }
-
-    bindLegacyDialogEvents(document);
-
     document.addEventListener('keydown', function (e) {
         const keyCode = e.keyCode || e.which;
-
-        // Hot key [Alt+Q] to close legacy download/debug dialogs.
-        if (e.altKey && keyCode === 81) {
-            removeLegacyDialog();
-            e.preventDefault();
-        }
 
         // Hot key [Alt+W] to open settings - use custom keycode if enabled, fallback to default Alt+W(87)
         let settingsKeyCode = state.settingsHotkeyKeyCode || 87;
@@ -122,35 +45,10 @@ export function registerEvents() {
         // Hot key [Alt+S] to download story/highlights resource - use custom keycode if enabled, fallback to default Alt+S(83)
         let downloadStoryKeyCode = state.downloadStoryHotkeyKeyCode || 83;
         if (e.altKey && keyCode === downloadStoryKeyCode) {
-            if (location.href.match(/^(https:\/\/www\.instagram\.com\/stories\/)/ig) && $('.IG_DWSTORY').length > 0) {
-                $('.IG_DWSTORY')?.trigger("click");
-            }
-            if (location.href.match(/^(https:\/\/www\.instagram\.com\/stories\/highlights\/)/ig) && $('.IG_DWHISTORY').length > 0) {
-                $('.IG_DWHISTORY')?.trigger("click");
-            }
+            if (location.pathname.startsWith('/stories/highlights/')) void onHighlightsStoryDownload();
+            else if (location.pathname.startsWith('/stories/')) void onStoryDownload();
             e.preventDefault();
         }
-    });
-
-    // Running if user left-click download icon in stories
-    $body.on('click', '.IG_DWSTORY', function () {
-        onStory(true);
-    });
-
-    // Running if user left-click all download icon in stories
-    $body.on('click', '.IG_DWSTORY_ALL', function () {
-        onStoryAll();
-    });
-
-    // Running if user left-click 'open in new tab' icon in stories
-    $body.on('click', '.IG_DWNEWTAB', function (e) {
-        e.preventDefault();
-        onStory(true, true, true);
-    });
-
-    // Running if user left-click download thumbnail icon in stories
-    $body.on('click', '.IG_DWSTORY_THUMBNAIL', function () {
-        onStoryThumbnail(true);
     });
 
     // Running if user left-click download icon in profile
@@ -159,26 +57,6 @@ export function registerEvents() {
         onProfileAvatar(true);
     });
 
-    // Running if user left-click download icon in highlight stories
-    $body.on('click', '.IG_DWHISTORY', function () {
-        onHighlightsStory(true);
-    });
-
-    // Running if user left-click all download icon in highlight stories
-    $body.on('click', '.IG_DWHISTORY_ALL', function () {
-        onHighlightsStoryAll();
-    });
-
-    // Running if user left-click 'open in new tab' icon in highlight stories
-    $body.on('click', '.IG_DWHINEWTAB', function (e) {
-        e.preventDefault();
-        onHighlightsStory(true, true);
-    });
-
-    // Running if user left-click thumbnail download icon in highlight stories
-    $body.on('click', '.IG_DWHISTORY_THUMBNAIL', function () {
-        onHighlightsStoryThumbnail(true);
-    });
 
     // Running if user right-click profile picture in stories area
     $body.on('mousedown', 'button[role="menuitem"], div[role="menuitem"], ul > li[tabindex="-1"] > div[role="button"]', function (e) {
@@ -264,27 +142,17 @@ export function registerEvents() {
                             $videos.each(function () {
                                 $(this).one('timeupdate', function () {
                                     const $this = $(this);
-                                    if (!$this.data('insert-thumbnail')) {
-                                        let $video = $this;
-                                        if ($video.parents('div[style][class]').filter(function () {
-                                            return $(this).width() == $video.width();
-                                        }).find('.IG_DWSTORY_THUMBNAIL, .IG_DWHISTORY_THUMBNAIL').length === 0) {
-                                            $this.data('insert-thumbnail', true);
+                                    if ($this.data('insert-thumbnail')) return;
+                                    $this.data('insert-thumbnail', true);
 
-                                            if (isHighlight) {
-                                                onHighlightsStoryThumbnail(false);
-                                            }
-                                            else {
-                                                onStoryThumbnail(false);
-                                            }
-
-                                            logger(`(${storyType})`, 'Manually inserting thumbnail button');
-                                        }
-                                        else {
-                                            $this.data('modify-thumbnail', true);
-                                            logger(`(${storyType})`, 'Thumbnail button already inserted');
-                                        }
+                                    if (isHighlight) {
+                                        onHighlightsStoryThumbnail(false);
                                     }
+                                    else {
+                                        onStoryThumbnail(false);
+                                    }
+
+                                    logger(`(${storyType})`, 'Updated video controls');
                                 });
 
                                 var $video = $(this);

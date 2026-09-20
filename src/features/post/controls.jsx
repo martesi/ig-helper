@@ -6,14 +6,32 @@ import { CopyIcon } from '../../shared/ui/icons.jsx';
 import { adoptShadowStyles } from '../../shared/ui/shadow-styles.js';
 import styles from './controls.css?inline';
 
-export function mountPostControls(mount, { showDownloadAll = false, showMediaPreview = USER_SETTING.SHOW_MEDIA_PREVIEW, mediaType = 'image', actions = {} } = {}) {
+export function mountPostControls(mount, options = {}) {
+    mountMediaControls(mount, options);
+}
+
+export function mountMediaControls(mount, {
+    showDownloadAll = false,
+    showMediaPreview = USER_SETTING.SHOW_MEDIA_PREVIEW,
+    showOpenInNewTab = USER_SETTING.SHOW_OPEN_IN_NEW_TAB_BUTTON,
+    showCopy = true,
+    mediaType = 'image',
+    actions = {},
+} = {}) {
     const root = mount.shadowRoot ?? mount.attachShadow({ mode: 'open' });
     adoptShadowStyles(root, styles);
-    render(<PostControls showDownloadAll={showDownloadAll} showMediaPreview={showMediaPreview} mediaType={mediaType} actions={actions} />, root);
+    render(<MediaControls
+        showDownloadAll={showDownloadAll}
+        showMediaPreview={showMediaPreview}
+        showOpenInNewTab={showOpenInNewTab}
+        showCopy={showCopy}
+        mediaType={mediaType}
+        actions={actions}
+    />, root);
 }
 
 
-function PostControls({ showDownloadAll, showMediaPreview, mediaType, actions }) {
+function MediaControls({ showDownloadAll, showMediaPreview, showOpenInNewTab, showCopy, mediaType, actions }) {
     return (
         <>
             {mediaType === 'video' ? (
@@ -21,10 +39,10 @@ function PostControls({ showDownloadAll, showMediaPreview, mediaType, actions })
             ) : showMediaPreview ? (
                 <ControlButton class="IG_IMAGE_VIEWER" labelKey="IMAGE_VIEWER" icon={SVG.FULLSCREEN} onClick={actions.view} />
             ) : null}
-            {USER_SETTING.SHOW_OPEN_IN_NEW_TAB_BUTTON && (
+            {showOpenInNewTab && (
                 <ControlButton class="IG_NEWTAB_MAIN" labelKey="NEW_TAB" icon={SVG.NEW_TAB} onClick={actions.newTab} />
             )}
-            <CopyControlButton onClick={actions.copy} />
+            {showCopy && <CopyControlButton onClick={actions.copy} />}
             {showDownloadAll && <ControlButton class="IG_DW_ALL_MAIN" labelKey="DW_ALL" icon={SVG.DOWNLOAD_ALL} onClick={actions.downloadAll} />}
             <ControlButton class="IG_DW_MAIN" labelKey="DW" icon={SVG.DOWNLOAD} onClick={actions.download} />
         </>

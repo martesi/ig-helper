@@ -20,6 +20,20 @@
     justify-content: flex-end;
 }
 
+.IG_STORY_CONTROL_BAR,
+.IG_HIGHLIGHT_CONTROL_BAR {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 5;
+    display: inline-flex;
+    overflow: hidden;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #000;
+    line-height: 0;
+}
+
 .IG_LEGACY_CONTROL {
     box-sizing: border-box;
     border: 0;

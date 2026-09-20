@@ -1,20 +1,18 @@
 import $ from 'jquery';
-import { USER_SETTING, SVG, state } from "../settings/state";
-import { appendLegacyControl } from "../shared/ui/legacy-controls.jsx";
+import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state } from "../settings/state";
 import {
     openNewTab,
-    setDownloadProgress, saveFiles, getStoryProgress,
+    saveFiles, getStoryProgress,
     tryHandleDashFromMediaItem,
     getHighlightCurrentTimeElement, setTimeElementDateAndLocaleTime,
     setStoryProgressIndexText, setStoryProgressIndexByUsername
 } from "../shared/general";
 import { updateLoadingBar } from "../shared/ui/status.jsx";
 import { logger } from "../shared/logger";
-import { _i18n } from "../shared/i18n";
 import { getHighlightStories, getMediaInfo } from "../shared/api";
-import { createStoryListDOM } from "./story";
+import { downloadStoryResources } from "./story";
 import { getImageFromCache } from "./media/image-cache";
-import { IG_createDM } from "./menu";
+import { mountMediaControls } from './post/controls.jsx';
 
 /**
  * getHighlightsStoryUsername
@@ -30,6 +28,67 @@ function getHighlightsStoryUsername() {
     return href?.split('/').filter(e => e.length > 0).at(0);
 }
 
+function findHighlightControlElement() {
+    let $element = $('body > div section:visible._ac0a');
+    if ($element.length === 0) {
+        $element = $('body > div section:visible > div > div[style]:not([class])');
+    }
+    if ($element.length === 0) {
+        $element = $('div[id^="mount"] section > div > a[href="/"]').parent().parent().parent()
+            .find('section:visible > div > div[style]:not([class])');
+    }
+    if ($element.length === 0) {
+        $element = $('div[id^="mount"] section > div > a[href="/"]').parent().parent().parent()
+            .find('section:visible > div div[style]:not([class]) > div:not([data-visualcompletion="loading-state"])');
+    }
+    if ($element.length === 0) {
+        $element = $('div[id^="mount"] section > div a[href="/"]').parents('section:visible')
+            .find('div[style]:not([class])');
+    }
+    if ($element.length === 0) {
+        let widest = 0;
+        $('body > div div:not([hidden]) section:visible > div div[class][style] > div[style]:not([class])').each(function () {
+            const $candidate = $(this);
+            if ($candidate.width() > widest) {
+                widest = $candidate.width();
+                $element = $candidate.children('div').first();
+            }
+        });
+    }
+    return $element.first();
+}
+
+function mountHighlightControlBar($element, username, mediaType) {
+    const parent = $element?.[0];
+    if (!parent) return null;
+    parent.style.position = 'relative';
+
+    let host = Array.from(parent.children).find(element => element.classList?.contains('IG_HIGHLIGHT_CONTROL_BAR'));
+    if (!host) {
+        host = document.createElement('span');
+        host.className = 'IG_HIGHLIGHT_CONTROL_BAR';
+        parent.append(host);
+    }
+
+    const $header = getStoryProgress(username);
+    mountMediaControls(host, {
+        showDownloadAll: $header.length > 1 && USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE,
+        showMediaPreview: false,
+        showOpenInNewTab: true,
+        showCopy: false,
+        mediaType,
+        actions: {
+            thumbnail: () => onHighlightsStoryThumbnail(true),
+            newTab: () => onHighlightsStory(true, true),
+            downloadAll: () => onHighlightsStoryAll(),
+            download: () => onHighlightsStoryDownload(),
+        },
+    });
+    setStoryProgressIndexText($element, $header, 'IG_DWHISTORY_POSITION');
+    setTimeElementDateAndLocaleTime(getHighlightCurrentTimeElement($header));
+    return host;
+}
+
 /**
  * onHighlightsStoryAll
  * @description Trigger user's highlight all download event.
@@ -38,88 +97,22 @@ function getHighlightsStoryUsername() {
  */
 export async function onHighlightsStoryAll() {
     updateLoadingBar(true);
-
-    let date = new Date().getTime();
-    let timestamp = Math.floor(date / 1000);
-    let highlightId = location.href.replace(/\/$/ig, '').split('/').at(-1);
-    let highStories = await getHighlightStories(highlightId);
-    let username = highStories.data.reels_media[0].owner.username;
-
-    if (USER_SETTING.DIRECT_DOWNLOAD_STORY) {
-
-        let complete = 0;
-        // OPTIMIZATION: Cache items array — accessed inside per-item setTimeout closures,
-        // avoids repeated .reels_media[0].items lookups (was 3 lookups per iteration).
-        const items = highStories.data.reels_media[0].items;
-        const totalItems = items.length;
-        setDownloadProgress(complete, totalItems);
-
-        items.forEach((item, idx) => {
-            setTimeout(() => {
-                if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                    timestamp = item.taken_at_timestamp;
-                }
-
-                item.display_resources.sort(function (a, b) {
-                    if (a.config_width < b.config_width) return 1;
-                    if (a.config_width > b.config_width) return -1;
-                    return 0;
-                });
-
-                if (item.is_video) {
-                    (async () => {
-                        if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && USER_SETTING.PREFER_DASH_MANIFEST && !state.tempFetchRateLimit) {
-                            const mi = await getMediaInfo(item.id);
-                            if (mi?.status === 'ok') {
-                                const handled = await tryHandleDashFromMediaItem({
-                                    mediaItem: mi.items[0],
-                                    username,
-                                    sourceType: "highlights",
-                                    timestamp,
-                                    shortcode: mi.items[0].id,
-                                    isPreview: false,
-                                });
-                                if (handled) {
-                                    setDownloadProgress(++complete, totalItems);
-                                    return;
-                                }
-                            } else if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED) {
-                                state.tempFetchRateLimit = true;
-                            }
-                        }
-
-                        await saveFiles(
-                            item.video_resources[0].src,
-                            {
-                                username,
-                                sourceType: "highlights",
-                                timestamp,
-                                filetype: 'mp4',
-                                shortcode: item.id
-                            }
-                        );
-                        setDownloadProgress(++complete, totalItems);
-                    })();
-                }
-                else {
-                    saveFiles(item.display_resources[0].src,
-                        {
-                            username,
-                            sourceType: "highlights",
-                            timestamp,
-                            filetype: 'jpg',
-                            shortcode: item.id
-                        }).then(() => {
-                            setDownloadProgress(++complete, totalItems);
-                        });
-                }
-            }, 100 * idx);
-        });
+    try {
+        const highlightId = location.href.replace(/\/$/ig, '').split('/').at(-1);
+        const highStories = await getHighlightStories(highlightId);
+        const username = highStories.data.reels_media[0].owner.username;
+        await downloadStoryResources(highStories, 'highlights', `Highlight · ${username}`);
     }
-    else {
-        IG_createDM(false, true);
-        createStoryListDOM(highStories, 'highlights');
+    finally {
+        updateLoadingBar(false);
     }
+}
+
+export function onHighlightsStoryDownload() {
+    if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE) {
+        return onHighlightsStory(true);
+    }
+    return onHighlightsStoryAll();
 }
 
 /**
@@ -285,125 +278,9 @@ export async function onHighlightsStory(isDownload, isPreview) {
         updateLoadingBar(false);
     }
     else {
-        // Add the stories download button
-        if (!$('.IG_DWHISTORY').length) {
-            let $element = null;
-
-            // Default detecter (section layout mode)
-            if ($('body > div section._ac0a').length > 0) {
-                $element = $('body > div section:visible._ac0a');
-            }
-            else {
-                $element = $('body > div section:visible > div > div[style]:not([class])');
-                $element.css('position', 'relative');
-            }
-
-            // Detecter for div layout mode
-            if ($element.length === 0) {
-                let $$element = $('body > div div:not([hidden]) section:visible > div div[class][style] > div[style]:not([class])');
-                let nowSize = 0;
-
-                $$element.each(function () {
-                    // OPTIMIZATION: cache $(this) — was wrapped 3 times per iteration
-                    const $this = $(this);
-                    const width = $this.width();
-                    if (width > nowSize) {
-                        nowSize = width;
-                        $element = $this.children('div').first();
-                    }
-                });
-            }
-
-
-            if ($element != null) {
-                //$element.css('position','relative');
-                appendLegacyControl($element[0], { className: "IG_DWHISTORY", labelKey: "DW", label: _i18n("DW"), icon: SVG.DOWNLOAD });
-                appendLegacyControl($element[0], { className: "IG_DWHINEWTAB", labelKey: "NEW_TAB", label: _i18n("NEW_TAB"), icon: SVG.NEW_TAB });
-
-                let $header = getStoryProgress(username);
-                if ($header.length > 1) {
-                    appendLegacyControl($element[0], { className: "IG_DWHISTORY_ALL", labelKey: "DW_ALL", label: _i18n("DW_ALL"), icon: SVG.DOWNLOAD_ALL });
-                }
-
-                setStoryProgressIndexText($element, $header, 'IG_DWHISTORY_POSITION');
-
-                // replace something times ago format to publish time in first init
-                setTimeElementDateAndLocaleTime(getHighlightCurrentTimeElement($header));
-
-                //// Modify video volume
-                //if(USER_SETTING.MODIFY_VIDEO_VOLUME){
-                //    $element.find('video').each(function(){
-                //        $(this).on('play playing', function(){
-                //            if(!$(this).data('modify')){
-                //                $(this).data('modify', true);
-                //                this.volume = VIDEO_VOLUME;
-                //                logger('(highlight) Added video event listener #modify');
-                //            }
-                //        });
-                //    });
-                //}
-
-                // Make sure to first remove thumbnail button if still exists and highlight is a picture
-                if ($element.find('img[referrerpolicy]').length) {
-                    $element.find('img[referrerpolicy]').each(function () {
-                        $(this).one('load', function () {
-                            const $img = $(this);
-                            if ($img.data('remove-thumbnail')) {
-                                return;
-                            }
-                            $img.data('remove-thumbnail', true);
-                            if ($element.find('.IG_DWHISTORY_THUMBNAIL').length === 0) {
-                                $('.IG_DWHISTORY_THUMBNAIL').remove();
-                                logger('(highlight) Manually removing thumbnail button');
-                            }
-                            else {
-                                logger('(highlight) Thumbnail button is not present for this picture');
-                            }
-                        });
-                    });
-                }
-                // If the highlight's <video> (blob src) is already present in the DOM by the time
-                // onHighlightsStory runs (e.g. script initialized late, after 'timeupdate' already
-                // fired once), insert the thumbnail button immediately instead of relying on a
-                // future 'timeupdate' event that may never come. The MutationObserver-based
-                // listener elsewhere only attaches to <video> nodes that are added *after* it
-                // was created, so a late init otherwise misses the button entirely.
-                // Create separate late-thumbnail-insert flag to avoid conflict with
-                // insert-thumbnail, which may be misset prematurely to true.
-				// We also check for IG_DWHISTORY_THUMBNAIL so the button is only added if necessary.
-                else if ($element.find('video[src^="blob:"]').length) {
-                    $element.find('video[src^="blob:"]').each(function () {
-                        const $video = $(this);
-                        if (!$video.data('late-thumbnail-insert')) {
-                            $video.data('late-thumbnail-insert', true);
-                            if ($element.find('.IG_DWHISTORY_THUMBNAIL').length === 0) {
-                                onHighlightsStoryThumbnail(false);
-                                logger('(highlight) Manually inserting thumbnail button (late init)');
-                            }
-                            else {
-                                logger('(highlight) Thumbnail button already inserted');
-                            }
-                        }
-                    });
-                }
-
-                // Try to use event listener 'timeupdate' in order to detect if highlight is a video
-                //$element.find('video').each(function(){
-                //    $(this).on('timeupdate',function(){
-                //        if(!$(this).data('modify-thumbnail')){
-                //            if($element.find('.IG_DWHISTORY_THUMBNAIL').length === 0){
-                //                $(this).data('modify-thumbnail', true);
-                //                onHighlightsStoryThumbnail(false);
-                //                logger('(highlight) Manually inserting thumbnail button');
-                //            }
-                //            else{
-                //                $(this).data('modify-thumbnail', true);
-                //                logger('(highlight) Thumbnail button already inserted');
-                //            }
-                //        }
-                //    });
-                //});
-            }
+        const $element = findHighlightControlElement();
+        if ($element.length > 0) {
+            mountHighlightControlBar($element, username, $element.find('video').length > 0 ? 'video' : 'image');
         }
     }
 }
@@ -505,44 +382,11 @@ export async function onHighlightsStoryThumbnail(isDownload) {
         updateLoadingBar(false);
     }
     else {
-        setStoryProgressIndexByUsername($('.IG_DWHISTORY').parent(), getHighlightsStoryUsername(), 'IG_DWHISTORY_POSITION');
-
-        if ($('body > div section video.xh8yej3').length) {
-            // Add the stories thumbnail download button
-            if (!$('.IG_DWHISTORY_THUMBNAIL').length) {
-                let $element = null;
-
-                // Default detecter (section layout mode)
-                if ($('body > div section._ac0a').length > 0) {
-                    $element = $('body > div section:visible._ac0a');
-                }
-                else {
-                    $element = $('body > div section:visible > div > div[style]:not([class])');
-                    $element.css('position', 'relative');
-                }
-
-                // Detecter for div layout mode
-                if ($element.length === 0) {
-                    let $$element = $('body > div div:not([hidden]) section:visible > div div[class][style] > div[style]:not([class])');
-                    let nowSize = 0;
-
-                    $$element.each(function () {
-                        const $this = $(this);
-                        const width = $this.width();
-                        if (width > nowSize) {
-                            nowSize = width;
-                            $element = $this.children('div').first();
-                        }
-                    });
-                }
-
-                if ($element != null) {
-                    appendLegacyControl($element[0], { className: "IG_DWHISTORY_THUMBNAIL", labelKey: "VIDEO_THUMBNAIL", label: _i18n("VIDEO_THUMBNAIL"), icon: SVG.THUMBNAIL });
-                }
-            }
+        const $element = findHighlightControlElement();
+        const username = getHighlightsStoryUsername();
+        if ($element.length > 0) {
+            mountHighlightControlBar($element, username, $element.find('video').length > 0 ? 'video' : 'image');
         }
-        else {
-            $('.IG_DWHISTORY_THUMBNAIL').remove();
-        }
+        setStoryProgressIndexByUsername($element, username, 'IG_DWHISTORY_POSITION');
     }
 }

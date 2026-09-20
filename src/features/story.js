@@ -1,13 +1,10 @@
 import $ from 'jquery';
-import { USER_SETTING, SVG, state } from "../settings/state";
-import { appendLegacyControl } from "../shared/ui/legacy-controls.jsx";
-import { appendMediaResource, decorateMediaResource } from "../shared/ui/media-resource.jsx";
+import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state } from "../settings/state";
+import { appendMediaResource } from "../shared/ui/media-resource.jsx";
 import {
-    setDownloadProgress,
     saveFiles, getStoryProgress, openNewTab,
     getStoryId,
     tryHandleDashFromMediaItem,
-    updatePopupSelectionSummary,
     setStoryProgressIndexText,
     setStoryProgressIndexByUsername
 } from "../shared/general";
@@ -16,62 +13,51 @@ import { logger } from "../shared/logger";
 import { getUserId, getStories, getMediaInfo } from "../shared/api";
 import { _i18n } from "../shared/i18n";
 import { getImageFromCache } from "./media/image-cache";
-import { IG_createDM } from "./menu";
-import { queryAllLegacyDialog, queryLegacyDialog } from '../shared/ui/dialogs.jsx';
+import { batchDownloadPostFiles } from './post/post.js';
+import { mountMediaControls } from './post/controls.jsx';
+import { openResourcePicker } from '../shared/ui/resource-picker.jsx';
 
 /**
- * createStoryListDOM
- * @description Create a list of story items in the popup dialog.
+ * createStoryResourceElements
+ * @description Build the same media-resource elements used by post downloads.
  *
  * @return {void}
  */
-export async function createStoryListDOM(obj, type) {
-    try {
-        $(queryLegacyDialog('#post_info')).text(`${type} ID: ${obj.data.reels_media[0].id}`);
-        const $selector = $(queryLegacyDialog('.IG_POPUP_DIG_BODY'));
+export function createStoryResourceElements(obj, type) {
+    const root = document.createElement('div');
+    const reel = obj.data.reels_media[0];
+    const username = reel?.user?.username || reel?.owner?.username;
 
-        // OPTIMIZATION: cache reels_media[0] reference
-        const reel = obj.data.reels_media[0];
-        const items = reel.items;
+    reel.items.forEach((item, idx) => {
+        const timestamp = USER_SETTING.RENAME_PUBLISH_DATE
+            ? item.taken_at_timestamp
+            : Math.floor(Date.now() / 1000);
+        const displayResources = [...item.display_resources].sort((a, b) => b.config_width - a.config_width);
+        const preview = displayResources[0]?.src;
+        const resource = item.is_video
+            ? { type: 'mp4', href: item.video_resources[0]?.src, labelKey: 'VID' }
+            : { type: 'jpg', href: preview, labelKey: 'IMG' };
 
-        items.forEach((item, idx) => {
-            let date = new Date().getTime();
-            let timestamp = Math.floor(date / 1000);
-            let username = reel?.user?.username || reel?.owner?.username;
+        if (!resource.href || !preview) return;
 
-            if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                timestamp = item.taken_at_timestamp;
-            }
-
-            item.display_resources.sort(function (a, b) {
-                if (a.config_width < b.config_width) return 1;
-                if (a.config_width > b.config_width) return -1;
-                return 0;
-            });
-
-            if (item.is_video) {
-                appendMediaResource($selector[0], { mediaId: item.id, datetime: timestamp, blob: true, name: type, type: 'mp4', username, path: item.id, index: idx + 1, displayIndex: idx, href: item.video_resources[0].src, preview: item.display_resources[0].src, labelKey: 'VID', label: _i18n('VID') });
-            }
-            else {
-                appendMediaResource($selector[0], { mediaId: item.id, datetime: timestamp, blob: true, name: type, type: 'jpg', username, path: item.id, index: idx + 1, displayIndex: idx, href: item.display_resources[0].src, preview: item.display_resources[0].src, labelKey: 'IMG', label: _i18n('IMG') });
-            }
+        appendMediaResource(root, {
+            mediaId: item.id,
+            datetime: timestamp,
+            blob: true,
+            name: type,
+            type: resource.type,
+            username,
+            path: item.id,
+            index: idx + 1,
+            displayIndex: idx + 1,
+            href: resource.href,
+            preview,
+            labelKey: resource.labelKey,
+            label: _i18n(resource.labelKey),
         });
+    });
 
-        $selector.find('a').each(function () {
-            decorateMediaResource(this, {
-                icons: { newTab: SVG.NEW_TAB, thumbnail: SVG.THUMBNAIL },
-                labels: { newTab: _i18n('NEW_TAB'), thumbnail: _i18n('VIDEO_THUMBNAIL') },
-                includeThumbnail: this.dataset.type === 'mp4',
-            });
-        });
-
-        updatePopupSelectionSummary();
-        queryAllLegacyDialog('#batch_download_selected, #batch_download_direct').forEach(button => { button.disabled = false; });
-        updateLoadingBar(false);
-    }
-    catch (err) {
-        logger('createStoryListDOM()', 'failed', err);
-    }
+    return Array.from(root.querySelectorAll('a[data-needed="direct"]'));
 }
 
 /**
@@ -82,64 +68,106 @@ export async function createStoryListDOM(obj, type) {
  */
 export async function onStoryAll() {
     updateLoadingBar(true);
+    try {
+        const username = $("body > div section._ac0a header._ac0k ._ac0l a + div a").first().text()
+            || location.pathname.split("/").filter(Boolean).at(1);
+        const userInfo = await getUserId(username);
+        const stories = await getStories(userInfo.user.pk);
+        await downloadStoryResources(stories, 'stories', `Story · ${username}`);
+    }
+    finally {
+        updateLoadingBar(false);
+    }
+}
 
-    let date = new Date().getTime();
-    let timestamp = Math.floor(date / 1000);
-    let username = $("body > div section._ac0a header._ac0k ._ac0l a + div a").first().text() || location.pathname.split("/").filter(s => s.length > 0).at(1);
+export async function downloadStoryResources(data, type, title) {
+    const elements = createStoryResourceElements(data, type);
+    if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ASK) {
+        openStoryResourcePicker(title, elements);
+        return;
+    }
+    await batchDownloadPostFiles(elements);
+}
 
-    let userInfo = await getUserId(username);
-    let userId = userInfo.user.pk;
-    let stories = await getStories(userId);
+function openStoryResourcePicker(title, elements) {
+    const resources = elements.map(element => ({
+        mediaId: element.getAttribute('media-id'),
+        preview: element.querySelector('img')?.src ?? element.dataset.href,
+        label: _i18n(element.dataset.type === 'mp4' ? 'VID' : 'IMG'),
+        element,
+    }));
 
-    if (USER_SETTING.DIRECT_DOWNLOAD_STORY) {
-        let complete = 0;
-        // OPTIMIZATION: cache items array — repeatedly accessed inside setTimeout closures
-        const items = stories.data.reels_media[0].items;
-        const totalItems = items.length;
-        setDownloadProgress(complete, totalItems);
+    openResourcePicker({
+        title,
+        resources,
+        onDownload: selected => batchDownloadPostFiles(selected.map(resource => resource.element)),
+    });
+}
 
-        items.forEach((item, idx) => {
-            setTimeout(() => {
-                if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                    timestamp = item.taken_at_timestamp;
-                }
+export function onStoryDownload() {
+    if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE) {
+        return onStory(true);
+    }
+    return onStoryAll();
+}
 
-                item.display_resources.sort(function (a, b) {
-                    if (a.config_width < b.config_width) return 1;
-                    if (a.config_width > b.config_width) return -1;
-                    return 0;
-                });
+function findStoryControlElement() {
+    let $element = $('body > div section:visible._ac0a');
 
-                if (item.is_video) {
-                    saveFiles(item.video_resources[0].src,
-                        {
-                            username,
-                            sourceType: "stories",
-                            timestamp,
-                            filetype: 'mp4',
-                            shortcode: item.id
-                        }).then(() => {
-                            setDownloadProgress(++complete, totalItems);
-                        });
-                }
-                else {
-                    saveFiles(item.display_resources[0].src, {
-                        username,
-                        sourceType: "stories",
-                        timestamp,
-                        filetype: 'jpg',
-                        shortcode: item.id
-                    }).then(() => {
-                        setDownloadProgress(++complete, totalItems);
-                    });
-                }
-            }, 100 * idx);
+    if ($element.length === 0) {
+        $element = $('body > div section:visible > div > div[style]:not([class])');
+    }
+    if ($element.length === 0) {
+        $element = $('div[id^="mount"] section > div > a[href="/"]').parent().parent().parent().find('section:visible > div > div[style]:not([class])');
+    }
+    if ($element.length === 0) {
+        $element = $('div[id^="mount"] section > div > a[href="/"]').parent().parent().parent().find('section:visible > div div[style]:not([class]) > div:not([data-visualcompletion="loading-state"])');
+    }
+    if ($element.length === 0) {
+        $element = $('div[id^="mount"] section > div a[href="/"]').parents('section:visible').find('div[style]:not([class])');
+    }
+    if ($element.length === 0) {
+        let widest = 0;
+        $('body > div div:not([hidden]) section:visible > div div[class][style] > div[style]:not([class])').each(function () {
+            const $candidate = $(this);
+            if ($candidate.width() > widest) {
+                widest = $candidate.width();
+                $element = $candidate.children('div').first();
+            }
         });
     }
-    else {
-        IG_createDM(false, true);
-        createStoryListDOM(stories, 'stories');
+
+    return $element.first();
+}
+
+function mountStoryControlBar($element, username, mediaType) {
+    const parent = $element?.[0];
+    if (!parent) return null;
+
+    parent.style.position = 'relative';
+    let host = Array.from(parent.children).find(element => element.classList?.contains('IG_STORY_CONTROL_BAR'));
+    if (!host) {
+        host = document.createElement('span');
+        host.className = 'IG_STORY_CONTROL_BAR';
+        parent.append(host);
     }
+
+    const $header = getStoryProgress(username);
+    mountMediaControls(host, {
+        showDownloadAll: $header.length > 1 && USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE,
+        showMediaPreview: false,
+        showOpenInNewTab: true,
+        showCopy: false,
+        mediaType,
+        actions: {
+            thumbnail: () => onStoryThumbnail(true),
+            newTab: () => onStory(true, true, true),
+            downloadAll: () => onStoryAll(),
+            download: () => onStoryDownload(),
+        },
+    });
+    setStoryProgressIndexText($element, $header, 'IG_DWSTORY_POSITION');
+    return host;
 }
 
 /**
@@ -515,66 +543,12 @@ export async function onStory(isDownload, isForce, isPreview) {
         updateLoadingBar(false);
     }
     else {
-        // Add the stories download button
-        if (!$('.IG_DWSTORY').length) {
+        if (!document.querySelector('.IG_STORY_CONTROL_BAR')) {
             state.GL_dataCache.stories = {};
-            let $element = null;
-            // Default detecter (section layout mode)
-            if ($('body > div section._ac0a').length > 0) {
-                $element = $('body > div section:visible._ac0a');
-            }
-            // detecter (single story layout mode)
-            else {
-                $element = $('body > div section:visible > div > div[style]:not([class])');
-                $element.css('position', 'relative');
-            }
-
-
-            if ($element.length === 0) {
-                $element = $('div[id^="mount"] section > div > a[href="/"]').parent().parent().parent().find('section:visible > div > div[style]:not([class])');
-                $element.css('position', 'relative');
-            }
-
-            if ($element.length === 0) {
-                $element = $('div[id^="mount"] section > div > a[href="/"]').parent().parent().parent().find('section:visible > div div[style]:not([class]) > div:not([data-visualcompletion="loading-state"])');
-                $element.css('position', 'relative');
-            }
-
-            if ($element.length === 0) {
-                $element = $('div[id^="mount"] section > div a[href="/"]').parents('section:visible').find('div[style]:not([class])');
-                $element.css('position', 'relative');
-            }
-
-
-            // Detecter for div layout mode
-            if ($element.length === 0) {
-                let $$element = $('body > div div:not([hidden]) section:visible > div div[class][style] > div[style]:not([class])');
-                let nowSize = 0;
-
-                $$element.each(function () {
-                    const $this = $(this);
-                    const width = $this.width();
-                    if (width > nowSize) {
-                        nowSize = width;
-                        $element = $this.children('div').first();
-                    }
-                });
-            }
-
-
-            if ($element != null) {
-                // OPTIMIZATION: cache .first() once
-                const $firstEl = $element.first();
-                $firstEl.css('position', 'relative');
-                appendLegacyControl($firstEl[0], { className: "IG_DWSTORY", labelKey: "DW", label: _i18n("DW"), icon: SVG.DOWNLOAD });
-                appendLegacyControl($firstEl[0], { className: "IG_DWNEWTAB", labelKey: "NEW_TAB", label: _i18n("NEW_TAB"), icon: SVG.NEW_TAB });
-
-                let $header = getStoryProgress(username);
-                if ($header.length > 1) {
-                    appendLegacyControl($firstEl[0], { className: "IG_DWSTORY_ALL", labelKey: "DW_ALL", label: _i18n("DW_ALL"), icon: SVG.DOWNLOAD_ALL });
-                }
-
-                setStoryProgressIndexText($firstEl, $header, 'IG_DWSTORY_POSITION');
+            const $element = findStoryControlElement();
+            if ($element.length > 0) {
+                const mediaType = $element.find('video').length > 0 ? 'video' : 'image';
+                mountStoryControlBar($element, username, mediaType);
 
                 // Modify video volume
                 //if(USER_SETTING.MODIFY_VIDEO_VOLUME){
@@ -589,70 +563,19 @@ export async function onStory(isDownload, isForce, isPreview) {
                 //    });
                 //}
 
-                // Make sure to first remove thumbnail button if still exists and story is a picture
                 if ($element.find('img[referrerpolicy]').length) {
-                    $element.find('img[referrerpolicy]').each(function () {
-                        $(this).one('load', function () {
-                            const $img = $(this);
-                            if ($img.data('remove-thumbnail')) {
-                                return;
-                            }
-                            $img.data('remove-thumbnail', true);
-                            if ($element.find('.IG_DWSTORY_THUMBNAIL').length === 0) {
-								$('.IG_DWSTORY_THUMBNAIL').remove();
-                                logger('(story) Manually removing thumbnail button');
-                            }
-                            else {
-                                logger('(story) Thumbnail button is not present for this picture');
-                            }
-                        });
-                    });
+                    mountStoryControlBar($element.first(), username, 'image');
                 }
-                // If the story's <video> (blob src) is already present in the DOM by the time
-                // onStory runs (e.g. script initialized late, after 'timeupdate' already fired
-                // once), insert the thumbnail button immediately instead of relying on a
-                // future 'timeupdate' event that may never come. The MutationObserver-based
-                // listener elsewhere only attaches to <video> nodes that are added *after* it
-                // was created, so a late init otherwise misses the button entirely.
-                // Create separate late-thumbnail-insert flag to avoid conflict with
-                // insert-thumbnail, which may be misset prematurely to true.
-				// We also check for IG_DWSTORY_THUMBNAIL so the button is only added if necessary.
                 else if ($element.find('video[src^="blob:"]').length) {
-                    $element.find('video[src^="blob:"]').each(function () {
-                        const $video = $(this);
-                        if (!$video.data('late-thumbnail-insert')) {
-                            $video.data('late-thumbnail-insert', true);
-                            if ($element.find('.IG_DWSTORY_THUMBNAIL').length === 0) {
-                                onStoryThumbnail(false);
-                                logger('(story) Manually inserting thumbnail button (late init)');
-                            }
-                            else {
-                                logger('(story) Thumbnail button already inserted');
-                            }
-                        }
-                    });
+                    mountStoryControlBar($element.first(), username, 'video');
                 }
-
-                // Try to use event listener 'timeupdate' in order to detect if story is a video
-                //$element.find('video').each(function(){
-                //    $(this).on('timeupdate',function(){
-                //        if(!$(this).data('modify-thumbnail')){
-                //            if($element.find('.IG_DWSTORY_THUMBNAIL').length === 0){
-                //                $(this).data('modify-thumbnail', true);
-                //                onStoryThumbnail(false);
-                //                logger('(story) Manually inserting thumbnail button');
-                //            }
-                //            else{
-                //                $(this).data('modify-thumbnail', true);
-                //                logger('(story) Thumbnail button already inserted');
-                //            }
-                //        }
-                //    });
-                //});
             }
         }
         else {
-            setStoryProgressIndexByUsername($('.IG_DWSTORY').parent(), username, 'IG_DWSTORY_POSITION');
+            const host = document.querySelector('.IG_STORY_CONTROL_BAR');
+            const $parent = host ? $(host.parentElement) : $();
+            if ($parent.length > 0) mountStoryControlBar($parent, username, $parent.find('video').length > 0 ? 'video' : 'image');
+            setStoryProgressIndexByUsername($parent, username, 'IG_DWSTORY_POSITION');
         }
     }
 }
@@ -867,51 +790,8 @@ export async function onStoryThumbnail(isDownload, isForce) {
         updateLoadingBar(false);
     }
     else {
-        if ($('body > div div.IG_DWSTORY').parent().find('video').length) {
-            // Add the stories download button
-            let $element = null;
-            // Default detecter (section layout mode)
-            if ($('body > div section._ac0a').length > 0) {
-                $element = $('body > div section:visible._ac0a');
-            }
-            // detecter (single story layout mode)
-            else {
-                $element = $('body > div section:visible > div > div[style]:not([class])');
-                $element.css('position', 'relative');
-            }
-
-            if ($element.length === 0) {
-                $element = $('div[id^="mount"] section > div > a[href="/"]').parent().parent().parent().find('section:visible > div > div[style]:not([class])');
-                $element.css('position', 'relative');
-            }
-
-            if ($element.length === 0) {
-                $element = $('div[id^="mount"] section > div > a[href="/"]').parent().parent().parent().find('section:visible > div div[style]:not([class]) > div:not([data-visualcompletion="loading-state"])');
-                $element.css('position', 'relative');
-            }
-
-            // Detecter for div layout mode
-            if ($element.length === 0) {
-                let $$element = $('body > div div:not([hidden]) section:visible > div div[class][style] > div[style]:not([class])');
-                let nowSize = 0;
-
-                $$element.each(function () {
-                    const $this = $(this);
-                    const width = $this.width();
-                    if (width > nowSize) {
-                        nowSize = width;
-                        $element = $this.children('div').first();
-                    }
-                });
-            }
-
-
-            if ($element != null) {
-                const $firstEl = $element.first();
-                $firstEl.css('position', 'relative');
-                appendLegacyControl($firstEl[0], { className: "IG_DWSTORY_THUMBNAIL", labelKey: "VIDEO_THUMBNAIL", label: _i18n("VIDEO_THUMBNAIL"), icon: SVG.THUMBNAIL });
-            }
-
-        }
+        const $element = findStoryControlElement();
+        const username = $("body > div section._ac0a header._ac0k ._ac0l a + div a").first().text() || location.pathname.split('/').at(2);
+        if ($element.find('video').length > 0) mountStoryControlBar($element, username, 'video');
     }
 }

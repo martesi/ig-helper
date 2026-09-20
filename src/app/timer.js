@@ -139,7 +139,7 @@ export function startTimer() {
                     onHighlightsStoryThumbnail(false);
                 }, checkInterval);
 
-                if ($(".IG_DWHISTORY").length) {
+                if (document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')) {
                     setTimeout(() => {
                         if (USER_SETTING.SKIP_VIEW_STORY_CONFIRM) {
                             var $viewStoryButton = $('div[id^="mount"] section:last-child > div > div:not([class]) div:last-child > div[role="button"]').filter(function () {
@@ -168,11 +168,7 @@ export function startTimer() {
                     $('div[id^="mount"] section > div > a[href^="/?hl="]').length > 0 ||
                     $('div[id^="mount"] section i[aria-label="Instagram"]').length > 0
                 ) {
-                    $('.IG_DWSTORY').remove();
-                    $('.IG_DWNEWTAB').remove();
-                    if ($('.IG_DWSTORY_THUMBNAIL').length) {
-                        $('.IG_DWSTORY_THUMBNAIL').remove();
-                    }
+                    $('.IG_STORY_CONTROL_BAR').remove();
                     if ($('.IG_DWSTORY_POSITION').length) {
                         $('.IG_DWSTORY_POSITION').remove();
                     }
@@ -185,7 +181,7 @@ export function startTimer() {
                     }, 150);
                 }
 
-                if ($(".IG_DWSTORY").length) {
+                if (document.querySelector('.IG_STORY_CONTROL_BAR')) {
                     setTimeout(() => {
                         if (USER_SETTING.SKIP_VIEW_STORY_CONFIRM) {
                             var $viewStoryButton = $('div[id^="mount"] section:last-child > div > div:not([class]) div:last-child > div[role="button"]').filter(function () {
@@ -204,7 +200,7 @@ export function startTimer() {
                 // OPTIMIZATION: Single combined selector + .remove() — replaces 8 separate
                 // $('.CLASS').length checks + removes. Behavior is identical because
                 // .remove() is a no-op on an empty set.
-                $('.IG_DWSTORY, .IG_DWSTORY_ALL, .IG_DWNEWTAB, .IG_DWSTORY_THUMBNAIL, .IG_DWSTORY_POSITION, .IG_DWHISTORY, .IG_DWHISTORY_ALL, .IG_DWHINEWTAB, .IG_DWHISTORY_THUMBNAIL, .IG_DWHISTORY_POSITION').remove();
+                $('.IG_STORY_CONTROL_BAR, .IG_HIGHLIGHT_CONTROL_BAR, .IG_DWSTORY_POSITION, .IG_DWHISTORY_POSITION').remove();
             }
         }
 
