@@ -1,0 +1,26 @@
+targetUrl = "https://www.instagram.com/"
+
+[shell]
+command = ["nix", "develop", ".#e2e", "--command"]
+executable = "chromium"
+
+[[dev]]
+command = ["bun", "run", "dev", "--", "--host", "127.0.0.1", "--port", "9000"]
+ready = [
+  "http://127.0.0.1:9000/ig-helper.dev.user.js",
+  "http://127.0.0.1:9000/settings/",
+]
+
+[profile.default]
+args = ["--disable-features=LocalNetworkAccessChecks"]
+
+[cookies]
+required = true
+
+[[plugins]]
+name = "userscript"
+url = "http://127.0.0.1:9000/ig-helper.dev.user.js"
+version = "1.4.0"
+
+[[plugins]]
+name = "disable-csp"

@@ -1,15 +1,15 @@
 # Repository agent instructions
 
-## Browser E2E has two separate paths
+## Browser E2E
 
-When the user asks for **agent E2E**, **browser E2E**, **use your own browser**, or browser-visible verification, use the `e2e` skill and the Agent E2E commands:
+The project-local E2E skill is installed by APM at `.agents/skills/e2e`.
+
+For agent-driven browser verification, use:
 
 ```sh
-bun run test:agent:start
-bun run test:agent -- <agent-browser command and arguments>
-bun run test:agent:stop
+bun run test:agent -- <browser command and arguments>
 ```
 
-`test:agent` is the repo-configured `agent-browser` CLI. Do not inspect, grep, import, modify, or run `e2e/playwright/`, `playwright.config.js`, or `bun run test:e2e` for Agent E2E. Do not use Playwright as a fallback or copy setup out of the Playwright harness.
+The harness starts or reuses the configured browser, dev server, userscript manager, cookies, and plugins automatically. Do not add separate start/stop steps.
 
-Only use `bun run test:e2e` when the user explicitly asks for Playwright, the automated E2E suite, or `test:e2e`.
+Do not inspect, import, modify, or run `e2e/playwright/`, `playwright.config.js`, or `bun run test:e2e` for Agent E2E. Use `bun run test:e2e` only when the user explicitly asks for Playwright or the automated regression suite.

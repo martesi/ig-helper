@@ -6,6 +6,9 @@
   "private": true,
   "author": "SN-Koarashi",
   "license": "GPLv3",
+  "workspaces": [
+    ".agents/skills/e2e"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "bun run --parallel build:*",
@@ -13,10 +16,8 @@
     "build:script": "vite build --mode script",
     "lint": "eslint .",
     "preview": "vite preview --outDir dist/page",
-    "test:e2e": "nix develop .#e2e --command bunx playwright test",
-    "test:agent:start": "nix develop .#e2e --command bun e2e/agent.js start",
-    "test:agent": "nix develop .#e2e --command agent-browser",
-    "test:agent:stop": "nix develop .#e2e --command bun e2e/agent.js stop"
+    "test:e2e": "node e2e/run-playwright.mjs",
+    "test:agent": "node .agents/skills/e2e/scripts/harness.ts browser --"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

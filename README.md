@@ -52,6 +52,7 @@ This guide provides comprehensive documentation for developers who want to under
 ### Development Environment Setup
 #### Prerequisites
 - Bun
+- APM
 - A userscript manager (Tampermonkey, Greasemonkey, or Violentmonkey)
 
 #### Setup Steps
@@ -60,8 +61,9 @@ This guide provides comprehensive documentation for developers who want to under
 git clone https://github.com/martesi/ig-helper.git
 cd ig-helper
 ```
-2. Install dependencies:
+2. Install project-local agent skills, then workspace dependencies:
 ```
+apm install --frozen
 bun install
 ```
 3. Start the Vite development server:

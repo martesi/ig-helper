@@ -5,3 +5,7 @@ dist/
 .cache/
 e2e/artifacts/
 cookies*
+
+
+# APM dependencies
+apm_modules/
