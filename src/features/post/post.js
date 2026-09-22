@@ -661,7 +661,7 @@ async function downloadPostResource(target) {
 
                 const resources = Array.from(resourceRoot.querySelectorAll('a[data-needed="direct"]')).map(anchor => ({
                     mediaId: anchor.getAttribute('media-id'),
-                    preview: anchor.querySelector('img')?.src ?? anchor.dataset.href,
+                    preview: anchor.dataset.preview ?? anchor.dataset.href,
                     label: _i18n(anchor.dataset.type === 'mp4' ? 'VID' : 'IMG'),
                     element: anchor,
                 }));

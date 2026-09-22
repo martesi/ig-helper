@@ -8,7 +8,6 @@ import {
 } from "../shared/general";
 import { logger } from "../shared/logger";
 import { onStoryDownload, onStoryThumbnail } from "../features/story";
-import { onProfileAvatar } from "../features/profile";
 import { onHighlightsStoryDownload, onHighlightsStoryThumbnail } from "../features/highlight";
 import { refreshReelsControls } from "../features/reel";
 import { registerPerformanceObserver } from "../features/media/image-cache";
@@ -50,13 +49,6 @@ export function registerEvents() {
             e.preventDefault();
         }
     });
-
-    // Running if user left-click download icon in profile
-    $body.on('click', '.IG_DWPROFILE', function (e) {
-        e.stopPropagation();
-        onProfileAvatar(true);
-    });
-
 
     // Running if user right-click profile picture in stories area
     $body.on('mousedown', 'button[role="menuitem"], div[role="menuitem"], ul > li[tabindex="-1"] > div[role="button"]', function (e) {

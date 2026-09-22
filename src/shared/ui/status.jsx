@@ -1,4 +1,6 @@
 import { render } from 'preact';
+import { adoptShadowStyles } from './shadow-styles.js';
+import styles from './status.css?inline';
 
 const DOWNLOAD_PROGRESS_ID = 'ig-helper-download-progress';
 let downloadProgressTimer;
@@ -18,13 +20,15 @@ export function setDownloadProgress(now, total) {
         document.body.append(mount);
     }
 
+    const root = mount.shadowRoot ?? mount.attachShadow({ mode: 'open' });
+    adoptShadowStyles(root, styles);
     const complete = now >= total;
-    render(<DownloadProgress now={now} total={total} complete={complete} />, mount);
+    render(<DownloadProgress now={now} total={total} complete={complete} />, root);
 
     clearTimeout(downloadProgressTimer);
     if (complete) {
         downloadProgressTimer = setTimeout(() => {
-            render(null, mount);
+            render(null, root);
             mount.remove();
         }, 250);
     }
@@ -32,8 +36,8 @@ export function setDownloadProgress(now, total) {
 
 function DownloadProgress({ now, total, complete }) {
     return (
-        <div class="circle_wrapper" style={{ opacity: complete ? 0 : 1, transition: 'opacity 250ms' }}>
-            <circle />
+        <div class="IG_DOWNLOAD_PROGRESS" style={{ opacity: complete ? 0 : 1, transition: 'opacity 250ms' }}>
+            <span class="IG_DOWNLOAD_SPINNER" />
             <span>{now}/{total}</span>
         </div>
     );

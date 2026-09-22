@@ -3,7 +3,6 @@ import { DIRECT_DOWNLOAD_MODE_OPTIONS } from '../../src/settings/schema.js';
 import {
     IMAGE_VIEWER_ROOT_ID,
     INSTAGRAM_HOME,
-    LEGACY_DIALOG_ROOT_ID,
     PROFILE_URL,
     VITE_URL,
     IgHelperE2E,
@@ -414,59 +413,28 @@ test.describe('IG Helper live browser E2E', () => {
         });
     });
 
-    test('open-in-new-tab creates a real Chrome target without mounting the legacy dialog', async () => {
+    test('open-in-new-tab creates a real Chrome target', async () => {
         await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
             await e2e.ensurePostControls();
-        await e2e.evaluate(`(() => {
-            window.__igHelperLegacyDialogMounted = false;
-            window.__igHelperLegacyDialogObserver?.disconnect();
-            window.__igHelperLegacyDialogObserver = new MutationObserver(() => {
-                if (document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})) {
-                    window.__igHelperLegacyDialogMounted = true;
-                }
-            });
-            window.__igHelperLegacyDialogObserver.observe(document.body, { childList: true });
-        })()`);
 
-        const created = await e2e.clickAndWaitForPage('.button_wrapper .IG_NEWTAB_MAIN');
+            const created = await e2e.clickAndWaitForPage('.button_wrapper .IG_NEWTAB_MAIN');
 
-        expect(created.url()).not.toBe('about:blank');
-        expect(await e2e.evaluate('window.__igHelperLegacyDialogMounted')).toBe(false);
-        expect(await e2e.evaluate(`!!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})`)).toBe(false);
-            await e2e.evaluate('window.__igHelperLegacyDialogObserver?.disconnect()');
+            expect(created.url()).not.toBe('about:blank');
             await created.close();
         });
     });
 
-    test('download-all bypasses the legacy dialog', async () => {
+    test('download-all bypasses the resource picker', async () => {
         await e2e.withSettings({ DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE }, async () => {
             await e2e.goto(PERMALINK_URL);
             const downloadAllButton = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR').first().locator('.IG_DW_ALL_MAIN');
             await downloadAllButton.waitFor({ state: 'visible', timeout: 15000 });
-            await e2e.evaluate(`(() => {
-                window.__igHelperLegacyDialogMounted = false;
-                window.__igHelperLegacyDialogObserver?.disconnect();
-                window.__igHelperLegacyDialogObserver = new MutationObserver(() => {
-                    if (document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)})) {
-                        window.__igHelperLegacyDialogMounted = true;
-                    }
-                });
-                window.__igHelperLegacyDialogObserver.observe(document.body, { childList: true });
-            })()`);
 
             await e2e.dismissInstagramNotificationPrompt();
             await e2e.actionDelay();
             await downloadAllButton.click();
             await e2e.page.waitForTimeout(1000);
-
-            const legacyDialog = await e2e.json(`({
-                mounted: window.__igHelperLegacyDialogMounted,
-                present: !!document.getElementById(${JSON.stringify(LEGACY_DIALOG_ROOT_ID)}),
-            })`);
-            expect(legacyDialog.mounted).toBe(false);
-            expect(legacyDialog.present).toBe(false);
-
-            await e2e.evaluate(`window.__igHelperLegacyDialogObserver?.disconnect()`);
+            expect(await e2e.json(`!!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})`)).toBe(false);
         });
     });
 
@@ -706,9 +674,9 @@ test.describe('IG Helper live browser E2E', () => {
             const result = await page.evaluate(async () => {
                 const { setDownloadProgress } = await import('/src/shared/ui/status.jsx?e2e-download-progress=1');
                 setDownloadProgress(0, 2);
-                const first = document.querySelector('#ig-helper-download-progress .circle_wrapper');
+                const first = document.getElementById('ig-helper-download-progress')?.shadowRoot?.querySelector('.IG_DOWNLOAD_PROGRESS');
                 setDownloadProgress(1, 2);
-                const second = document.querySelector('#ig-helper-download-progress .circle_wrapper');
+                const second = document.getElementById('ig-helper-download-progress')?.shadowRoot?.querySelector('.IG_DOWNLOAD_PROGRESS');
                 const text = second?.textContent;
                 setDownloadProgress(2, 2);
                 await new Promise(resolve => setTimeout(resolve, 300));
@@ -860,58 +828,64 @@ test.describe('IG Helper live browser E2E', () => {
 
     test('profile page mounts the avatar download control in the live Instagram DOM', async () => {
         await e2e.goto(PROFILE_URL);
-        await e2e.waitFor(`document.querySelectorAll('.IG_DWPROFILE').length > 0`, 10000);
+        await e2e.waitFor(`document.querySelectorAll('.IG_PROFILE_CONTROL').length > 0`, 10000);
 
         const profile = await e2e.json(`(() => {
-            const control = document.querySelector('.IG_DWPROFILE');
+            const control = document.querySelector('.IG_PROFILE_CONTROL');
+            const button = control?.shadowRoot?.querySelector('.IG_PROFILE_DOWNLOAD');
             const rect = control?.getBoundingClientRect();
             return {
                 href: location.href,
-                controls: document.querySelectorAll('.IG_DWPROFILE').length,
+                controls: document.querySelectorAll('.IG_PROFILE_CONTROL').length,
+                button: Boolean(button),
                 visible: Boolean(rect && rect.width > 0 && rect.height > 0),
             };
         })()`);
 
         expect(profile.href).toBe(PROFILE_URL);
         expect(profile.controls).toBeGreaterThan(0);
+        expect(profile.button).toBe(true);
         expect(profile.visible).toBe(true);
     });
 
     test('Reels controls remount after Instagram replaces the helper subtree', async () => {
-        await e2e.goto('https://www.instagram.com/reels/');
-        await e2e.waitFor(`document.querySelectorAll('.IG_REELS').length > 0`, 20000);
+        await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
+            await e2e.goto('https://www.instagram.com/reels/');
+            await e2e.waitFor(`document.querySelector('.IG_REEL_CONTROLS')?.shadowRoot?.querySelector('.IG_REELS')`, 20000);
 
-        const initial = await e2e.json(`({
-            hosts: document.querySelectorAll('.IG_REEL_CONTROLS').length,
-            downloads: document.querySelectorAll('.IG_REELS').length,
-            newTabs: document.querySelectorAll('.IG_REELS_NEWTAB').length,
-            thumbnails: document.querySelectorAll('.IG_REELS_THUMBNAIL').length,
-            legacy: document.querySelectorAll('.IG_REELS.IG_LEGACY_CONTROL').length,
-        })`);
-        expect(initial.hosts).toBeGreaterThan(0);
-        expect(initial.downloads).toBeGreaterThan(0);
-        expect(initial.newTabs).toBeGreaterThan(0);
-        expect(initial.thumbnails).toBeGreaterThan(0);
-        expect(initial.legacy).toBe(0);
+            const initial = await e2e.json(`(() => {
+                const hosts = [...document.querySelectorAll('.IG_REEL_CONTROLS')];
+                return {
+                    hosts: hosts.length,
+                    downloads: hosts.filter(host => host.shadowRoot?.querySelector('.IG_REELS')).length,
+                    newTabs: hosts.filter(host => host.shadowRoot?.querySelector('.IG_REELS_NEWTAB')).length,
+                    thumbnails: hosts.filter(host => host.shadowRoot?.querySelector('.IG_REELS_THUMBNAIL')).length,
+                };
+            })()`);
+            expect(initial.hosts).toBeGreaterThan(0);
+            expect(initial.downloads).toBeGreaterThan(0);
+            expect(initial.newTabs).toBeGreaterThan(0);
+            expect(initial.thumbnails).toBeGreaterThan(0);
 
-        await e2e.evaluate(`(() => {
-            window.__igHelperReelSlider = document.querySelector('div.volume_slider');
-            document.querySelector('.IG_REEL_CONTROLS')?.remove();
-        })()`);
-        await e2e.waitFor(`document.querySelectorAll('.IG_REEL_CONTROLS').length >= ${initial.hosts}`, 5000);
+            await e2e.evaluate(`(() => {
+                window.__igHelperReelSlider = document.querySelector('div.volume_slider');
+                document.querySelector('.IG_REEL_CONTROLS')?.remove();
+            })()`);
+            await e2e.waitFor(`document.querySelectorAll('.IG_REEL_CONTROLS').length >= ${initial.hosts}`, 5000);
 
-        const remounted = await e2e.json(`({
-            hosts: document.querySelectorAll('.IG_REEL_CONTROLS').length,
-            controlsComplete: [...document.querySelectorAll('.IG_REEL_CONTROLS')].every(host =>
-                host.querySelectorAll('.IG_REELS').length === 1 &&
-                host.querySelectorAll('.IG_REELS_NEWTAB').length === 1 &&
-                host.querySelectorAll('.IG_REELS_THUMBNAIL').length === 1
-            ),
-            sliderPreserved: !window.__igHelperReelSlider || window.__igHelperReelSlider.isConnected,
-        })`);
-        expect(remounted.hosts).toBe(initial.hosts);
-        expect(remounted.controlsComplete).toBe(true);
-        expect(remounted.sliderPreserved).toBe(true);
+            const remounted = await e2e.json(`({
+                hosts: document.querySelectorAll('.IG_REEL_CONTROLS').length,
+                controlsComplete: [...document.querySelectorAll('.IG_REEL_CONTROLS')].every(host =>
+                    host.shadowRoot?.querySelectorAll('.IG_REELS').length === 1 &&
+                    host.shadowRoot?.querySelectorAll('.IG_REELS_NEWTAB').length === 1 &&
+                    host.shadowRoot?.querySelectorAll('.IG_REELS_THUMBNAIL').length === 1
+                ),
+                sliderPreserved: !window.__igHelperReelSlider || window.__igHelperReelSlider.isConnected,
+            })`);
+            expect(remounted.hosts).toBe(initial.hosts);
+            expect(remounted.controlsComplete).toBe(true);
+            expect(remounted.sliderPreserved).toBe(true);
+        });
     });
 
     test('Story controls mount when the authenticated home feed exposes a live story', async () => {
@@ -938,7 +912,6 @@ test.describe('IG Helper live browser E2E', () => {
                     sameRow: Boolean(host && like && host.parentElement.querySelector('svg[aria-label="Direct"]')),
                     sameColor: Boolean(like && getComputedStyle(host).color === getComputedStyle(like).color),
                     pointer: download ? getComputedStyle(download).cursor : '',
-                    counter: document.querySelectorAll('.IG_DWSTORY_POSITION').length,
                 };
             })()`);
             expect(mobile.download).toBe(true);
@@ -946,7 +919,6 @@ test.describe('IG Helper live browser E2E', () => {
             expect(mobile.sameRow).toBe(true);
             expect(mobile.sameColor).toBe(true);
             expect(mobile.pointer).toBe('pointer');
-            expect(mobile.counter).toBe(0);
         });
 
         await e2e.page.setViewportSize({ width: 1280, height: 900 });
@@ -954,7 +926,6 @@ test.describe('IG Helper live browser E2E', () => {
             await e2e.goto(storyUrl);
             await e2e.waitFor(`document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN')`, 15000);
             expect(await e2e.json(`Boolean(document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN'))`)).toBe(true);
-            expect(await e2e.json(`document.querySelectorAll('#ig-helper-legacy-dialog-root').length`)).toBe(0);
         });
     });
 
@@ -970,7 +941,6 @@ test.describe('IG Helper live browser E2E', () => {
         await e2e.waitFor(`document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN')`, 15000);
         expect(await e2e.json(`Boolean(document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN'))`)).toBe(true);
         expect(await e2e.json(`Boolean(document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN'))`)).toBe(true);
-        expect(await e2e.json(`document.querySelectorAll('#ig-helper-legacy-dialog-root').length`)).toBe(0);
     });
 
 });

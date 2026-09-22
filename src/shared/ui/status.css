@@ -1,0 +1,37 @@
+:host(#ig-helper-download-progress) {
+    position: fixed;
+    right: 15px;
+    bottom: 15px;
+    z-index: 50000;
+}
+
+.IG_DOWNLOAD_PROGRESS {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    padding: 7px;
+    border-radius: 7px;
+    background: var(--secondary);
+    color: var(--foreground);
+    box-shadow: 0 0 5px #202020;
+    font-family: monospace;
+    font-size: 16px;
+}
+
+.IG_DOWNLOAD_SPINNER {
+    width: 24px;
+    height: 24px;
+    margin: 0 5px;
+    border: 2px solid rgba(255, 152, 0, 0.9);
+    border-right-color: transparent;
+    border-left-color: transparent;
+    border-radius: 9999px;
+    opacity: 0.9;
+    animation: ig-helper-spin 0.5s linear infinite;
+}
+
+@keyframes ig-helper-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
