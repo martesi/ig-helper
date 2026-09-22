@@ -84,7 +84,7 @@ function mountHighlightControlBar($element, username, mediaType) {
             download: () => onHighlightsStoryDownload(),
         },
     });
-    setStoryProgressIndexText($element, $header, 'IG_HIGHLIGHT_POSITION');
+    setStoryProgressIndexText($element, $header, 'IG_DWHISTORY_POSITION');
     setTimeElementDateAndLocaleTime(getHighlightCurrentTimeElement($header));
     return host;
 }
@@ -387,6 +387,6 @@ export async function onHighlightsStoryThumbnail(isDownload) {
         if ($element.length > 0) {
             mountHighlightControlBar($element, username, $element.find('video').length > 0 ? 'video' : 'image');
         }
-        setStoryProgressIndexByUsername($element, username, 'IG_HIGHLIGHT_POSITION');
+        setStoryProgressIndexByUsername($element, username, 'IG_DWHISTORY_POSITION');
     }
 }

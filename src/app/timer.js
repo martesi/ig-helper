@@ -189,7 +189,7 @@ export function startTimer() {
                 // OPTIMIZATION: Single combined selector + .remove() — replaces 8 separate
                 // $('.CLASS').length checks + removes. Behavior is identical because
                 // .remove() is a no-op on an empty set.
-                $('.IG_STORY_CONTROL_BAR, .IG_HIGHLIGHT_CONTROL_BAR, .IG_HIGHLIGHT_POSITION').remove();
+                $('.IG_STORY_CONTROL_BAR, .IG_HIGHLIGHT_CONTROL_BAR, .IG_DWSTORY_POSITION, .IG_DWHISTORY_POSITION').remove();
             }
         }
 
