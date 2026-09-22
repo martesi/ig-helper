@@ -15,7 +15,6 @@ const hotkeysByStateKey = new Map(HOTKEY_SETTINGS.map(config => [config.stateKey
 
 export function startSettingsBridge() {
     window.addEventListener('message', async event => {
-        if (event.origin !== location.origin || event.source !== window) return;
         if (event.data?.channel !== CHANNEL || event.data.direction !== 'request') return;
 
         const id = Number.isInteger(event.data.id) && event.data.id > 0 ? event.data.id : null;

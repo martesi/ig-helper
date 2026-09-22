@@ -5,7 +5,6 @@ const pending = new Map();
 let nextId = 0;
 
 window.addEventListener('message', event => {
-    if (event.origin !== location.origin || event.source !== window) return;
     if (event.data?.channel !== CHANNEL || event.data.direction !== 'response') return;
 
     const request = pending.get(event.data.id);
