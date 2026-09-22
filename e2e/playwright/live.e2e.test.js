@@ -923,11 +923,39 @@ test.describe('IG Helper live browser E2E', () => {
         })()`);
         test.skip(!storyUrl, 'No live story is available in the authenticated feed');
 
-        await e2e.goto(storyUrl);
-        await e2e.waitFor(`document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN')`, 15000);
-        expect(await e2e.json(`Boolean(document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN'))`)).toBe(true);
-        expect(await e2e.json(`Boolean(document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN'))`)).toBe(true);
-        expect(await e2e.json(`document.querySelectorAll('#ig-helper-legacy-dialog-root').length`)).toBe(0);
+        await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: false }, async () => {
+            await e2e.page.setViewportSize({ width: 390, height: 844 });
+            await e2e.goto(storyUrl);
+            await e2e.waitFor(`document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN')`, 15000);
+            const mobile = await e2e.json(`(() => {
+                const host = document.querySelector('.IG_STORY_CONTROL_BAR');
+                const root = host?.shadowRoot;
+                const like = host?.parentElement?.querySelector('svg[aria-label="Like"]');
+                const download = root?.querySelector('.IG_DW_MAIN');
+                return {
+                    download: Boolean(download),
+                    newTab: Boolean(root?.querySelector('.IG_NEWTAB_MAIN')),
+                    sameRow: Boolean(host && like && host.parentElement.querySelector('svg[aria-label="Direct"]')),
+                    sameColor: Boolean(like && getComputedStyle(host).color === getComputedStyle(like).color),
+                    pointer: download ? getComputedStyle(download).cursor : '',
+                    counter: document.querySelectorAll('.IG_DWSTORY_POSITION').length,
+                };
+            })()`);
+            expect(mobile.download).toBe(true);
+            expect(mobile.newTab).toBe(false);
+            expect(mobile.sameRow).toBe(true);
+            expect(mobile.sameColor).toBe(true);
+            expect(mobile.pointer).toBe('pointer');
+            expect(mobile.counter).toBe(0);
+        });
+
+        await e2e.page.setViewportSize({ width: 1280, height: 900 });
+        await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
+            await e2e.goto(storyUrl);
+            await e2e.waitFor(`document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN')`, 15000);
+            expect(await e2e.json(`Boolean(document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN'))`)).toBe(true);
+            expect(await e2e.json(`document.querySelectorAll('#ig-helper-legacy-dialog-root').length`)).toBe(0);
+        });
     });
 
     test('Highlight controls mount when the profile exposes a highlight', async () => {

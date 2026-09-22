@@ -162,24 +162,13 @@ export function startTimer() {
                  *  $('body div[id^="mount"] > div > div > div[class]').last().find('svg > polyline + line').length > 0
                  *
                  */
-                // ? detect logo element in left-top corner
-                if (
-                    $('div[id^="mount"] section > div > a[href="/"]').length > 0 ||
-                    $('div[id^="mount"] section > div > a[href^="/?hl="]').length > 0 ||
-                    $('div[id^="mount"] section i[aria-label="Instagram"]').length > 0
-                ) {
-                    $('.IG_STORY_CONTROL_BAR').remove();
-                    if ($('.IG_DWSTORY_POSITION').length) {
-                        $('.IG_DWSTORY_POSITION').remove();
-                    }
+                $('.IG_STORY_CONTROL_BAR').remove();
+                onStory(false);
 
+                // Prevent buttons from being eaten by black holes sometimes
+                setTimeout(() => {
                     onStory(false);
-
-                    // Prevent buttons from being eaten by black holes sometimes
-                    setTimeout(() => {
-                        onStory(false);
-                    }, 150);
-                }
+                }, 150);
 
                 if (document.querySelector('.IG_STORY_CONTROL_BAR')) {
                     setTimeout(() => {

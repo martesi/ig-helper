@@ -10,10 +10,12 @@
     height: 40px;
     padding: 8px;
     border-radius: 0;
+    cursor: pointer;
 }
 
 .IG_POST_CONTROL:hover {
     background-color: transparent;
+    color: inherit;
     transform: scale(1.05);
 }
 

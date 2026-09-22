@@ -61,7 +61,7 @@ const english = {
     DISABLE_VIDEO_LOOPING_INTRO: 'Disable video auto-looping in Reels and posts.',
     HTML5_VIDEO_CONTROL_INTRO: 'Display the native HTML5 video controller.',
     SHOW_MEDIA_PREVIEW_INTRO: 'Show the button that opens the current post image in the lightbox viewer.',
-    SHOW_OPEN_IN_NEW_TAB_BUTTON_INTRO: 'Show the button that opens the current post resource in a new tab.',
+    SHOW_OPEN_IN_NEW_TAB_BUTTON_INTRO: 'Show the button that opens the current post or story resource in a new tab.',
     REDIRECT_CLICK_USER_STORY_PICTURE_INTRO: "Redirect to a user's profile page when interacting with their story avatar.",
     DIRECT_DOWNLOAD_MODE_INTRO: 'Choose what the download button does for posts, stories, and highlights.',
     MODIFY_VIDEO_VOLUME_INTRO: 'Set the playback volume used for Reels and posts.',

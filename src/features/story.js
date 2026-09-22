@@ -4,9 +4,7 @@ import { appendMediaResource } from "../shared/ui/media-resource.jsx";
 import {
     saveFiles, getStoryProgress, openNewTab,
     getStoryId,
-    tryHandleDashFromMediaItem,
-    setStoryProgressIndexText,
-    setStoryProgressIndexByUsername
+    tryHandleDashFromMediaItem
 } from "../shared/general";
 import { updateLoadingBar } from "../shared/ui/status.jsx";
 import { logger } from "../shared/logger";
@@ -112,6 +110,14 @@ export function onStoryDownload() {
 }
 
 function findStoryControlElement() {
+    let actionRow = findStoryActionRow();
+    while (actionRow && actionRow !== document.body) {
+        if (Array.from(actionRow.querySelectorAll('video, img')).some(element => element.getClientRects().length > 0)) {
+            return $(actionRow);
+        }
+        actionRow = actionRow.parentElement;
+    }
+
     let $element = $('body > div section:visible._ac0a');
 
     if ($element.length === 0) {
@@ -140,23 +146,33 @@ function findStoryControlElement() {
     return $element.first();
 }
 
-function mountStoryControlBar($element, username, mediaType) {
-    const parent = $element?.[0];
+function findStoryActionRow() {
+    const likeIcon = Array.from(document.querySelectorAll('svg[aria-label="Like"]'))
+        .find(element => element.getBoundingClientRect().width > 0);
+    if (!likeIcon) return null;
+
+    let row = likeIcon.parentElement;
+    while (row && !row.querySelector('svg[aria-label="Direct"]')) row = row.parentElement;
+    return row;
+}
+
+function mountStoryControlBar(username, mediaType) {
+    const parent = findStoryActionRow();
     if (!parent) return null;
 
-    parent.style.position = 'relative';
     let host = Array.from(parent.children).find(element => element.classList?.contains('IG_STORY_CONTROL_BAR'));
     if (!host) {
         host = document.createElement('span');
         host.className = 'IG_STORY_CONTROL_BAR';
+        host.style.display = 'contents';
         parent.append(host);
     }
+    host.style.color = getComputedStyle(parent.querySelector('svg[aria-label="Like"]')).color;
 
     const $header = getStoryProgress(username);
     mountMediaControls(host, {
         showDownloadAll: $header.length > 1 && USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE,
         showMediaPreview: false,
-        showOpenInNewTab: true,
         showCopy: false,
         mediaType,
         actions: {
@@ -166,7 +182,6 @@ function mountStoryControlBar($element, username, mediaType) {
             download: () => onStoryDownload(),
         },
     });
-    setStoryProgressIndexText($element, $header, 'IG_DWSTORY_POSITION');
     return host;
 }
 
@@ -547,8 +562,8 @@ export async function onStory(isDownload, isForce, isPreview) {
             state.GL_dataCache.stories = {};
             const $element = findStoryControlElement();
             if ($element.length > 0) {
-                const mediaType = $element.find('video').length > 0 ? 'video' : 'image';
-                mountStoryControlBar($element, username, mediaType);
+                const mediaType = $element.find('video:visible').length > 0 ? 'video' : 'image';
+                mountStoryControlBar(username, mediaType);
 
                 // Modify video volume
                 //if(USER_SETTING.MODIFY_VIDEO_VOLUME){
@@ -564,18 +579,16 @@ export async function onStory(isDownload, isForce, isPreview) {
                 //}
 
                 if ($element.find('img[referrerpolicy]').length) {
-                    mountStoryControlBar($element.first(), username, 'image');
+                    mountStoryControlBar(username, 'image');
                 }
                 else if ($element.find('video[src^="blob:"]').length) {
-                    mountStoryControlBar($element.first(), username, 'video');
+                    mountStoryControlBar(username, 'video');
                 }
             }
         }
         else {
-            const host = document.querySelector('.IG_STORY_CONTROL_BAR');
-            const $parent = host ? $(host.parentElement) : $();
-            if ($parent.length > 0) mountStoryControlBar($parent, username, $parent.find('video').length > 0 ? 'video' : 'image');
-            setStoryProgressIndexByUsername($parent, username, 'IG_DWSTORY_POSITION');
+            const $element = findStoryControlElement();
+            if ($element.length > 0) mountStoryControlBar(username, $element.find('video:visible').length > 0 ? 'video' : 'image');
         }
     }
 }
@@ -792,6 +805,6 @@ export async function onStoryThumbnail(isDownload, isForce) {
     else {
         const $element = findStoryControlElement();
         const username = $("body > div section._ac0a header._ac0k ._ac0l a + div a").first().text() || location.pathname.split('/').at(2);
-        if ($element.find('video').length > 0) mountStoryControlBar($element, username, 'video');
+        if ($element.find('video:visible').length > 0) mountStoryControlBar(username, 'video');
     }
 }
