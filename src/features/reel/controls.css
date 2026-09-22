@@ -5,16 +5,29 @@
 .IG_REELS,
 .IG_REELS_NEWTAB,
 .IG_REELS_THUMBNAIL {
-    position: absolute;
-    right: 2.5rem;
-    z-index: 5;
-    padding: 2px;
-    border-radius: 5px;
-    background: #fff;
-    color: #000;
-    line-height: 0;
+    width: 24px;
+    min-height: 24px;
+    height: 24px;
+    margin-bottom: 28px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
 }
 
-.IG_REELS { top: 15px; }
-.IG_REELS_NEWTAB { top: 47px; }
-.IG_REELS_THUMBNAIL { top: 79px; line-height: 1; }
+.IG_REELS:hover,
+.IG_REELS_NEWTAB:hover,
+.IG_REELS_THUMBNAIL:hover {
+    background: transparent;
+    color: inherit;
+    transform: scale(1.05);
+}
+
+.IG_REELS svg,
+.IG_REELS_NEWTAB svg,
+.IG_REELS_THUMBNAIL svg {
+    width: 24px;
+    height: 24px;
+    pointer-events: none;
+}

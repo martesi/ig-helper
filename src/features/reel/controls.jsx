@@ -5,16 +5,16 @@ import { Button } from '../../shared/ui/components.jsx';
 import { adoptShadowStyles } from '../../shared/ui/shadow-styles.js';
 import styles from './controls.css?inline';
 
-export function mountReelControls(parent, actions) {
+export function mountReelControls(parent, before, actions) {
     const host = document.createElement('div');
     host.className = 'IG_REEL_CONTROLS';
-    parent.append(host);
+    parent.insertBefore(host, before);
     const shadow = host.attachShadow({ mode: 'open' });
     adoptShadowStyles(shadow, styles);
     render(
         <>
             <ReelControl className="IG_REELS" labelKey="DW" icon={SVG.DOWNLOAD} onClick={actions.download} />
-            <ReelControl className="IG_REELS_NEWTAB" labelKey="NEW_TAB" icon={SVG.NEW_TAB} onClick={actions.newTab} />
+            {actions.newTab && <ReelControl className="IG_REELS_NEWTAB" labelKey="NEW_TAB" icon={SVG.NEW_TAB} onClick={actions.newTab} />}
             <ReelControl className="IG_REELS_THUMBNAIL" labelKey="VIDEO_THUMBNAIL" icon={SVG.THUMBNAIL} onClick={actions.thumbnail} />
         </>,
         shadow,
