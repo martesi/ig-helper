@@ -16,7 +16,7 @@
     "build:script": "vite build --mode script",
     "lint": "eslint .",
     "preview": "vite preview --outDir dist/page",
-    "test:e2e": "node e2e/run-playwright.mjs",
+    "test:e2e": "node .agents/skills/e2e/scripts/harness.ts playwright -- test",
     "test:agent": "node .agents/skills/e2e/scripts/harness.ts browser --"
   },
   "devDependencies": {

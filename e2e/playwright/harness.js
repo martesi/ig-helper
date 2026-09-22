@@ -3,11 +3,12 @@ import { chromium } from '@playwright/test';
 
 export const IMAGE_VIEWER_ROOT_ID = 'ig-helper-image-viewer-root';
 
-export const CDP_HTTP = process.env.PLAYWRIGHT_CDP_ENDPOINT ?? 'http://127.0.0.1:2000';
-export const INSTAGRAM_HOME = process.env.IG_HELPER_E2E_HOME ?? 'https://www.instagram.com/';
-export const PROFILE_URL = process.env.IG_HELPER_E2E_PROFILE ?? 'https://www.instagram.com/instagram/';
-export const VITE_URL = process.env.IG_HELPER_E2E_VITE ?? 'http://127.0.0.1:9000';
-export const OPTIONS_URL = process.env.IG_HELPER_E2E_OPTIONS ?? VITE_URL;
+const CDP_HTTP = process.env.PLAYWRIGHT_CDP_ENDPOINT;
+if (!CDP_HTTP) throw new Error('PLAYWRIGHT_CDP_ENDPOINT is required; run Playwright through the E2E harness');
+
+export const INSTAGRAM_HOME = 'https://www.instagram.com/';
+export const PROFILE_URL = 'https://www.instagram.com/instagram/';
+export const VITE_URL = 'http://127.0.0.1:9000';
 
 const actionDelayMin = Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MIN ?? 80);
 const actionDelayMax = Math.max(actionDelayMin, Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MAX ?? 220));
@@ -124,7 +125,7 @@ export class IgHelperE2E {
     }
 
     async openSettings(section = 'general') {
-        await this.goto(`${OPTIONS_URL}/#/settings`);
+        await this.goto(`${VITE_URL}/#/settings`);
         await this.waitFor(`document.querySelectorAll('[data-settings-section]').length === 8`, 10000);
         await this.locateSettingsSection(section);
     }
@@ -218,7 +219,7 @@ export class IgHelperE2E {
             await this.closeSettings();
             return await action(original);
         } finally {
-            if (!String(await this.evaluate('location.href')).startsWith(`${OPTIONS_URL}/settings/`)) {
+            if (!String(await this.evaluate('location.href')).startsWith(`${VITE_URL}/settings/`)) {
                 await this.openSettings();
             }
             await this.setSettings(original);

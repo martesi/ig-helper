@@ -23,7 +23,7 @@ Use this only for the automated Playwright suite:
 bun run test:e2e
 ```
 
-`e2e/run-playwright.mjs` starts the installed Arca harness, runs Playwright against its CDP endpoint on port 2000, and always stops the managed runtime afterward. The Playwright harness contains only IG Helper-specific navigation, assertions, settings manipulation, and download checks.
+The installed Arca harness owns Chromium lifecycle and injects its actual CDP endpoint into Playwright Test. The local Playwright harness contains only IG Helper-specific navigation, assertions, settings manipulation, and download checks.
 
 Browser state and Playwright artifacts live under `.cache/arca/`.
 

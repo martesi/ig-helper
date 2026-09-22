@@ -9,7 +9,7 @@ import {
 } from './harness.js';
 
 const HOTKEY_OPTIONS_COUNT = 13;
-const PERMALINK_URL = process.env.IG_HELPER_E2E_PERMALINK ?? 'https://www.instagram.com/p/Dc7Z80KGzLT/';
+const PERMALINK_URL = 'https://www.instagram.com/p/Dc7Z80KGzLT/';
 const RESOURCE_PICKER_ROOT_ID = 'ig-helper-resource-picker-root';
 
 const e2e = new IgHelperE2E();
