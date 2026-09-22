@@ -1,4 +1,5 @@
 import { state } from "../settings/state";
+import { translations } from "./locales";
 
 /**
  * translateText
@@ -172,13 +173,6 @@ export function translateText() {
  * @return {Object}
  */
 export async function getTranslationText(lang) {
-    if (import.meta.env.DEV) {
-        const localeUrl = new URL(`/locale/translations/${lang}.json`, import.meta.url);
-        const localeModule = await import(/* @vite-ignore */ localeUrl.href);
-        return localeModule.default;
-    }
-
-    const translations = JSON.parse(GM_getResourceText('I18N'));
     const translation = translations[lang];
     if (translation == null) {
         throw new Error(`Translation not found for ${lang}`);

@@ -1,14 +1,10 @@
 import tailwindcss from '@tailwindcss/vite';
-import { readdirSync, readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import userscript from 'vite-userscript-plugin';
 import packageJson from './package.json' with { type: 'json' };
 
 const mediabunnyUrl = 'https://cdn.jsdelivr.net/npm/mediabunny@1.34.5/dist/bundles/mediabunny.min.cjs#sha256-wUFR+x2bDvpqgMAVGy2CvGvULyjTGvGy4UUAm8rae5U=';
 const jqueryUrl = 'https://code.jquery.com/jquery-4.0.0.min.js#sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=';
-const i18nArtifactName = 'i18n.json';
-const i18nReleaseUrl = `https://github.com/martesi/ig-helper/releases/download/v${packageJson.version}/${i18nArtifactName}`;
-
 function localizedMetadata(key, values) {
     const { '': fallback, ...localized } = values;
 
@@ -17,32 +13,6 @@ function localizedMetadata(key, values) {
         ...Object.fromEntries(
             Object.entries(localized).map(([locale, value]) => [`${key}:${locale}`, value]),
         ),
-    };
-}
-
-function i18nArtifactPlugin() {
-    const translationsUrl = new URL('./locale/translations/', import.meta.url);
-
-    return {
-        name: 'ig-helper-i18n-artifact',
-        apply: 'build',
-        generateBundle() {
-            const translations = Object.fromEntries(
-                readdirSync(translationsUrl)
-                    .filter(file => file.endsWith('.json'))
-                    .sort()
-                    .map(file => [
-                        file.slice(0, -'.json'.length),
-                        JSON.parse(readFileSync(new URL(file, translationsUrl), 'utf8')),
-                    ]),
-            );
-
-            this.emitFile({
-                type: 'asset',
-                fileName: i18nArtifactName,
-                source: JSON.stringify(translations),
-            });
-        },
     };
 }
 
@@ -58,7 +28,6 @@ export default defineConfig(({ command, mode }) => {
     const plugins = [tailwindcss()];
     if (!isPageBuild) {
         plugins.push(
-            i18nArtifactPlugin(),
             userscript({
                 entry: isScriptBuild ? 'entry.prod.js' : 'src/app/entry.js',
                 fileName: 'ig-helper',
@@ -117,7 +86,6 @@ export default defineConfig(({ command, mode }) => {
                         'GM_addStyle',
                         'GM_addValueChangeListener',
                         'GM_download',
-                        'GM_getResourceText',
                         'GM_getValue',
                         'GM_info',
                         'GM_openInTab',
@@ -130,7 +98,6 @@ export default defineConfig(({ command, mode }) => {
                         'cdn.jsdelivr.net',
                         'i.instagram.com',
                     ],
-                    ...(isScriptBuild ? { resource: [['I18N', i18nReleaseUrl]] } : {}),
                     contributionURL: 'https://ko-fi.com/snkoarashi',
                     icon: 'https://www.google.com/s2/favicons?domain=www.instagram.com&sz=32',
                     license: 'GPL-3.0-only',

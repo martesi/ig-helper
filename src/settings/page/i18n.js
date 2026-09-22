@@ -1,4 +1,4 @@
-import localeManifest from '../../../locale/manifest.json';
+import { localeManifest, translations } from '../../shared/locales.js';
 
 export { localeManifest };
 
@@ -81,8 +81,6 @@ const english = {
     HOTKEY_RESET: 'Reset',
 };
 
-const localeModules = import.meta.glob('../../../locale/translations/*.json', { import: 'default' });
-
 export function resolveLanguage(language) {
     if (localeManifest[language]) return language;
     const base = String(language || '').split('-')[0];
@@ -92,8 +90,7 @@ export function resolveLanguage(language) {
 export async function loadLocale(language) {
     const resolved = resolveLanguage(language);
     if (resolved === 'en-US') return {};
-    const load = localeModules[`../../../locale/translations/${resolved}.json`];
-    return load ? await load() : {};
+    return translations[resolved] ?? {};
 }
 
 export function createTranslator(locale = {}) {
