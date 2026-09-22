@@ -7,6 +7,7 @@ const CDP_HTTP = process.env.PLAYWRIGHT_CDP_ENDPOINT;
 if (!CDP_HTTP) throw new Error('PLAYWRIGHT_CDP_ENDPOINT is required; run Playwright through the E2E harness');
 
 export const INSTAGRAM_HOME = 'https://www.instagram.com/';
+export const PERMALINK_URL = 'https://www.instagram.com/p/Dc7Z80KGzLT/';
 export const PROFILE_URL = 'https://www.instagram.com/instagram/';
 export const VITE_URL = 'http://127.0.0.1:9000';
 
@@ -26,7 +27,7 @@ export class IgHelperE2E {
         try {
             await this.connectBrowser();
             this.page = await this.createPage();
-            await this.goto(INSTAGRAM_HOME);
+            await this.goto(PERMALINK_URL);
         } catch (error) {
             await this.stop();
             throw error;
@@ -131,7 +132,7 @@ export class IgHelperE2E {
     }
 
     async closeSettings() {
-        await this.goto(INSTAGRAM_HOME);
+        await this.goto(PERMALINK_URL);
     }
 
     async showGeneralSection() {
@@ -228,7 +229,7 @@ export class IgHelperE2E {
     }
 
     async ensurePostControls() {
-        await this.goto(INSTAGRAM_HOME);
+        await this.goto(PERMALINK_URL);
         await this.page.locator('.button_wrapper.IG_CONTROL_BAR').first().locator('.IG_DW_MAIN').waitFor({
             state: 'visible',
             timeout: 15000,

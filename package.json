@@ -16,10 +16,12 @@
     "build:script": "vite build --mode script",
     "lint": "eslint .",
     "preview": "vite preview --outDir dist/page",
-    "test:e2e": "node .agents/skills/e2e/scripts/harness.ts playwright -- test",
-    "test:e2e:ui": "node .agents/skills/e2e/scripts/harness.ts playwright -- test --grep @ui",
-    "test:e2e:execution": "node .agents/skills/e2e/scripts/harness.ts playwright -- test --grep @execution",
-    "test:agent": "node .agents/skills/e2e/scripts/harness.ts browser --"
+    "test:e2e": "node e2e/run.mjs",
+    "test:e2e:ui": "node e2e/run.mjs ui",
+    "test:e2e:execution": "node e2e/run.mjs execution",
+    "test:agent": "node .agents/skills/e2e/scripts/harness.ts browser --",
+    "test:e2e:anonymous": "node e2e/run.mjs anonymous",
+    "test:e2e:auth": "node e2e/run.mjs auth"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

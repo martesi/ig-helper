@@ -14,6 +14,9 @@ ready = [
 [profile.default]
 args = ["--disable-features=LocalNetworkAccessChecks"]
 
+[profile.anonymous]
+port = 2001
+
 [cookies]
 required = true
 
