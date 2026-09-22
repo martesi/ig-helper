@@ -52,6 +52,9 @@ test.describe('IG Helper live browser E2E', () => {
             href: location.href,
             targets: document.querySelectorAll('[data-snig="canDownload"]').length,
             wrappers: document.querySelectorAll('[data-snig="canDownload"] .button_wrapper').length,
+            duplicateControlSections: [...document.querySelectorAll('section')].filter(section =>
+                section.querySelectorAll('.button_wrapper.IG_CONTROL_BAR').length > 1
+            ).length,
             media: [...document.querySelectorAll('[data-snig="canDownload"] img, [data-snig="canDownload"] video')].some(element => {
                 const rect = element.getBoundingClientRect();
                 return rect.width > 64 && rect.height > 64;
@@ -61,6 +64,7 @@ test.describe('IG Helper live browser E2E', () => {
         expect(state.href).toBe(PERMALINK_URL);
         expect(state.targets).toBeGreaterThan(0);
         expect(state.wrappers).toBeGreaterThan(0);
+        expect(state.duplicateControlSections).toBe(0);
         expect(state.media).toBe(true);
     });
 
