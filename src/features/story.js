@@ -90,7 +90,7 @@ export async function downloadStoryResources(data, type, title) {
 function openStoryResourcePicker(title, elements) {
     const resources = elements.map(element => ({
         mediaId: element.getAttribute('media-id'),
-        preview: element.querySelector('img')?.src ?? element.dataset.href,
+        preview: element.dataset.preview ?? element.dataset.href,
         label: _i18n(element.dataset.type === 'mp4' ? 'VID' : 'IMG'),
         element,
     }));

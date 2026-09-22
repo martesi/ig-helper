@@ -1,11 +1,10 @@
 import $ from 'jquery';
-import { SVG, USER_SETTING } from "../settings/state";
-import { appendLegacyControl } from "../shared/ui/legacy-controls.jsx";
+import { USER_SETTING } from "../settings/state";
 import { saveFiles } from "../shared/general";
 import { updateLoadingBar } from "../shared/ui/status.jsx";
 import { logger } from "../shared/logger";
-import { _i18n } from "../shared/i18n";
 import { getUserId, getUserHighSizeProfile } from "../shared/api";
+import { mountProfileControl } from "./profile/controls.jsx";
 
 /**
  * onProfileAvatar
@@ -46,10 +45,9 @@ export async function onProfileAvatar(isDownload) {
         updateLoadingBar(false);
     }
     else {
-        // Add the profile download button
-        if (!$('.IG_DWPROFILE').length) {
+        if (!$('.IG_PROFILE_CONTROL').length) {
             let profileTimer = setInterval(() => {
-                if ($('.IG_DWPROFILE').length) {
+                if ($('.IG_PROFILE_CONTROL').length) {
                     clearInterval(profileTimer);
                     return;
                 }
@@ -57,9 +55,9 @@ export async function onProfileAvatar(isDownload) {
                 const selector = 'header > *[class]:first-child > *[class]:first-child img[alt]';
                 const $draggableElements = $(`${selector}[draggable]`).parent().parent();
                 const $nonDraggableElements = $(`${selector}:not([draggable])`).parent().parent().parent();
-                $draggableElements.each((_, element) => appendLegacyControl(element, { className: "IG_DWPROFILE", labelKey: "DW", label: _i18n("DW"), icon: SVG.DOWNLOAD }));
+                $draggableElements.each((_, element) => mountProfileControl(element, () => onProfileAvatar(true)));
                 $draggableElements.css('position', 'relative');
-                $nonDraggableElements.each((_, element) => appendLegacyControl(element, { className: "IG_DWPROFILE", labelKey: "DW", label: _i18n("DW"), icon: SVG.DOWNLOAD }));
+                $nonDraggableElements.each((_, element) => mountProfileControl(element, () => onProfileAvatar(true)));
                 $nonDraggableElements.css('position', 'relative');
             }, 150);
         }

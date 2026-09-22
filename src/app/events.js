@@ -1,14 +1,12 @@
 import $ from 'jquery';
 import { state, USER_SETTING, $body } from "../settings/state";
 import {
-    toggleVolumeSilder,
     setTimeElementDateAndLocaleTime,
     getHighlightCurrentTimeElement,
     triggerReactClickHandler
 } from "../shared/general";
 import { logger } from "../shared/logger";
 import { onStoryDownload, onStoryThumbnail } from "../features/story";
-import { onProfileAvatar } from "../features/profile";
 import { onHighlightsStoryDownload, onHighlightsStoryThumbnail } from "../features/highlight";
 import { refreshReelsControls } from "../features/reel";
 import { registerPerformanceObserver } from "../features/media/image-cache";
@@ -50,13 +48,6 @@ export function registerEvents() {
             e.preventDefault();
         }
     });
-
-    // Running if user left-click download icon in profile
-    $body.on('click', '.IG_DWPROFILE', function (e) {
-        e.stopPropagation();
-        onProfileAvatar(true);
-    });
-
 
     // Running if user right-click profile picture in stories area
     $body.on('mousedown', 'button[role="menuitem"], div[role="menuitem"], ul > li[tabindex="-1"] > div[role="button"]', function (e) {
@@ -210,9 +201,6 @@ export function registerEvents() {
                                             $readMoreButton.hide();
                                             $bottomBar.hide();
 
-                                            toggleVolumeSilder($video, $video.parents('div[style][class]').filter(function () {
-                                                return $(this).width() == $video.width();
-                                            }).first(), storyType, 'vertical');
                                         };
 
                                         // Hide layout to show controller
@@ -234,9 +222,6 @@ export function registerEvents() {
                                             $bottomBar.show();
                                             $readMoreButton.show();
 
-                                            toggleVolumeSilder($video, $video.parents('div[style][class]').filter(function () {
-                                                return $(this).width() == $video.width();
-                                            }).first(), storyType, 'vertical');
                                         });
 
                                         $video.on('volumechange', function () {
@@ -262,16 +247,7 @@ export function registerEvents() {
 
                                         $video.css('position', 'absolute');
                                         $video.data('controls', true);
-
-                                        toggleVolumeSilder($video, $video.parents('div[style][class]').filter(function () {
-                                            return $(this).width() == $video.width();
-                                        }).first(), storyType, 'vertical');
                                     }
-                                }
-                                else {
-                                    toggleVolumeSilder($video, $video.parents('div[style][class]').filter(function () {
-                                        return $(this).width() == $video.width();
-                                    }).first(), storyType, 'vertical');
                                 }
                             });
                         }

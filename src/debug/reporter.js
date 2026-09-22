@@ -85,7 +85,6 @@ function createSnapshot() {
             controlBars: document.querySelectorAll('.button_wrapper').length,
             videos: document.querySelectorAll('video').length,
             images: document.querySelectorAll('img').length,
-            legacyDialog: Boolean(document.getElementById('ig-helper-legacy-dialog-root')),
         },
         cache: {
             stories: Object.keys(state.GL_dataCache.stories ?? {}).length,

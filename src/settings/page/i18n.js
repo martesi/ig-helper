@@ -44,7 +44,7 @@ const english = {
     DIRECT_DOWNLOAD_MODE_ASK: 'Ask',
     DIRECT_DOWNLOAD_MODE_VISIBLE: 'Visible',
     DIRECT_DOWNLOAD_MODE_ALL: 'All',
-    MODIFY_VIDEO_VOLUME: 'Modify Video Volume (Right-Click to Set)',
+    MODIFY_VIDEO_VOLUME: 'Modify Video Volume',
     MODIFY_VIDEO_VOLUME_SETTINGS_LABEL: 'Modify Video Volume',
     MODIFY_RESOURCE_EXIF: 'Modify Resource EXIF Properties',
     FORCE_RESOURCE_VIA_MEDIA: 'Force Fetch Resource via Media API',

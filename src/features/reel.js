@@ -1,6 +1,6 @@
 import $ from 'jquery';
 import { USER_SETTING, state } from "../settings/state";
-import { saveFiles, openNewTab, toggleVolumeSilder, triggerReactClickHandler } from "../shared/general";
+import { saveFiles, openNewTab, triggerReactClickHandler } from "../shared/general";
 import { updateLoadingBar } from "../shared/ui/status.jsx";
 import { logger } from "../shared/logger";
 import { getBlobMedia } from "../shared/api";
@@ -280,10 +280,6 @@ function appendReelsButton($main) {
             });
     }
 
-    const $buttonParent = $main.find('div[role="presentation"] > div[role="button"] > div').first();
-    if ($buttonParent.find('div.volume_slider').length === 0) {
-        toggleVolumeSilder($videos, $buttonParent, 'reel');
-    }
 }
 
 function findReelActionControls(main) {

@@ -4,7 +4,7 @@ import { USER_SETTING, state, $body } from "../settings/state";
 import { _i18n } from "./i18n";
 import { getPostOwner, getMediaInfo } from "./api";
 import { getImageFromCache } from "../features/media/image-cache";
-import { appendCounter, appendVolumeSlider, updateLoadingBar } from "./ui/status.jsx";
+import { appendCounter, updateLoadingBar } from "./ui/status.jsx";
 import { logger } from "./logger";
 import { createSaveFileElement, saveFiles } from "./download";
 export { saveFiles } from "./download";
@@ -874,64 +874,6 @@ export function initSettings() {
     }
 }
 
-
-/**
- * toggleVolumeSilder
- * @description Toggle display of custom volume slider.
- *
- * @param  {object}  $videos
- * @param  {object}  $buttonParent
- * @param  {string}  loggerType
- * @param  {string}  customClass
- * @return {void}
- */
-export function toggleVolumeSilder($videos, $buttonParent, loggerType, customClass = "") {
-    if (!$buttonParent?.length) return;
-
-    // OPTIMIZATION: cache the volume_slider lookup
-    let $existingSlider = $buttonParent.find('div.volume_slider');
-    if ($existingSlider.length === 0) {
-        const slider = appendVolumeSlider($buttonParent[0], Number(state.videoVolume), customClass);
-        const $newSlider = $(slider);
-        const $sliderInput = $newSlider.find('input');
-        $sliderInput.attr('style', `--ig-track-progress: ${(state.videoVolume * 100) + '%'}`);
-        $sliderInput.on('input', function () {
-            const $this = $(this);
-            var percent = ($this.val() * 100) + '%';
-
-            state.videoVolume = $this.val();
-            GM_setValue('G_VIDEO_VOLUME', $this.val());
-
-            $this.attr('style', `--ig-track-progress: ${percent}`);
-
-            $videos.each(function () {
-                logger(`(${loggerType})`, 'video volume changed #slider');
-                this.volume = state.videoVolume;
-            });
-        });
-
-        $sliderInput.on('mouseenter', function () {
-            const $this = $(this);
-            var percent = (state.videoVolume * 100) + '%';
-            $this.attr('style', `--ig-track-progress: ${percent}`);
-            $this.val(state.videoVolume);
-
-
-            $videos.each(function () {
-                logger(`(${loggerType})`, 'video volume changed #slider');
-                this.volume = state.videoVolume;
-            });
-        });
-
-        $newSlider.on('click', function (e) {
-            e.stopPropagation();
-            e.preventDefault();
-        });
-    }
-    else {
-        $existingSlider.remove();
-    }
-}
 
 /**
  * triggerReactClickHandler

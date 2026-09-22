@@ -1,0 +1,26 @@
+:host {
+    display: block;
+    width: 26px;
+    height: 26px;
+}
+
+.IG_PROFILE_DOWNLOAD {
+    width: 26px;
+    min-height: 26px;
+    height: 26px;
+    padding: 2px;
+    border: 1px solid #ccc;
+    border-radius: 9999px;
+    background: #fff;
+    color: #000;
+    cursor: pointer;
+}
+
+.IG_PROFILE_DOWNLOAD:hover {
+    background: #f5f5f5;
+}
+
+.IG_PROFILE_DOWNLOAD svg {
+    width: 20px;
+    height: 20px;
+}

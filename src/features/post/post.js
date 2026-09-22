@@ -2,7 +2,7 @@ import $ from 'jquery';
 import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state, resourceCountSelector } from "../../settings/state";
 import {
     openNewTab,
-    toggleVolumeSilder, triggerLinkElement,
+    triggerLinkElement,
     replaceSameOriginHost,
     saveMediaThumbnail,
     triggerReactClickHandler
@@ -225,8 +225,6 @@ export function initPostVideoFunction($mainElement) {
         });
     }
 
-    var $buttonParent = $mainElement.find('video + div > div').first();
-    toggleVolumeSilder($videos, $buttonParent, 'post', 'bottom');
 };
 
 
@@ -301,9 +299,7 @@ export function createDownloadButton() {
                 const $actionSection = findPostActionSection($mainElement);
                 if ($actionSection.length === 0) return;
 
-                const controlsMount = document.createElement('span');
-                controlsMount.className = 'button_wrapper IG_CONTROL_BAR';
-                insertPostControls($actionSection, controlsMount);
+                const controlsMount = getPostControlsMount($actionSection);
 
                 const resource_count = $mainElement.find(resourceCountSelector).length;
                 const showDownloadAll = resource_count > 1 && USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE;
@@ -661,7 +657,7 @@ async function downloadPostResource(target) {
 
                 const resources = Array.from(resourceRoot.querySelectorAll('a[data-needed="direct"]')).map(anchor => ({
                     mediaId: anchor.getAttribute('media-id'),
-                    preview: anchor.querySelector('img')?.src ?? anchor.dataset.href,
+                    preview: anchor.dataset.preview ?? anchor.dataset.href,
                     label: _i18n(anchor.dataset.type === 'mp4' ? 'VID' : 'IMG'),
                     element: anchor,
                 }));
@@ -1077,7 +1073,13 @@ function findPostActionSection($mainElement) {
     }).first();
 }
 
-function insertPostControls($actionSection, controlsMount) {
+function getPostControlsMount($actionSection) {
+    const existingMount = $actionSection.find('.button_wrapper.IG_CONTROL_BAR').first()[0];
+    if (existingMount) return existingMount;
+
+    const controlsMount = document.createElement('span');
+    controlsMount.className = 'button_wrapper IG_CONTROL_BAR';
+
     const $saveIcon = $actionSection.find('svg[aria-label="Save"], svg[aria-label="Remove"]').first();
     const $saveItem = $actionSection.children().filter(function () {
         return this === $saveIcon[0] || $.contains(this, $saveIcon[0]);
@@ -1085,10 +1087,11 @@ function insertPostControls($actionSection, controlsMount) {
 
     if ($saveItem.length > 0) {
         $saveItem.addClass('IG_POST_SAVE_GROUP').prepend(controlsMount);
-        return;
+        return controlsMount;
     }
 
     $actionSection.append(controlsMount);
+    return controlsMount;
 }
 
 function findPermalinkPostContainer(marker) {

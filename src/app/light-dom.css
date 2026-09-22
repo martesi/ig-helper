@@ -33,14 +33,37 @@
     line-height: 0;
 }
 
-.IG_LEGACY_CONTROL {
-    box-sizing: border-box;
-    border: 0;
-    background: transparent;
-    color: inherit;
+.IG_PROFILE_CONTROL {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
 }
 
-.IG_LEGACY_CONTROL svg {
-    width: 20px;
-    height: 20px;
+.IG_HIGHLIGHT_POSITION {
+    position: absolute;
+    top: 47px;
+    right: -24px;
+    z-index: 5;
+    display: flex;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 2px;
+    border-radius: 5px;
+    background: #fff;
+    color: #000;
+    cursor: default;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.4px;
+    user-select: none;
+    white-space: nowrap;
+}
+
+*:not(:has(> section[class])) > .IG_HIGHLIGHT_POSITION {
+    right: -70px;
 }

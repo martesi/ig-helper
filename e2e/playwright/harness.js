@@ -3,7 +3,6 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { chromium } from '@playwright/test';
 import { loadLocalCookies } from '../cookie-loader.js';
 
-export const LEGACY_DIALOG_ROOT_ID = 'ig-helper-legacy-dialog-root';
 export const IMAGE_VIEWER_ROOT_ID = 'ig-helper-image-viewer-root';
 
 const externalCdpHttp = process.env.IG_HELPER_E2E_CDP;
@@ -18,7 +17,7 @@ const repoRoot = process.cwd();
 const chromiumPath = process.env.IG_HELPER_E2E_CHROMIUM;
 const extensionPath = process.env.IG_HELPER_E2E_EXTENSION;
 const cspExtensionPath = process.env.IG_HELPER_E2E_CSP_EXTENSION;
-const profileDir = process.env.IG_HELPER_E2E_PROFILE_DIR ?? `${repoRoot}/.browser-state/playwright`;
+const profileDir = process.env.IG_HELPER_E2E_PROFILE_DIR ?? `${repoRoot}/.cache/arca/browser/default`;
 const actionDelayMin = Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MIN ?? 80);
 const actionDelayMax = Math.max(actionDelayMin, Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MAX ?? 220));
 
