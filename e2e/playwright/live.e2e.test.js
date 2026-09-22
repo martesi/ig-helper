@@ -11,11 +11,12 @@ import {
 const HOTKEY_OPTIONS_COUNT = 13;
 const PERMALINK_URL = 'https://www.instagram.com/p/Dc7Z80KGzLT/';
 const RESOURCE_PICKER_ROOT_ID = 'ig-helper-resource-picker-root';
+const UI = { tag: '@ui' };
+const EXECUTION = { tag: '@execution' };
 
 const e2e = new IgHelperE2E();
 let hotkeys;
 
-test.describe.configure({ mode: 'serial' });
 
 test.describe('IG Helper live browser E2E', () => {
     test.beforeAll(async () => {
@@ -26,7 +27,7 @@ test.describe('IG Helper live browser E2E', () => {
         await e2e.stop();
     });
 
-    test('boots in the existing Instagram session and detects feed posts', async () => {
+    test('boots in the existing Instagram session and detects feed posts', UI, async () => {
         await e2e.goto(INSTAGRAM_HOME);
         await e2e.waitFor(`document.querySelectorAll('[data-snig="canDownload"]').length > 0`, 15000);
 
@@ -44,7 +45,7 @@ test.describe('IG Helper live browser E2E', () => {
         expect(state.targets).toBeGreaterThan(0);
     });
 
-    test('direct permalink mounts post controls on the media container', async () => {
+    test('direct permalink mounts post controls on the media container', UI, async () => {
         await e2e.goto(PERMALINK_URL);
         await e2e.waitFor(`document.querySelectorAll('[data-snig="canDownload"] .button_wrapper').length > 0`, 15000);
 
@@ -68,8 +69,11 @@ test.describe('IG Helper live browser E2E', () => {
         expect(state.media).toBe(true);
     });
 
-    test('post control bar renders real visible button DOM', async () => {
-        await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
+    test('post control bar renders real visible button DOM', UI, async () => {
+        await e2e.withSettings({
+            SHOW_MEDIA_PREVIEW: true,
+            SHOW_OPEN_IN_NEW_TAB_BUTTON: true,
+        }, async () => {
             await e2e.ensurePostControls();
 
         const controls = await e2e.json(`(() => {
@@ -102,7 +106,7 @@ test.describe('IG Helper live browser E2E', () => {
         });
     });
 
-    test('copy current post image writes image data and reports success', async () => {
+    test('copy current post image writes image data and reports success', EXECUTION, async () => {
         await e2e.ensurePostControls();
         const imageControls = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR')
             .filter({ has: e2e.page.locator('.IG_IMAGE_VIEWER') })
@@ -173,7 +177,7 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
-    test('settings render as one continuous page, persist a real preference, and expose shortcut configuration', async () => {
+    test('settings render as one continuous page, persist a real preference, and expose shortcut configuration', UI, async () => {
         await e2e.openSettings();
         await e2e.showGeneralSection();
 
@@ -249,7 +253,7 @@ test.describe('IG Helper live browser E2E', () => {
         await e2e.closeSettings();
     });
 
-    test('configured debug hotkey opens the attached control window and captures the live DOM tree', async () => {
+    test('configured debug hotkey opens the attached control window and captures the live DOM tree', UI, async () => {
         if (!hotkeys) {
             await e2e.openSettings();
             hotkeys = await e2e.readHotkeys();
@@ -337,12 +341,19 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
-    test('post action row places native-sized controls beside Save and image viewer supports rotate, zoom, and close', async () => {
-        await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
+    test('post action row places native-sized controls beside Save and image viewer supports rotate, zoom, and close', UI, async () => {
+        await e2e.withSettings({
+            SHOW_MEDIA_PREVIEW: true,
+            SHOW_OPEN_IN_NEW_TAB_BUTTON: true,
+        }, async () => {
             await e2e.ensurePostControls();
 
-        const controls = await e2e.json(`(() => {
-            const wrapper = document.querySelector('.button_wrapper');
+        const imageControls = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR')
+            .filter({ has: e2e.page.locator('.IG_IMAGE_VIEWER') })
+            .first();
+        await imageControls.waitFor({ state: 'visible', timeout: 15000 });
+
+        const controls = await imageControls.evaluate(wrapper => {
             const root = wrapper?.shadowRoot;
             const section = wrapper?.closest('section');
             const groups = section ? [...section.children].filter(child => child.tagName === 'DIV') : [];
@@ -354,7 +365,7 @@ test.describe('IG Helper live browser E2E', () => {
             const buttonRects = [...(root?.querySelectorAll('.IG_POST_CONTROL') || [])]
                 .map(button => button.getBoundingClientRect());
             return {
-                wrappers: document.querySelectorAll('.button_wrapper').length,
+                wrappers: document.querySelectorAll('.button_wrapper.IG_CONTROL_BAR').length,
                 viewer: Boolean(root?.querySelector('.IG_IMAGE_VIEWER')),
                 newTab: Boolean(root?.querySelector('.IG_NEWTAB_MAIN')),
                 download: Boolean(root?.querySelector('.IG_DW_MAIN')),
@@ -373,7 +384,7 @@ test.describe('IG Helper live browser E2E', () => {
                 saveItem: Boolean(saveItem),
                 position: wrapper ? getComputedStyle(wrapper).position : null,
             };
-        })()`);
+        });
         expect(controls.wrappers).toBeGreaterThan(0);
         expect(controls.viewer).toBe(true);
         expect(controls.newTab).toBe(true);
@@ -386,12 +397,12 @@ test.describe('IG Helper live browser E2E', () => {
         expect(controls.saveItem).toBe(true);
         expect(controls.position).toBe('static');
 
-        const downloadButton = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR').first().locator('.IG_DW_MAIN');
+        const downloadButton = imageControls.locator('.IG_DW_MAIN');
         await downloadButton.hover();
         await expect(downloadButton).toHaveCSS('transform', 'matrix(1.05, 0, 0, 1.05, 0, 0)');
         await expect(downloadButton).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
 
-        await e2e.click('.button_wrapper .IG_IMAGE_VIEWER');
+        await imageControls.locator('.IG_IMAGE_VIEWER').click();
         await e2e.waitFor(`!!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})`, 3000);
 
         await e2e.clickShadow(IMAGE_VIEWER_ROOT_ID, '#rotate_right');
@@ -417,7 +428,7 @@ test.describe('IG Helper live browser E2E', () => {
         });
     });
 
-    test('open-in-new-tab creates a real Chrome target', async () => {
+    test('open-in-new-tab creates a real Chrome target', EXECUTION, async () => {
         await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
             await e2e.ensurePostControls();
 
@@ -428,7 +439,7 @@ test.describe('IG Helper live browser E2E', () => {
         });
     });
 
-    test('download-all bypasses the resource picker', async () => {
+    test('download-all bypasses the resource picker', EXECUTION, async () => {
         await e2e.withSettings({ DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE }, async () => {
             await e2e.goto(PERMALINK_URL);
             const downloadAllButton = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR').first().locator('.IG_DW_ALL_MAIN');
@@ -442,7 +453,7 @@ test.describe('IG Helper live browser E2E', () => {
         });
     });
 
-    test('legacy 10-item carousel is completed from the current web-info response', async () => {
+    test('legacy 10-item carousel is completed from the current web-info response', EXECUTION, async () => {
         const page = await e2e.context.newPage();
         try {
             await page.goto(`${VITE_URL}/src/shared/api.js`, { waitUntil: 'domcontentloaded' });
@@ -491,7 +502,7 @@ test.describe('IG Helper live browser E2E', () => {
     });
 
 
-    test('preview setting hides only the lightbox button', async () => {
+    test('preview setting hides only the lightbox button', UI, async () => {
         await e2e.withSettings({
             DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
             SHOW_MEDIA_PREVIEW: false,
@@ -525,7 +536,7 @@ test.describe('IG Helper live browser E2E', () => {
         });
     });
 
-    test('invalid post paths reject before issuing requests', async () => {
+    test('invalid post paths reject before issuing requests', EXECUTION, async () => {
         const page = await e2e.context.newPage();
         try {
             await page.goto(`${VITE_URL}/src/shared/api.js`, { waitUntil: 'domcontentloaded' });
@@ -562,7 +573,7 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
-    test('GM download failures propagate to saveFiles', async () => {
+    test('GM download failures propagate to saveFiles', EXECUTION, async () => {
         const page = await e2e.context.newPage();
         try {
             await page.goto(`${VITE_URL}/src/shared/download.js`, { waitUntil: 'domcontentloaded' });
@@ -592,7 +603,7 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
-    test('resource picker manages modal focus', async () => {
+    test('resource picker manages modal focus', UI, async () => {
         const page = await e2e.context.newPage();
         try {
             await page.goto(`${VITE_URL}/src/shared/ui/resource-picker.jsx`, { waitUntil: 'domcontentloaded' });
@@ -633,7 +644,7 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
-    test('download failures do not create a toast', async () => {
+    test('download failures do not create a toast', EXECUTION, async () => {
         const page = await e2e.context.newPage();
         try {
             await page.goto(`${VITE_URL}/src/shared/general.js`, { waitUntil: 'domcontentloaded' });
@@ -671,7 +682,7 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
-    test('download progress bar updates and clears', async () => {
+    test('download progress bar updates and clears', UI, async () => {
         const page = await e2e.context.newPage();
         try {
             await page.goto(`${VITE_URL}/src/shared/ui/status.jsx`, { waitUntil: 'domcontentloaded' });
@@ -697,16 +708,11 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
-    test('resource picker selection works and a real post media download completes on disk', async () => {
-        const requiredSettings = {
+    test('resource picker selection and responsive styling', UI, async () => {
+        await e2e.withSettings({
             DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
             FORCE_RESOURCE_VIA_MEDIA: false,
-            USE_EXTERNAL_DOWNLOAD_MODE: false,
-            MODIFY_RESOURCE_EXIF: false,
-        };
-
-        await e2e.withSettings(requiredSettings, async () => {
-            await e2e.configureDownloads();
+        }, async () => {
             await e2e.ensurePostControls();
             await e2e.click('.button_wrapper .IG_DW_MAIN');
 
@@ -784,11 +790,27 @@ test.describe('IG Helper live browser E2E', () => {
                 return root?.querySelector('.resource-picker-count')?.textContent?.includes('1');
             })()`, 3000);
 
+            await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-header .btn[data-size="icon-sm"]');
+        });
+    });
+
+    test('real post media download completes on disk', EXECUTION, async () => {
+        await e2e.withSettings({
+            DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
+            FORCE_RESOURCE_VIA_MEDIA: false,
+            USE_EXTERNAL_DOWNLOAD_MODE: false,
+            MODIFY_RESOURCE_EXIF: false,
+        }, async () => {
+            await e2e.configureDownloads();
+            await e2e.ensurePostControls();
+            await e2e.click('.button_wrapper .IG_DW_MAIN');
+            await e2e.waitFor(`!!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})?.shadowRoot?.querySelector('.resource-picker-item')`, 20000);
+
+            await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-item .input[type="checkbox"]');
             await e2e.clickShadow(RESOURCE_PICKER_ROOT_ID, '.resource-picker-footer .btn[data-variant="primary"]');
             await e2e.waitFor(`!document.getElementById(${JSON.stringify(RESOURCE_PICKER_ROOT_ID)})`, 3000);
 
             const { begin, complete } = await e2e.waitForCompletedDownload(30000);
-
             expect(begin).toBeDefined();
             expect(begin.suggestedFilename).toMatch(/\.(jpg|jpeg|png|webp|mp4)$/i);
             expect(complete.filePath).toBeTruthy();
@@ -798,7 +820,7 @@ test.describe('IG Helper live browser E2E', () => {
         });
     });
 
-    test('resource picker renders Korean item counts without leaking placeholders', async () => {
+    test('resource picker renders Korean item counts without leaking placeholders', UI, async () => {
         await e2e.openSettings();
         const originalLanguage = await e2e.readLanguage();
 
@@ -830,7 +852,7 @@ test.describe('IG Helper live browser E2E', () => {
         }
     });
 
-    test('profile page mounts the avatar download control in the live Instagram DOM', async () => {
+    test('profile page mounts the avatar download control in the live Instagram DOM', UI, async () => {
         await e2e.goto(PROFILE_URL);
         await e2e.waitFor(`document.querySelectorAll('.IG_PROFILE_CONTROL').length > 0`, 10000);
 
@@ -852,7 +874,7 @@ test.describe('IG Helper live browser E2E', () => {
         expect(profile.visible).toBe(true);
     });
 
-    test('Reels controls remount after Instagram replaces the helper subtree', async () => {
+    test('Reels controls remount after Instagram replaces the helper subtree', UI, async () => {
         await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
             await e2e.goto('https://www.instagram.com/reels/');
             await e2e.waitFor(`document.querySelector('.IG_REEL_CONTROLS')?.shadowRoot?.querySelector('.IG_REELS')`, 20000);
@@ -887,7 +909,7 @@ test.describe('IG Helper live browser E2E', () => {
         });
     });
 
-    test('Story controls mount when the authenticated home feed exposes a live story', async () => {
+    test('Story controls mount when the authenticated home feed exposes a live story', UI, async () => {
         await e2e.goto(INSTAGRAM_HOME);
         const storyUrl = await e2e.evaluate(`(() => {
             const link = [...document.querySelectorAll('a[href^="/stories/"]')]
@@ -928,7 +950,7 @@ test.describe('IG Helper live browser E2E', () => {
         });
     });
 
-    test('Highlight controls mount when the profile exposes a highlight', async () => {
+    test('Highlight controls mount when the profile exposes a highlight', UI, async () => {
         await e2e.goto(PROFILE_URL);
         const highlightUrl = await e2e.evaluate(`(() => {
             const link = document.querySelector('a[href^="/stories/highlights/"]');

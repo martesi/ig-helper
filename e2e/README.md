@@ -17,11 +17,15 @@ Agent sessions share the configured browser profile while remaining separate con
 
 ## Playwright regression suite
 
-Use this only for the automated Playwright suite:
+The suite is tagged by purpose:
 
 ```sh
-bun run test:e2e
+bun run test:e2e:ui         # required after every code change
+bun run test:e2e:execution  # runtime/actions/download behavior
+bun run test:e2e            # both categories
 ```
+
+UI tests never require a real file download. Run execution tests when functional behavior changes; they can be skipped for changes that do not affect functionality. Tests are independent, so a failed test does not prevent later tests from running.
 
 The installed Arca harness owns Chromium lifecycle and injects its actual CDP endpoint into Playwright Test. The local Playwright harness contains only IG Helper-specific navigation, assertions, settings manipulation, and download checks.
 
