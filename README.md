@@ -18,7 +18,6 @@
 - Disable video looping.
 - Enable the native HTML5 video controller for video resources.
 - Download the user's profile picture.
-- Provide scroll buttons for Reels pages.
 - Automatically modify and control the playback volume of all video elements.
 - Redirect to a user's profile page when clicking on their avatar in the story area on the homepage.
 - Customize the naming format when downloading according to your preferences.

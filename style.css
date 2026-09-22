@@ -181,39 +181,6 @@
     font-size: 14px;
 }
 
-#scrollWrapper {
-    @apply fixed bottom-[15px] right-[15px];
-}
-
-#scrollWrapper .button-up,
-#scrollWrapper .button-down {
-    @apply my-[5px] h-8 w-8 cursor-pointer rounded-[10px];
-    border: 1px solid rgb(var(--ig-separator));
-    background-color: rgba(var(--ig-banner-background));
-}
-
-#scrollWrapper .button-up:hover,
-#scrollWrapper .button-down:hover {
-    background-color: rgba(var(--ig-hover-overlay));
-}
-
-#scrollWrapper .button-up > div,
-#scrollWrapper .button-down > div {
-    @apply relative left-[9.5px] inline-block p-1;
-    border: solid rgb(var(--ig-primary-text));
-    border-width: 0 4px 4px 0;
-}
-
-#scrollWrapper .button-up > div {
-    @apply top-[9px];
-    transform: rotate(-135deg);
-}
-
-#scrollWrapper .button-down > div {
-    @apply top-[6px];
-    transform: rotate(45deg);
-}
-
 .IG_POPUP_DIG_BODY .newTab,
 .IG_POPUP_DIG_BODY .videoThumbnail {
     @apply absolute right-0 z-[3] cursor-pointer rounded-[5px] p-[7px];

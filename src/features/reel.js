@@ -1,6 +1,5 @@
 import $ from 'jquery';
 import { USER_SETTING, state } from "../settings/state";
-import { appendReelScrollControls } from "../shared/ui/legacy-controls.jsx";
 import { saveFiles, openNewTab, toggleVolumeSilder, triggerReactClickHandler } from "../shared/general";
 import { updateLoadingBar } from "../shared/ui/status.jsx";
 import { logger } from "../shared/logger";
@@ -110,22 +109,6 @@ export async function onReels(isDownload, isVideo, isPreview) {
                 const hasTiktokStyleLayout = $(svgClose).length > 0;
                 if (hasTiktokStyleLayout || $('section > main[role="main"] > div div.x1qjc9v5 video').length > 0) {
                     clearInterval(timer);
-
-                    if (USER_SETTING.SCROLL_BUTTON) {
-                        $('#scrollWrapper').remove();
-                        // OPTIMIZATION: cache reels main element (used 5 times below)
-                        const $reelsMain = $('section > main[role="main"]');
-                        const scrollWrapper = appendReelScrollControls($reelsMain[0]);
-                        const $scrollWrapper = $(scrollWrapper);
-
-                        $scrollWrapper.find('> .button-up').on('click', function () {
-                            $reelsMain.find('> div')[0].scrollBy({ top: -30, behavior: "smooth" });
-                        });
-                        $scrollWrapper.find('> .button-down').on('click', function () {
-                            $reelsMain.find('> div')[0].scrollBy({ top: 30, behavior: "smooth" });
-                        });
-                    }
-
                     refreshReelsControls();
                 }
             }, 250);
@@ -152,14 +135,12 @@ export function refreshReelsControls() {
 }
 
 function appendReelsButton($main) {
-    // OPTIMIZATION: cache $main.children() and $main.find('video') usage
     const $mainChildren = $main.children();
-    if (!$mainChildren.find('.IG_REEL_CONTROLS').length) {
-        $mainChildren.css('position', 'relative');
-
-        mountReelControls($mainChildren[0], {
+    const reelControls = findReelActionControls($mainChildren[0]);
+    if (reelControls && !reelControls.parent.querySelector(':scope > .IG_REEL_CONTROLS')) {
+        mountReelControls(reelControls.parent, reelControls.before, {
             download: () => onReels(true, true),
-            newTab: () => onReels(true, true, true),
+            newTab: USER_SETTING.SHOW_OPEN_IN_NEW_TAB_BUTTON ? () => onReels(true, true, true) : null,
             thumbnail: () => onReels(true, false),
         });
     }
@@ -303,4 +284,26 @@ function appendReelsButton($main) {
     if ($buttonParent.find('div.volume_slider').length === 0) {
         toggleVolumeSilder($videos, $buttonParent, 'reel');
     }
+}
+
+function findReelActionControls(main) {
+    let container = main;
+    let saveIcon = null;
+
+    while (container && container !== document.body) {
+        saveIcon = Array.from(container.querySelectorAll('svg[aria-label="Save"]'))
+            .find(icon => icon.getBoundingClientRect().width > 0);
+        if (saveIcon) break;
+        container = container.parentElement;
+    }
+    if (!saveIcon) return null;
+
+    let saveItem = saveIcon;
+    while (saveItem.parentElement && !Array.from(saveItem.parentElement.children).some(child =>
+        child !== saveItem && child.querySelector?.('svg[aria-label="Share"]')
+    )) {
+        saveItem = saveItem.parentElement;
+    }
+
+    return saveItem.parentElement ? { parent: saveItem.parentElement, before: saveItem } : null;
 }
