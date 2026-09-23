@@ -79,6 +79,11 @@ export function beginRouteScope(): RouteScope {
     return current;
 }
 
+export function endRouteScope(): void {
+    current?.close();
+    current = undefined;
+}
+
 export function subscribeRouteScope(subscriber: (scope: RouteScope) => void): Cleanup {
     subscribers.add(subscriber);
     subscriber(currentRouteScope());

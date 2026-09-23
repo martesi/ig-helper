@@ -92,29 +92,31 @@ export function getImageFromCache(mediaId: string): string | null {
  * registerPerformanceObserver
  * @description Register performance observer to document, captures any loaded image resource.
  *
- * @return {void}
+ * @return Effect that owns the observer's lifetime.
  */
 export function registerPerformanceObserver() {
-    const perfObs = new PerformanceObserver(list => {
-        if (!USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) return;
+    return Effect.acquireRelease(
+        Effect.sync(() => {
+            const observer = new PerformanceObserver(list => {
+                if (!USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) return;
 
-        list.getEntries().forEach(entry => {
-            if (!(entry instanceof PerformanceResourceTiming)) return;
-            if (entry.initiatorType === 'img') {
-                const u = entry.name;
+                list.getEntries().forEach(entry => {
+                    if (!(entry instanceof PerformanceResourceTiming)) return;
+                    if (entry.initiatorType !== 'img') return;
+                    const url = entry.name;
+                    if (
+                        !(url.includes('_e35') || url.includes('_e15') || url.includes('.webp?')) ||
+                        url.includes('_e35_s') ||
+                        url.match(/_[sp](\d+)x\1(?!\d)/)
+                    ) return;
 
-                if (
-                    !(u.includes('_e35') || u.includes('_e15') || u.includes('.webp?')) ||
-                    u.includes('_e35_s') ||
-                    u.match(/_[sp](\d+)x\1(?!\d)/)
-                ) {
-                    return;
-                }
-
-                const id = mediaIdFromURL(u);
-                if (id && !state.GL_imageCache[id]) putInCache(id, u);
-            }
-        });
-    });
-    perfObs.observe({ entryTypes: ['resource'] });
+                    const id = mediaIdFromURL(url);
+                    if (id && !state.GL_imageCache[id]) putInCache(id, url);
+                });
+            });
+            observer.observe({ entryTypes: ['resource'] });
+            return observer;
+        }),
+        observer => Effect.sync(() => observer.disconnect()),
+    );
 }

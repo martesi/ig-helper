@@ -9,7 +9,7 @@ const startedAt = Date.now();
 const errors: DebugSnapshot['errors'] = [];
 
 export function startDebugReporter() {
-    window.addEventListener('message', event => {
+    const onMessage = (event: MessageEvent) => {
         if (event.origin !== CONTROL_ORIGIN) return;
         if (event.data?.channel !== DEBUG_CHANNEL || event.data.direction !== 'request') return;
 
@@ -34,15 +34,24 @@ export function startDebugReporter() {
             }, event.origin),
             onSuccess: () => undefined,
         }));
-    });
+    };
 
-    window.addEventListener('error', event => {
-        rememberError(event.error ?? event.message);
-    });
+    const onError = (event: ErrorEvent) => rememberError(event.error ?? event.message);
+    const onUnhandledRejection = (event: PromiseRejectionEvent) => rememberError(event.reason);
 
-    window.addEventListener('unhandledrejection', event => {
-        rememberError(event.reason);
-    });
+    return Effect.acquireRelease(
+        Effect.sync(() => {
+            window.addEventListener('message', onMessage);
+            window.addEventListener('error', onError);
+            window.addEventListener('unhandledrejection', onUnhandledRejection);
+            return () => {
+                window.removeEventListener('message', onMessage);
+                window.removeEventListener('error', onError);
+                window.removeEventListener('unhandledrejection', onUnhandledRejection);
+            };
+        }),
+        cleanup => Effect.sync(cleanup),
+    );
 }
 
 function handleRequest(method: DebugMethod): DebugSnapshot | DomCapture {

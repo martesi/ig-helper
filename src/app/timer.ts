@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import { Effect } from 'effect';
 import { state, checkInterval, USER_SETTING } from "../settings/state";
 import { logger } from "../shared/logger";
 import { onReadyMyDW } from "../features/post/post";
@@ -6,18 +7,29 @@ import { onReels } from "../features/reel";
 import { onProfileAvatar, skipSharedWithYouDialog } from "../features/profile";
 import { onHighlightsStory, onHighlightsStoryThumbnail } from "../features/highlight";
 import { onStory } from "../features/story";
-import { beginRouteScope, currentRouteScope } from '../shared/route-scope.ts';
-
-export let timer: ReturnType<typeof setInterval> | null = null;
+import { beginRouteScope, currentRouteScope, endRouteScope } from '../shared/route-scope.ts';
 
 export function startTimer() {
-    beginRouteScope();
-    // Post-page observer belongs to the post/timer lifecycle, not the settings module.
-    const observer = new MutationObserver(() => onReadyMyDW());
-    state.GL_observer = observer;
+    return Effect.acquireRelease(
+        Effect.sync(() => {
+            beginRouteScope();
+            const observer = new MutationObserver(() => onReadyMyDW());
+            state.GL_observer = observer;
+            return {
+                observer,
+                timer: setInterval(() => runTimerTick(observer), checkInterval),
+            };
+        }),
+        ({ observer, timer }) => Effect.sync(() => {
+            clearInterval(timer);
+            observer.disconnect();
+            state.GL_observer = null;
+            endRouteScope();
+        }),
+    );
+}
 
-    // Main Timer
-    timer = setInterval(function () {
+function runTimerTick(observer: MutationObserver) {
     if (state.currentURL !== location.href) {
         beginRouteScope();
         state.currentURL = location.href;
@@ -185,7 +197,6 @@ export function startTimer() {
     }
 
     state.GL_referrer = new URL(location.href).pathname;
-    }, checkInterval);
 }
 
 function markStoryPageLoaded() {

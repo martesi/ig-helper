@@ -16,7 +16,7 @@ const CHANNEL = 'ig-helper:settings';
 const hotkeysByStateKey = new Map(HOTKEY_SETTINGS.map(config => [config.stateKey, config]));
 
 export function startSettingsBridge() {
-    window.addEventListener('message', event => {
+    const onMessage = (event: MessageEvent) => {
         if (event.source !== window || event.origin !== location.origin) return;
         if (event.data?.channel !== CHANNEL || event.data.direction !== 'request') return;
 
@@ -35,7 +35,15 @@ export function startSettingsBridge() {
             },
             onSuccess: () => undefined,
         }));
-    });
+    };
+
+    return Effect.acquireRelease(
+        Effect.sync(() => {
+            window.addEventListener('message', onMessage);
+            return () => window.removeEventListener('message', onMessage);
+        }),
+        cleanup => Effect.sync(cleanup),
+    );
 }
 
 function respond(id: number, ok: boolean, result: unknown, error?: string) {
