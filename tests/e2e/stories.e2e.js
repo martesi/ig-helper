@@ -5,7 +5,7 @@ const e2e = new IgHelperE2E();
 test.describe('IG Helper browser E2E', () => {
 
     test.describe('Authenticated UI', { tag: ['@ui', '@auth'] }, () => {
-        requireAuthenticatedProfile(test);
+        requireAuthenticatedProfile(test, e2e);
         registerE2E(test, e2e);
         test('Story controls mount when the authenticated home feed exposes a live story', async () => {
             await e2e.goto(INSTAGRAM_HOME);

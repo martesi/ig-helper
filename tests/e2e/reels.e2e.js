@@ -5,7 +5,7 @@ const e2e = new IgHelperE2E();
 test.describe('IG Helper browser E2E', () => {
 
     test.describe('Authenticated UI', { tag: ['@ui', '@auth'] }, () => {
-        requireAuthenticatedProfile(test);
+        requireAuthenticatedProfile(test, e2e);
         registerE2E(test, e2e);
         test('Reels controls remount after Instagram replaces the helper subtree', async () => {
             await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {

@@ -12,19 +12,16 @@ const actionDelayMin = Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MIN ?? 80);
 const actionDelayMax = Math.max(actionDelayMin, Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MAX ?? 220));
 
 export function registerE2E(test, e2e) {
-    test.beforeAll(async ({ browserName }, workerInfo) => {
-        test.skip(browserName !== 'chromium', 'The managed E2E profiles require Chromium');
+    test.beforeAll(async (_fixtures, workerInfo) => {
         await e2e.start(workerInfo.project.name);
     });
     test.afterAll(() => e2e.stop());
 }
 
-export function requireAuthenticatedProfile(test) {
-    test.beforeAll(async ({ browserName }, workerInfo) => {
-        test.skip(
-            browserName !== 'chromium' || workerInfo.project.name !== 'default',
-            'Requires the authenticated Chromium profile',
-        );
+export function requireAuthenticatedProfile(test, e2e) {
+    test.beforeEach(async (_fixtures, workerInfo) => {
+        test.skip(workerInfo.project.name !== 'default', 'Requires the authenticated profile');
+        test.skip(!await e2e.hasAuthenticatedSession(), 'Authenticated Instagram session unavailable; refresh cookies.json');
     });
 }
 
@@ -35,6 +32,7 @@ export class IgHelperE2E {
         this.page = null;
         this.downloadEvents = [];
         this.downloadCdp = null;
+        this.authenticatedSession = undefined;
     }
 
     async start(projectName) {
@@ -69,6 +67,16 @@ export class IgHelperE2E {
         const page = await this.context.newPage();
         await page.setViewportSize({ width: 1280, height: 900 });
         return page;
+    }
+
+    async hasAuthenticatedSession() {
+        if (this.authenticatedSession !== undefined) return this.authenticatedSession;
+        await this.goto(INSTAGRAM_HOME);
+        this.authenticatedSession = await this.page.locator('a[href="/direct/inbox/"]').first().waitFor({
+            state: 'attached',
+            timeout: 10000,
+        }).then(() => true, () => false);
+        return this.authenticatedSession;
     }
 
     async goto(url) {

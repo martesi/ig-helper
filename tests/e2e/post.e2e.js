@@ -197,7 +197,7 @@ test.describe('IG Helper browser E2E', () => {
     });
 
     test.describe('Authenticated UI', { tag: ['@ui', '@auth'] }, () => {
-        requireAuthenticatedProfile(test);
+        requireAuthenticatedProfile(test, e2e);
         test('image viewer supports rotate, zoom, and close', async () => {
             await e2e.withSettings({ SHOW_MEDIA_PREVIEW: true }, async () => {
                 await e2e.ensurePostControls();
@@ -354,7 +354,7 @@ test.describe('IG Helper browser E2E', () => {
     });
 
     test.describe('Authenticated Execution', { tag: ['@execution', '@auth'] }, () => {
-        requireAuthenticatedProfile(test);
+        requireAuthenticatedProfile(test, e2e);
         test('copy current post image writes image data and reports success', async () => {
             await e2e.ensurePostControls();
             const imageControls = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR')
