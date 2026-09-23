@@ -1,6 +1,8 @@
 import $ from 'jquery';
 import { USER_SETTING, state } from "../settings/state";
-import { saveFiles, openNewTab, triggerReactClickHandler } from "../shared/general";
+import { saveFiles } from "../shared/download";
+import { openNewTab } from "../shared/navigation";
+import { triggerReactClickHandler } from "../shared/react";
 import { updateLoadingBar } from "../shared/ui/status.tsx";
 import { logger } from "../shared/logger";
 import { getBlobMedia } from "../shared/api";

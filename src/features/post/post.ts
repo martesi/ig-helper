@@ -1,12 +1,8 @@
 import $ from 'jquery';
 import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state, resourceCountSelector } from "../../settings/state";
-import {
-    openNewTab,
-    triggerLinkElement,
-    replaceSameOriginHost,
-    saveMediaThumbnail,
-    triggerReactClickHandler
-} from "../../shared/general";
+import { triggerLinkElement, saveMediaThumbnail } from "../../shared/media-download";
+import { openNewTab, replaceSameOriginHost } from "../../shared/navigation";
+import { triggerReactClickHandler } from "../../shared/react";
 import { setDownloadProgress, updateLoadingBar } from "../../shared/ui/status.tsx";
 import { logger } from "../../shared/logger";
 import { getBlobMedia, getMediaInfo } from "../../shared/api";

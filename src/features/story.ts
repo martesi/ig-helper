@@ -1,11 +1,10 @@
 import $ from 'jquery';
 import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state } from "../settings/state";
 import { appendMediaResource } from "../shared/ui/media-resource.tsx";
-import {
-    saveFiles, getStoryProgress, openNewTab,
-    getStoryId,
-    tryHandleDashFromMediaItem
-} from "../shared/general";
+import { saveFiles } from "../shared/download";
+import { getStoryProgress, getStoryId } from "../shared/story";
+import { openNewTab } from "../shared/navigation";
+import { tryHandleDashFromMediaItem } from "../shared/dash";
 import { updateLoadingBar } from "../shared/ui/status.tsx";
 import { logger } from "../shared/logger";
 import { getUserId, getStories, getMediaInfo } from "../shared/api";

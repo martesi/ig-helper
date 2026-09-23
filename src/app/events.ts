@@ -2,9 +2,9 @@ import $ from 'jquery';
 import { state, USER_SETTING, $body } from "../settings/state";
 import {
     setTimeElementDateAndLocaleTime,
-    getHighlightCurrentTimeElement,
-    triggerReactClickHandler
-} from "../shared/general";
+    getHighlightCurrentTimeElement
+} from "../shared/story";
+import { triggerReactClickHandler } from "../shared/react";
 import { logger } from "../shared/logger";
 import { onStoryDownload, onStoryThumbnail } from "../features/story";
 import { onHighlightsStoryDownload, onHighlightsStoryThumbnail } from "../features/highlight";

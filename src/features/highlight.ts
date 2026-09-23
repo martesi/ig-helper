@@ -1,12 +1,13 @@
 import $ from 'jquery';
 import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state } from "../settings/state";
+import { saveFiles } from "../shared/download";
+import { openNewTab } from "../shared/navigation";
+import { tryHandleDashFromMediaItem } from "../shared/dash";
 import {
-    openNewTab,
-    saveFiles, getStoryProgress,
-    tryHandleDashFromMediaItem,
+    getStoryProgress,
     getHighlightCurrentTimeElement, setTimeElementDateAndLocaleTime,
     setStoryProgressIndexText, setStoryProgressIndexByUsername
-} from "../shared/general";
+} from "../shared/story";
 import { updateLoadingBar } from "../shared/ui/status.tsx";
 import { logger } from "../shared/logger";
 import { getHighlightStories, getMediaInfo } from "../shared/api";

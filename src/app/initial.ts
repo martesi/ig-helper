@@ -1,7 +1,6 @@
-import { initSettings } from "../shared/general";
+import { initSettings, state, USER_SETTING } from "../settings/state";
 import { logger } from "../shared/logger";
 import { getTranslationText, repaintingTranslations } from "../shared/i18n";
-import { state, USER_SETTING } from "../settings/state";
 import { HOTKEY_SETTINGS, SETTINGS_STORAGE_KEYS } from "../settings/schema";
 import { purgeCache } from "../features/media/image-cache";
 import { registerMenuCommand } from "../features/menu";

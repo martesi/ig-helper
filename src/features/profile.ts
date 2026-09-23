@@ -1,6 +1,6 @@
 import $ from 'jquery';
 import { USER_SETTING } from "../settings/state";
-import { saveFiles } from "../shared/general";
+import { saveFiles } from "../shared/download";
 import { updateLoadingBar } from "../shared/ui/status.tsx";
 import { logger } from "../shared/logger";
 import { getUserId, getUserHighSizeProfile } from "../shared/api";

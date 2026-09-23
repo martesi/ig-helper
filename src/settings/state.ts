@@ -5,7 +5,10 @@ import {
     DEFAULT_USER_SETTINGS,
     DEFAULT_VIDEO_VOLUME,
     DIRECT_DOWNLOAD_MODE_OPTIONS,
+    HOTKEY_SETTINGS,
     PARENT_CHILD_MAPPING,
+    resolveDirectDownloadMode,
+    SETTINGS_STORAGE_KEYS,
 } from './schema';
 import type { UserSettings } from './schema';
 
@@ -84,3 +87,26 @@ export const state = {
     downloadStoryHotkeyKeyCode: (GM_getValue('G_HOTKEY_DOWNLOAD_STORY_KEYCODE')) ? GM_getValue('G_HOTKEY_DOWNLOAD_STORY_KEYCODE') : 83
 };
 /*******************************/
+
+export function initSettings() {
+    for (const [name, fallback] of Object.entries(USER_SETTING)) {
+        const value = name === 'DIRECT_DOWNLOAD_MODE'
+            ? resolveDirectDownloadMode(
+                GM_getValue(name),
+                GM_getValue('DIRECT_DOWNLOAD_VISIBLE_RESOURCE'),
+                GM_getValue('DIRECT_DOWNLOAD_ALL')
+            )
+            : GM_getValue(name);
+        if (typeof value === typeof fallback) (USER_SETTING as Record<string, unknown>)[name] = value;
+    }
+
+    state.videoVolume = USER_SETTING.MODIFY_VIDEO_VOLUME
+        ? Number(GM_getValue(SETTINGS_STORAGE_KEYS.videoVolume, DEFAULT_VIDEO_VOLUME))
+        : DEFAULT_VIDEO_VOLUME;
+    state.fileRenameFormat = GM_getValue(SETTINGS_STORAGE_KEYS.renameFormat, DEFAULT_RENAME_FORMAT);
+    state.lang = GM_getValue(SETTINGS_STORAGE_KEYS.language, state.lang);
+
+    for (const config of HOTKEY_SETTINGS) {
+        (state as unknown as Record<string, unknown>)[config.stateKey] = Number(GM_getValue(config.storageKey, config.defaultKeyCode));
+    }
+}
