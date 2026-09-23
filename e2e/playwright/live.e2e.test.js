@@ -469,8 +469,17 @@ test.describe('IG Helper live browser E2E', () => {
                 globalThis.GM_getResourceText = () => '{}';
                 globalThis.GM_getValue = (_key, fallback) => fallback;
 
-                const legacyItems = Array.from({ length: 10 }, (_, index) => ({ node: { id: `legacy-${index}` } }));
-                const currentItems = Array.from({ length: 12 }, (_, index) => ({ pk: `current-${index}` }));
+                const image = { src: 'https://example.test/image.jpg' };
+                const legacyItems = Array.from({ length: 10 }, (_, index) => ({
+                    node: { __typename: 'GraphImage', id: `legacy-${index}`, display_resources: [image] },
+                }));
+                const currentItems = Array.from({ length: 12 }, (_, index) => ({
+                    pk: `current-${index}`,
+                    taken_at: 1700000000,
+                    video_dash_manifest: null,
+                    video_versions: null,
+                    image_versions2: { candidates: [{ url: image.src }] },
+                }));
                 const requests = [];
                 const request = options => {
                     requests.push(options.url);
@@ -480,6 +489,11 @@ test.describe('IG Helper live browser E2E', () => {
                             data: {
                                 shortcode_media: {
                                     __typename: 'GraphSidecar',
+                                    id: 'legacy-post',
+                                    shortcode: 'synthetic-carousel',
+                                    owner: { username: 'example' },
+                                    taken_at_timestamp: 1700000000,
+                                    display_resources: [image],
                                     edge_sidecar_to_children: { edges: legacyItems },
                                 },
                             },
@@ -493,6 +507,7 @@ test.describe('IG Helper live browser E2E', () => {
                             },
                         };
                     queueMicrotask(() => options.onload({ response: JSON.stringify(response), finalUrl: options.url }));
+                    return { abort() {} };
                 };
                 const { getBlobMedia } = await import('/src/shared/api.js?e2e-long-carousel=1');
                 const media = await getBlobMedia('synthetic-carousel', request);
@@ -504,6 +519,45 @@ test.describe('IG Helper live browser E2E', () => {
             });
 
             expect(result).toEqual({ type: 'query_id', count: 12, requests: 2 });
+        } finally {
+            await page.close();
+        }
+    });
+
+    test('legacy HTML redirect falls back to web-info media', EXECUTION, async () => {
+        const page = await e2e.context.newPage();
+        try {
+            await page.goto(`${VITE_URL}/src/shared/api.js`, { waitUntil: 'domcontentloaded' });
+            const result = await page.evaluate(async () => {
+                globalThis.GM_getValue = (_key, fallback) => fallback;
+
+                const requests = [];
+                const request = options => {
+                    requests.push(options.url);
+                    const response = options.url.includes('query_hash=')
+                        ? '<!DOCTYPE html><html></html>'
+                        : JSON.stringify({
+                            status: 'ok',
+                            data: { xdt_api__v1__media__shortcode__web_info: { items: [{
+                                pk: '123',
+                                code: 'synthetic-post',
+                                taken_at: 1700000000,
+                                owner: { username: 'example' },
+                                video_dash_manifest: null,
+                                video_versions: null,
+                                image_versions2: { candidates: [{ url: 'https://example.test/image.jpg' }] },
+                            }] } },
+                        });
+                    queueMicrotask(() => options.onload({ response, status: 200, finalUrl: options.url }));
+                    return { abort() {} };
+                };
+                const { getBlobMedia, getPostOwner } = await import('/src/shared/api.js?e2e-html-fallback=1');
+                const media = await getBlobMedia('synthetic-post', request);
+                const owner = await getPostOwner('synthetic-post', request);
+                return { type: media.type, code: media.data.code, owner, requests: requests.length };
+            });
+
+            expect(result).toEqual({ type: 'query_id', code: 'synthetic-post', owner: 'example', requests: 4 });
         } finally {
             await page.close();
         }

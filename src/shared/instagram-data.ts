@@ -38,8 +38,8 @@ const fallbackMediaImageVersions = { candidates: [] };
 const carouselMediaSchema = z.object({
     pk: z.prefault(z.string(), ''),
     taken_at: z.prefault(z.number(), 0),
-    video_dash_manifest: z.optional(z.string()),
-    video_versions: z.optional(z.array(mediaCandidate)),
+    video_dash_manifest: z.nullish(z.string()),
+    video_versions: z.nullish(z.array(mediaCandidate)),
     image_versions2: z.prefault(mediaImageVersions, fallbackMediaImageVersions),
 });
 
@@ -101,12 +101,12 @@ export const modernMediaSchema = z.object({
     pk: z.prefault(z.string(), ''),
     code: z.prefault(z.string(), ''),
     taken_at: z.prefault(z.number(), 0),
-    owner: z.optional(z.object({ username: z.string() })),
-    user: z.optional(z.object({ username: z.string() })),
-    video_dash_manifest: z.optional(z.string()),
-    video_versions: z.optional(z.array(mediaCandidate)),
+    owner: z.nullish(z.object({ username: z.string() })),
+    user: z.nullish(z.object({ username: z.string() })),
+    video_dash_manifest: z.nullish(z.string()),
+    video_versions: z.nullish(z.array(mediaCandidate)),
     image_versions2: z.prefault(mediaImageVersions, fallbackMediaImageVersions),
-    carousel_media: z.optional(z.array(carouselMediaSchema)),
+    carousel_media: z.nullish(z.array(carouselMediaSchema)),
 });
 
 export type ModernMedia = Omit<z.infer<typeof modernMediaSchema>, 'owner'> & {

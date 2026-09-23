@@ -71,8 +71,8 @@ export const state = {
     GL_observer: null as MutationObserver | null,
     GL_imageCache: GM_getValue<Record<string, { url: string; ts: number }>>(IMAGE_CACHE_KEY, {}),
     GL_mediaDataCache: {} as Record<string, {
-        video_dash_manifest?: string;
-        video_versions?: { url: string }[];
+        video_dash_manifest?: string | null;
+        video_versions?: { url: string }[] | null;
     }>,
     GL_weakCache: {
         overlay: new WeakMap<HTMLVideoElement, JQuery<Element>>(),

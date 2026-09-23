@@ -571,7 +571,7 @@ export async function tryHandleDashFromMediaItem({
     isPreview,
     index
 }: {
-    mediaItem: { video_dash_manifest?: string; video_versions?: ReadonlyArray<{ url: string }> };
+    mediaItem: { video_dash_manifest?: string | null; video_versions?: ReadonlyArray<{ url: string }> | null };
     username?: string;
     sourceType: string;
     timestamp: number;

@@ -18,7 +18,11 @@ export function startTimer() {
 
     // Main Timer
     timer = setInterval(function () {
-    if (state.currentURL !== location.href) beginRouteScope();
+    if (state.currentURL !== location.href) {
+        beginRouteScope();
+        state.currentURL = location.href;
+        state.pageLoaded = false;
+    }
     const routeScope = currentRouteScope();
     // page loading or unnecessary route
     if ($('div#splash-screen').length > 0 && !$('div#splash-screen').is(':hidden') ||
