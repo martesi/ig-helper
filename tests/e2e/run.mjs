@@ -10,10 +10,10 @@ const harness = process.env.E2E_HARNESS_SCRIPT ?? path.join(root, '.agents/skill
 const config = globalThis.Bun.TOML.parse(readFileSync(configPath, 'utf8'));
 const mode = process.argv[2] ?? 'anonymous';
 const category = mode === 'ui' ? '@ui' : ['execution', 'exe'].includes(mode) ? '@execution' : null;
-const onlyProfile = { anonymous: 'anonymous', auth: 'default' }[mode];
+const onlyProfile = { anonymous: 'default', auth: 'authenticated' }[mode];
 if (!['all', 'ui', 'execution', 'exe', 'anonymous', 'auth'].includes(mode)) throw new Error(`Unknown E2E mode: ${mode}`);
 
-const profiles = onlyProfile ? [onlyProfile] : ['anonymous', 'default'];
+const profiles = onlyProfile ? [onlyProfile] : ['default', 'authenticated'];
 const endpoints = Object.fromEntries(profiles.map(profile => [
     profile,
     `http://127.0.0.1:${config.profile[profile].port ?? 2000}`,
@@ -41,7 +41,6 @@ const runConcurrent = args => new Promise((resolve, reject) => {
 let failed = false;
 for (const profile of profiles) {
     const args = ['start', '--profile', profile];
-    if (profile === 'anonymous') args.push('--no-cookies');
     if (run([...args, '--'], true) !== 0) {
         failed = true;
         break;
@@ -52,8 +51,9 @@ if (failed) process.exitCode = 1;
 else {
     const results = await Promise.all(profiles.map(async profile => {
         const args = ['playwright', '--profile', profile, '--', 'test'];
-        if (category) args.push('--grep', category);
-        else if (mode === 'auth' || mode === 'all' && profile === 'default') args.push('--grep', '@auth');
+        if (category && profile === 'default') args.push('--grep', category, '--grep-invert', '@auth');
+        else if (category) args.push('--grep', `(?=.*${category})(?=.*@auth)`);
+        else if (mode === 'auth' || mode === 'all' && profile === 'authenticated') args.push('--grep', '@auth');
         else if (mode === 'anonymous' || mode === 'all') args.push('--grep-invert', '@auth');
         args.push('--project', profile);
         return runConcurrent(args);

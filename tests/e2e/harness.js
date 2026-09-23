@@ -12,15 +12,17 @@ const actionDelayMin = Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MIN ?? 80);
 const actionDelayMax = Math.max(actionDelayMin, Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MAX ?? 220));
 
 export function registerE2E(test, e2e) {
-    test.beforeAll(async (_fixtures, workerInfo) => {
+    // eslint-disable-next-line no-empty-pattern -- Playwright requires fixture destructuring.
+    test.beforeAll(async ({}, workerInfo) => {
         await e2e.start(workerInfo.project.name);
     });
     test.afterAll(() => e2e.stop());
 }
 
 export function requireAuthenticatedProfile(test, e2e) {
-    test.beforeEach(async (_fixtures, workerInfo) => {
-        test.skip(workerInfo.project.name !== 'default', 'Requires the authenticated profile');
+    // eslint-disable-next-line no-empty-pattern -- Playwright requires fixture destructuring.
+    test.beforeEach(async ({}, workerInfo) => {
+        test.skip(workerInfo.project.name !== 'authenticated', 'Requires the authenticated profile');
         test.skip(!await e2e.hasAuthenticatedSession(), 'Authenticated Instagram session unavailable; refresh cookies.json');
     });
 }

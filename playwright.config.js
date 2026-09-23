@@ -9,10 +9,10 @@ export default defineConfig({
     reporter: 'line',
     projects: [
         {
-            name: 'anonymous',
+            name: 'default',
         },
         {
-            name: 'default',
+            name: 'authenticated',
         },
     ],
 });
