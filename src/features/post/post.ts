@@ -15,6 +15,7 @@ import { mediaIdFromURL } from "../media/image-cache";
 import { openResourcePicker } from '../../shared/ui/resource-picker.tsx';
 import type { LegacyMedia, LegacyMediaRoot, ModernMedia } from '../../shared/instagram-data.ts';
 import { currentRouteScope } from '../../shared/route-scope.ts';
+import { runWithLoadingBar } from '../loading';
 
 /**
  * onReadyMyDW
@@ -466,30 +467,29 @@ async function copyPostResourceToClipboard(target: HTMLElement) {
         return;
     }
 
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const blob = await response.blob();
-        const type = blob.type === 'image/png' || ClipboardItem.supports?.(blob.type)
-            ? blob.type
-            : 'image/png';
-        const data = type === blob.type ? blob : await toClipboardPng(blob);
-
-        await navigator.clipboard.write([new ClipboardItem({ [type]: data })]);
-        alert(_i18n('COPY_MEDIA_SUCCESS'));
-    }
-    catch (err) {
+    const copy = Effect.tryPromise({
+        try: async () => {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const blob = await response.blob();
+            const type = blob.type === 'image/png' || ClipboardItem.supports?.(blob.type) ? blob.type : 'image/png';
+            const data = type === blob.type ? blob : await toClipboardPng(blob);
+            await navigator.clipboard.write([new ClipboardItem({ [type]: data })]);
+        },
+        catch: cause => cause,
+    });
+    await Effect.runPromise(copy).then(() => alert(_i18n('COPY_MEDIA_SUCCESS')), err => {
         logger('copyPostResourceToClipboard', err);
         alert(_i18n('COPY_MEDIA_FAILED'));
-    }
+    });
 }
 
 async function toClipboardPng(blob: Blob): Promise<Blob> {
     if (blob.type === 'image/png') return blob;
 
     const bitmap = await createImageBitmap(blob);
-    try {
+    const conversion = Effect.tryPromise({
+        try: async () => {
         const canvas = document.createElement('canvas');
         canvas.width = bitmap.width;
         canvas.height = bitmap.height;
@@ -497,22 +497,20 @@ async function toClipboardPng(blob: Blob): Promise<Blob> {
         if (!context) throw new Error('Canvas 2D context unavailable');
         context.drawImage(bitmap, 0, 0);
 
-        return await new Promise<Blob>((resolve, reject) => {
+        return new Promise<Blob>((resolve, reject) => {
             canvas.toBlob(
                 result => result ? resolve(result) : reject(new Error('PNG conversion failed')),
                 'image/png',
             );
         });
-    }
-    finally {
-        bitmap.close();
-    }
+        },
+        catch: cause => cause,
+    }).pipe(Effect.ensuring(Effect.sync(() => bitmap.close())));
+    return Effect.runPromise(conversion);
 }
 
-async function openPostVideoThumbnail(target: HTMLElement) {
-    updateLoadingBar(true);
-
-    try {
+function openPostVideoThumbnail(target: HTMLElement) {
+    return runWithLoadingBar(async () => {
         const { $article, postPath } = await getPostContextFromButton(target);
         if ($article.length === 0 || !postPath) {
             alert('Cannot determine post path.');
@@ -539,20 +537,14 @@ async function openPostVideoThumbnail(target: HTMLElement) {
         if ($link.length === 0 || !await saveMediaThumbnail($link, postPath)) {
             alert('Cannot find thumbnail URL.');
         }
-    }
-    catch (err) {
+    }).catch(err => {
         logger('openPostVideoThumbnail', err);
         alert('Cannot find thumbnail URL.');
-    }
-    finally {
-        updateLoadingBar(false);
-    }
+    });
 }
 
-async function openPostResourceInNewTab(target: HTMLElement) {
-    updateLoadingBar(true);
-
-    try {
+function openPostResourceInNewTab(target: HTMLElement) {
+    return runWithLoadingBar(async () => {
         const { $article, postPath } = await getPostContextFromButton(target);
         if ($article.length === 0 || !postPath) {
             alert('Cannot determine post path.');
@@ -589,18 +581,14 @@ async function openPostResourceInNewTab(target: HTMLElement) {
         const href = $link.data('href');
         if (href) openNewTab(replaceSameOriginHost(href));
         else alert('Cannot find open tab URL.');
-    }
-    catch (err) {
+    }).catch(err => {
         logger('openPostResourceInNewTab', err);
         alert('Cannot find open tab URL.');
-    }
-    finally {
-        updateLoadingBar(false);
-    }
+    });
 }
 
 async function downloadAllPostResources(target: HTMLElement) {
-    try {
+    await (async () => {
         const { $article, postPath } = await getPostContextFromButton(target);
         if ($article.length === 0 || !postPath) {
             alert('Cannot determine post path.');
@@ -627,17 +615,66 @@ async function downloadAllPostResources(target: HTMLElement) {
         });
 
         await batchDownloadPostFiles(links);
-    }
-    catch (err) {
+    })().catch(err => {
         logger('downloadAllPostResources', err);
+    }).finally(() => updateLoadingBar(false));
+}
+
+async function appendVisiblePostResources($article: JQuery<Element>, popupBody: HTMLElement, postPath: string) {
+    const resourceItems = $article.find(resourceCountSelector);
+    const publishTime = new Date(
+        $article.find('a[href] time[datetime]').filter(function () {
+            const href = $(this).parents('a[href]').attr('href');
+            return href?.startsWith('/p/') || href?.match(/\/([\w.\-_]+)\/(p|reel)\//ig) != null;
+        }).first().attr('datetime') ?? '',
+    ).getTime();
+
+    if (resourceItems.length === 0) {
+        if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA) {
+            await createMediaListDOM(postPath, popupBody, _i18n('LOAD_BLOB_MULTIPLE'));
+            return;
+        }
+
+        const videos = $article.find('video');
+        const images = $article.find('._aagv img');
+        const imageLink = images.attr('srcset')?.split(' ')[0] || images.attr('src');
+        if (videos.attr('src')) await createMediaListDOM(postPath, popupBody, _i18n('LOAD_BLOB_ONE'));
+        if (imageLink) appendPostImage(popupBody, imageLink, 1, publishTime, postPath);
+        return;
     }
-    finally {
-        updateLoadingBar(false);
+
+    let hasBlob = false;
+    resourceItems.each(function () {
+        if ($(this).parent().parent().parent().find('video').attr('src')) hasBlob = true;
+    });
+    if (hasBlob || USER_SETTING.FORCE_RESOURCE_VIA_MEDIA) {
+        await createMediaListDOM(postPath, popupBody, _i18n('LOAD_BLOB_MULTIPLE'));
+        return;
     }
+
+    let index = 0;
+    let foundBlob = false;
+    resourceItems.each(function () {
+        index++;
+        const $this = $(this);
+        const videos = $this.find('video');
+        const images = $this.find('._aagv img');
+        const imageLink = images.attr('srcset')?.split(' ')[0] || images.attr('src');
+        if (videos.attr('src')) foundBlob = true;
+        if (imageLink) appendPostImage(popupBody, imageLink, index, publishTime, postPath);
+    });
+    if (foundBlob) await createMediaListDOM(postPath, popupBody, _i18n('LOAD_BLOB_RELOAD'));
+}
+
+function appendPostImage(root: HTMLElement, imageLink: string, index: number, publishTime: number, postPath: string) {
+    appendMediaResource(root, {
+        datetime: publishTime, name: 'photo', type: 'jpg', username: state.GL_username,
+        path: postPath, index, href: imageLink, preview: imageLink, labelKey: 'IMG', label: _i18n('IMG'),
+    });
 }
 
 async function downloadPostResource(target: HTMLElement) {
-    try {
+    await (async () => {
         const { $article, postPath } = await getPostContextFromButton(target);
         if ($article.length === 0 || !postPath) {
             alert('Cannot determine post path.');
@@ -648,12 +685,11 @@ async function downloadPostResource(target: HTMLElement) {
         state.GL_postPath = postPath;
 
         if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ASK) {
-            updateLoadingBar(true);
             const resourceRoot = document.createElement('div');
 
-            try {
+            await runWithLoadingBar(async () => {
                 const totalInserted = await createMediaListDOM(
-                    state.GL_postPath,
+                    postPath,
                     resourceRoot,
                     _i18n("LOAD_BLOB_MULTIPLE")
                 );
@@ -671,14 +707,11 @@ async function downloadPostResource(target: HTMLElement) {
                 }));
 
                 openResourcePicker({
-                    title: `Post ${state.GL_postPath}`,
+                    title: `Post ${postPath}`,
                     resources,
                     onDownload: selected => batchDownloadPostFiles(selected.map(resource => $(resource.element))),
                 });
-            }
-            finally {
-                updateLoadingBar(false);
-            }
+            });
 
             return;
         }
@@ -686,13 +719,11 @@ async function downloadPostResource(target: HTMLElement) {
         const popupBody = document.createElement('div');
 
         if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE) {
-            updateLoadingBar(true);
-
-            try {
+            await runWithLoadingBar(async () => {
                 const index = getVisibleNodeIndex($article);
 
                 const totalInserted = await createMediaListDOM(
-                    state.GL_postPath,
+                    postPath,
                     popupBody,
                     ""
                 );
@@ -711,97 +742,16 @@ async function downloadPostResource(target: HTMLElement) {
                 else {
                     alert('Cannot find download URL.');
                 }
-            }
-            catch (err) {
+            }).catch(err => {
                 logger('downloadPostResource visibleResource', err);
                 alert('Cannot find download URL.');
-            }
-            finally {
-                updateLoadingBar(false);
-            }
+            });
 
             return;
         }
 
         if (USER_SETTING.DIRECT_DOWNLOAD_MODE !== DIRECT_DOWNLOAD_MODE_OPTIONS.ALL) {
-            let s = 0;
-            const $resourceItems = $article.find(resourceCountSelector);
-            const multiple = $resourceItems.length;
-            let blob = false;
-            const publish_time = new Date(
-                $article.find('a[href] time[datetime]').filter(function () {
-                    const href = $(this).parents("a[href]").attr("href");
-                    return href?.startsWith("/p/") || href?.match(/\/([\w.\-_]+)\/(p|reel)\//ig) != null;
-                }).first().attr('datetime') ?? ''
-            ).getTime();
-
-            if (multiple) {
-                $resourceItems.each(function () {
-                    const element_videos = $(this).parent().parent().parent().find('video');
-                    if (element_videos && element_videos.attr('src')) {
-                        blob = true;
-                    }
-                });
-
-                if (blob || USER_SETTING.FORCE_RESOURCE_VIA_MEDIA) {
-                    await createMediaListDOM(
-                        state.GL_postPath,
-                        popupBody,
-                        _i18n("LOAD_BLOB_MULTIPLE")
-                    );
-                }
-                else {
-                    const $popupBody = $(popupBody);
-                    $resourceItems.each(function () {
-                        s++;
-                        const $this = $(this);
-                        const element_videos = $this.find('video');
-                        const element_images = $this.find('._aagv img');
-                        const imgLink = element_images.attr('srcset')?.split(" ")[0] || element_images.attr('src');
-
-                        if (element_videos && element_videos.attr('src')) {
-                            blob = true;
-                        }
-                        if (element_images && imgLink) {
-                            appendMediaResource($popupBody[0], { datetime: publish_time, name: 'photo', type: 'jpg', username: state.GL_username, path: state.GL_postPath, index: s, href: imgLink, preview: imgLink, labelKey: 'IMG', label: _i18n('IMG') });
-                        }
-                    });
-
-                    if (blob) {
-                        await createMediaListDOM(
-                            state.GL_postPath,
-                            popupBody,
-                            _i18n("LOAD_BLOB_RELOAD")
-                        );
-                    }
-                }
-            }
-            else {
-                if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA) {
-                    await createMediaListDOM(
-                        state.GL_postPath,
-                        popupBody,
-                        _i18n("LOAD_BLOB_MULTIPLE")
-                    );
-                }
-                else {
-                    s++;
-                    const element_videos = $article.find('video');
-                    const element_images = $article.find('._aagv img');
-                    const imgLink = element_images.attr('srcset')?.split(" ")[0] || element_images.attr('src');
-
-                    if (element_videos && element_videos.attr('src')) {
-                        await createMediaListDOM(
-                            state.GL_postPath,
-                            popupBody,
-                            _i18n("LOAD_BLOB_ONE")
-                        );
-                    }
-                    if (element_images && imgLink) {
-                        appendMediaResource(popupBody, { datetime: publish_time, name: 'photo', type: 'jpg', username: state.GL_username, path: state.GL_postPath, index: s, href: imgLink, preview: imgLink, labelKey: 'IMG', label: _i18n('IMG') });
-                    }
-                }
-            }
+            await appendVisiblePostResources($article, popupBody, postPath);
         }
 
         if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ALL) {
@@ -822,10 +772,9 @@ async function downloadPostResource(target: HTMLElement) {
 
             await batchDownloadPostFiles(links);
         }
-    }
-    catch (err) {
+    })().catch(err => {
         logger('downloadPostResource', err);
-    }
+    });
 }
 
 
@@ -843,6 +792,70 @@ export function filterResourceData(data: LegacyMediaRoot | ModernMedia): LegacyM
     return 'shortcode_media' in data ? data.shortcode_media : data;
 }
 
+function appendLegacyMediaResources(root: HTMLElement, resource: LegacyMedia) {
+    let index = 1;
+    if (resource.__typename === 'GraphVideo' && resource.video_url) {
+        appendMediaResource(root, { mediaId: resource.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'video', type: 'mp4', username: resource.owner.username, index, href: resource.video_url, preview: resource.display_resources[1].src, labelKey: 'VID', label: _i18n('VID') });
+        if (resource.video_dash_manifest) state.GL_mediaDataCache[resource.id] = resource;
+        index++;
+    }
+    if (resource.__typename === 'GraphImage') {
+        appendMediaResource(root, { mediaId: resource.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'photo', type: 'jpg', username: resource.owner.username, index, href: resource.display_resources[resource.display_resources.length - 1].src, preview: resource.display_resources[1].src, labelKey: 'IMG', label: _i18n('IMG') });
+        index++;
+    }
+    if (resource.__typename === 'GraphSidecar') appendLegacySidecarResources(root, resource, index);
+}
+
+function appendLegacySidecarResources(root: HTMLElement, resource: LegacyMedia, startIndex: number) {
+    if (resource.__typename !== 'GraphSidecar' || !resource.edge_sidecar_to_children) return;
+    let index = startIndex;
+    for (const edge of resource.edge_sidecar_to_children.edges) {
+        const media = edge.node;
+        if (media.__typename === 'GraphVideo' && media.video_url) {
+            appendMediaResource(root, { mediaId: media.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'video', type: 'mp4', username: resource.owner.username, index, href: media.video_url, preview: media.display_resources[1].src, labelKey: 'VID', label: _i18n('VID') });
+            if (media.video_dash_manifest) state.GL_mediaDataCache[media.id] = media;
+        }
+        if (media.__typename === 'GraphImage') {
+            appendMediaResource(root, { mediaId: media.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'photo', type: 'jpg', username: resource.owner.username, index, href: media.display_resources[media.display_resources.length - 1].src, preview: media.display_resources[1].src, labelKey: 'IMG', label: _i18n('IMG') });
+        }
+        index++;
+    }
+}
+
+function appendModernMediaResources(root: HTMLElement, resource: ModernMedia) {
+    if (resource.carousel_media) {
+        logger('carousel_media');
+        resource.carousel_media.forEach((media, position) => {
+            const index = position + 1;
+            if (media.video_versions == null) {
+                media.image_versions2.candidates.sort(compareImageCandidates);
+                appendMediaResource(root, { mediaId: media.pk, datetime: media.taken_at, blob: true, path: resource.code, name: 'photo', type: 'jpg', username: resource.owner.username, index, href: media.image_versions2.candidates[0].url, preview: media.image_versions2.candidates[0].url, labelKey: 'IMG', label: _i18n('IMG') });
+                return;
+            }
+
+            appendMediaResource(root, { mediaId: media.pk, datetime: media.taken_at, blob: true, path: resource.code, name: 'video', type: 'mp4', username: resource.owner.username, index, href: media.video_versions[0].url, preview: media.image_versions2.candidates[0].url, labelKey: 'VID', label: _i18n('VID') });
+            if (media.video_dash_manifest) state.GL_mediaDataCache[media.pk] = media;
+        });
+        return;
+    }
+
+    if (resource.video_versions == null) {
+        resource.image_versions2.candidates.sort(compareImageCandidates);
+        appendMediaResource(root, { mediaId: resource.pk, datetime: resource.taken_at, blob: true, path: resource.code, name: 'photo', type: 'jpg', username: resource.owner.username, index: 1, href: resource.image_versions2.candidates[0].url, preview: resource.image_versions2.candidates[0].url, labelKey: 'IMG', label: _i18n('IMG') });
+        return;
+    }
+
+    if (resource.video_dash_manifest) state.GL_mediaDataCache[resource.pk] = resource;
+    appendMediaResource(root, { mediaId: resource.pk, datetime: resource.taken_at, blob: true, path: resource.code, name: 'video', type: 'mp4', username: resource.owner.username, index: 1, href: resource.video_versions[0].url, preview: resource.image_versions2.candidates[0].url, labelKey: 'VID', label: _i18n('VID') });
+}
+
+function compareImageCandidates(a: { url: string; width?: number }, b: { url: string; width?: number }) {
+    const aSTP = new URL(a.url).searchParams.get('stp');
+    const bSTP = new URL(b.url).searchParams.get('stp');
+    if (aSTP && bSTP) return aSTP.length - bSTP.length;
+    return (b.width ?? 0) - (a.width ?? 0);
+}
+
 
 /**
  * createMediaListDOM
@@ -853,125 +866,23 @@ export function filterResourceData(data: LegacyMediaRoot | ModernMedia): LegacyM
  * @param  {String}  message - i18n display loading message
  * @return {Promise<number>}  The number of <a> elements inserted into the DOM
  */
-export async function createMediaListDOM(postURL: string, root: HTMLElement, message: string): Promise<number> {
+export function createMediaListDOM(postURL: string, root: HTMLElement, message: string): Promise<number> {
     const $target = $(root);
-    try {
+    return (async () => {
         $target.find('a').remove();
         appendLoadingMessage($target[0], message);
         const result = await getBlobMedia(postURL);
-
-        if (result.type === 'query_hash') {
-            const resource = filterResourceData(result.data);
-            let idx = 1;
-
-            // GraphVideo
-            if (resource.__typename == "GraphVideo" && resource.video_url) {
-                appendMediaResource($target[0], { mediaId: resource.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'video', type: 'mp4', username: resource.owner.username, index: idx, href: resource.video_url, preview: resource.display_resources[1].src, labelKey: 'VID', label: _i18n('VID') });
-                idx++;
-
-                if (resource.video_dash_manifest) {
-                    state.GL_mediaDataCache[resource.id] = resource;
-                }
-            }
-            // GraphImage
-            if (resource.__typename == "GraphImage") {
-                appendMediaResource($target[0], { mediaId: resource.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'photo', type: 'jpg', username: resource.owner.username, index: idx, href: resource.display_resources[resource.display_resources.length - 1].src, preview: resource.display_resources[1].src, labelKey: 'IMG', label: _i18n('IMG') });
-                idx++;
-            }
-            // GraphSidecar
-            if (resource.__typename == "GraphSidecar" && resource.edge_sidecar_to_children) {
-                for (const e of resource.edge_sidecar_to_children.edges) {
-                    if (e.node.__typename == "GraphVideo" && e.node.video_url) {
-                        appendMediaResource($target[0], { mediaId: e.node.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'video', type: 'mp4', username: resource.owner.username, index: idx, href: e.node.video_url, preview: e.node.display_resources[1].src, labelKey: 'VID', label: _i18n('VID') });
-                        if (e.node.video_dash_manifest) {
-                            state.GL_mediaDataCache[e.node.id] = e.node;
-                        }
-                    }
-
-                    if (e.node.__typename == "GraphImage") {
-                        appendMediaResource($target[0], { mediaId: e.node.id, datetime: resource.taken_at_timestamp, blob: true, path: resource.shortcode, name: 'photo', type: 'jpg', username: resource.owner.username, index: idx, href: e.node.display_resources[e.node.display_resources.length - 1].src, preview: e.node.display_resources[1].src, labelKey: 'IMG', label: _i18n('IMG') });
-                    }
-                    idx++;
-                }
-            }
-        }
-        else {
-            const resource = filterResourceData(result.data);
-            if (resource.carousel_media) {
-                logger('carousel_media');
-
-                resource.carousel_media.forEach((mda, ind) => {
-                    const idx = ind + 1;
-                    // Image
-                    if (mda.video_versions == null) {
-                        mda.image_versions2.candidates.sort(function (a, b) {
-                            const aSTP = new URL(a.url).searchParams.get('stp');
-                            const bSTP = new URL(b.url).searchParams.get('stp');
-
-                            if (aSTP && bSTP) {
-                                if (aSTP.length > bSTP.length) return 1;
-                                if (aSTP.length < bSTP.length) return -1;
-                            }
-                            else {
-                                if ((a.width ?? 0) < (b.width ?? 0)) return 1;
-                                if ((a.width ?? 0) > (b.width ?? 0)) return -1;
-                            }
-
-                            return 0;
-                        });
-
-                        appendMediaResource($target[0], { mediaId: mda.pk, datetime: mda.taken_at, blob: true, path: resource.code, name: 'photo', type: 'jpg', username: resource.owner.username, index: idx, href: mda.image_versions2.candidates[0].url, preview: mda.image_versions2.candidates[0].url, labelKey: 'IMG', label: _i18n('IMG') });
-                    }
-                    // Video
-                    else {
-                        appendMediaResource($target[0], { mediaId: mda.pk, datetime: mda.taken_at, blob: true, path: resource.code, name: 'video', type: 'mp4', username: resource.owner.username, index: idx, href: mda.video_versions[0].url, preview: mda.image_versions2.candidates[0].url, labelKey: 'VID', label: _i18n('VID') });
-                        if (mda.video_dash_manifest) {
-                            state.GL_mediaDataCache[mda.pk] = mda;
-                        }
-                    }
-                });
-            }
-            else {
-                const idx = 1;
-                // Image
-                if (resource.video_versions == null) {
-                    resource.image_versions2.candidates.sort(function (a, b) {
-                        const aSTP = new URL(a.url).searchParams.get('stp');
-                        const bSTP = new URL(b.url).searchParams.get('stp');
-
-                        if (aSTP && bSTP) {
-                            if (aSTP.length > bSTP.length) return 1;
-                            if (aSTP.length < bSTP.length) return -1;
-                        }
-                        else {
-                            if ((a.width ?? 0) < (b.width ?? 0)) return 1;
-                            if ((a.width ?? 0) > (b.width ?? 0)) return -1;
-                        }
-
-                        return 0;
-                    });
-
-                    appendMediaResource($target[0], { mediaId: resource.pk, datetime: resource.taken_at, blob: true, path: resource.code, name: 'photo', type: 'jpg', username: resource.owner.username, index: idx, href: resource.image_versions2.candidates[0].url, preview: resource.image_versions2.candidates[0].url, labelKey: 'IMG', label: _i18n('IMG') });
-                }
-                // Video
-                else {
-                    if (resource.video_dash_manifest) {
-                        state.GL_mediaDataCache[resource.pk] = resource;
-                    }
-                    appendMediaResource($target[0], { mediaId: resource.pk, datetime: resource.taken_at, blob: true, path: resource.code, name: 'video', type: 'mp4', username: resource.owner.username, index: idx, href: resource.video_versions[0].url, preview: resource.image_versions2.candidates[0].url, labelKey: 'VID', label: _i18n('VID') });
-                }
-            }
-        }
+        if (result.type === 'query_hash') appendLegacyMediaResources($target[0], filterResourceData(result.data));
+        else appendModernMediaResources($target[0], filterResourceData(result.data));
 
         $target.find('#_SNLOAD').remove();
 
         return $target.find('a').length;
-    }
-    catch (err) {
+    })().catch(err => {
         logger('createMediaListDOM', err);
         $target.find('#_SNLOAD').remove();
         return 0;
-    }
+    });
 }
 
 
@@ -1016,20 +927,17 @@ export function getVisibleNodeIndex($main: JQuery<Element>): number {
                 .sort((a, b) => Math.abs(a.getBoundingClientRect().right - viewportRight) - Math.abs(b.getBoundingClientRect().right - viewportRight))[0];
 
             // STAGE 2: Index calculation, use the found <li> and itemWidth to calculate the global index
-            if (closestSlideElement) {
-                const style = $(closestSlideElement).attr('style');
-                if (style && style.includes('translateX')) {
-                    const offsetMatch = style.match(/translateX\(([^p]+)px\)/);
-                    if (offsetMatch && offsetMatch[1]) {
-                        const totalOffset = parseFloat(offsetMatch[1]);
-                        // c. Execute the final calculation formula
-                        index = Math.round(totalOffset / itemWidth);
-                    }
-                }
-            }
+            if (closestSlideElement) index = getSlideIndex(closestSlideElement, itemWidth);
         }
     }
     return index;
+}
+
+function getSlideIndex(element: HTMLElement, itemWidth: number) {
+    const style = $(element).attr('style');
+    if (!style?.includes('translateX')) return 0;
+    const offset = style.match(/translateX\(([^p]+)px\)/)?.[1];
+    return offset ? Math.round(parseFloat(offset) / itemWidth) : 0;
 }
 
 
@@ -1045,11 +953,9 @@ export async function batchDownloadPostFiles($elements: Array<Element | JQuery<E
     setDownloadProgress(0, totalLen);
 
     for (const element of $elements) {
-        try {
-            await triggerLinkElement($(element), false);
-        } catch (err) {
+        await triggerLinkElement($(element), false).catch(err => {
             logger('batchDownloadPostFiles()', 'failed', err);
-        }
+        });
 
         index++;
         setDownloadProgress(index, totalLen);
@@ -1123,18 +1029,17 @@ async function getPostPathFromMedia(target: HTMLElement): Promise<string | null>
     const mediaId = mediaURL ? mediaIdFromURL(mediaURL) : null;
     if (!mediaId) return null;
 
-    try {
-        const mediaItem = (await getMediaInfo(mediaId))?.items?.[0];
+    return getMediaInfo(mediaId).then(async apiResponse => {
+        const mediaItem = apiResponse?.items?.[0];
         if (!mediaItem?.code) return null;
         if (mediaItem.product_type !== 'carousel_item') return mediaItem.code;
 
-        const response = await fetch(`/p/${mediaItem.code}/`, { credentials: 'same-origin' });
-        return getPostPathFromURL(response.url) || mediaItem.code;
-    }
-    catch (err) {
+        const fetchResponse = await fetch(`/p/${mediaItem.code}/`, { credentials: 'same-origin' });
+        return getPostPathFromURL(fetchResponse.url) || mediaItem.code;
+    }).catch(err => {
         logger('getPostPathFromMedia', err);
         return null;
-    }
+    });
 }
 
 /**

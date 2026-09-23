@@ -5,6 +5,7 @@
 */
 
 import { IMAGE_CACHE_KEY, IMAGE_CACHE_MAX_AGE, IMAGE_MAX_CACHE_ITEMS, state, USER_SETTING } from "../../settings/state";
+import { Effect } from 'effect';
 
 let mediaCacheDirty = false;
 let mediaCacheSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -32,13 +33,13 @@ export function purgeCache() {
  * @return {?string}
  */
 export function mediaIdFromURL(url: string): string | null {
-    try {
-        const u = new URL(url);
-        const key = u.searchParams.get('ig_cache_key');
-        if (!key) return null;
-        const b64 = key.split('.')[0];          // Part before “.3-ccb7…”
-        return atob(b64);                       // e.g., “3670776772828545770”
-    } catch { return null; }
+    if (!URL.canParse(url)) return null;
+    const key = new URL(url).searchParams.get('ig_cache_key');
+    if (!key) return null;
+    const b64 = key.split('.')[0];
+    return Effect.runSync(Effect.try({ try: () => atob(b64), catch: () => null }).pipe(
+        Effect.catchCause(() => Effect.succeed(null)),
+    ));
 }
 
 /**

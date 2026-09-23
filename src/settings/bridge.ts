@@ -10,6 +10,7 @@ import {
 } from './schema';
 import { parseSettingsRequest } from './message-schema.ts';
 import type { SettingsRequest } from './message-schema.ts';
+import { Effect } from 'effect';
 
 const CHANNEL = 'ig-helper:settings';
 const hotkeysByStateKey = new Map(HOTKEY_SETTINGS.map(config => [config.stateKey, config]));
@@ -21,14 +22,19 @@ export function startSettingsBridge() {
 
         const id = Number.isInteger(event.data.id) && event.data.id > 0 ? event.data.id : null;
         if (id == null) return;
-        try {
-            const message = parseSettingsRequest(event.data);
-            const result = handleRequest(message);
-            respond(message.id, true, result);
-        } catch (error) {
-            console.error('settings.request.failed', error);
-            respond(id, false, null, error instanceof Error ? error.message : String(error));
-        }
+        Effect.runSync(Effect.match(Effect.try({
+            try: () => {
+                const message = parseSettingsRequest(event.data);
+                respond(message.id, true, handleRequest(message));
+            },
+            catch: error => error,
+        }), {
+            onFailure: error => {
+                console.error('settings.request.failed', error);
+                respond(id, false, null, error instanceof Error ? error.message : String(error));
+            },
+            onSuccess: () => undefined,
+        }));
     });
 }
 

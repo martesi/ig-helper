@@ -44,16 +44,18 @@ export function requestDebug(method: DebugMethod): Promise<DebugSnapshot | DomCa
         }
 
         pending.set(id, value => {
-            try {
-                finish(Effect.succeed(parseDebugResponse(method, value)));
-            } catch (cause) {
-                if (cause instanceof DebugRequestError) {
-                    finish(Effect.fail(cause));
-                    return;
-                }
-                console.error('debug.response.invalid', method, cause instanceof Error ? cause.message : String(cause));
-                finish(Effect.fail(new Error('IG Helper sent an invalid debugger response.')));
-            }
+            const parsed = Effect.try({ try: () => parseDebugResponse(method, value), catch: cause => cause });
+            Effect.runSync(Effect.match(parsed, {
+                onFailure: cause => {
+                    if (cause instanceof DebugRequestError) {
+                        finish(Effect.fail(cause));
+                        return;
+                    }
+                    console.error('debug.response.invalid', method, cause instanceof Error ? cause.message : String(cause));
+                    finish(Effect.fail(new Error('IG Helper sent an invalid debugger response.')));
+                },
+                onSuccess: response => finish(Effect.succeed(response)),
+            }));
         });
         send();
         return Effect.sync(cleanup);

@@ -1,7 +1,7 @@
 import $ from 'jquery';
 import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state } from "../settings/state";
 import { saveFiles } from "../shared/download";
-import { openNewTab } from "../shared/navigation";
+import { openOrSaveMedia } from "../shared/media-download";
 import { tryHandleDashFromMediaItem } from "../shared/dash";
 import {
     getStoryProgress,
@@ -169,18 +169,7 @@ export async function onHighlightsStory(isDownload = false, isPreview = false): 
                 const cached = getImageFromCache(targetId);
                 if (cached && state.GL_dataCache.highlights[highlightId].data.reels_media[0].items.find(item => item.id === targetId)?.is_video === false) {
                     logger("[Restore Cached onHighlight]", targetId);
-                    if (isPreview) {
-                        openNewTab(cached);
-                    }
-                    else {
-                        await saveFiles(cached, {
-                            username,
-                            sourceType: "highlights",
-                            timestamp,
-                            filetype: 'jpg',
-                            shortcode: targetId
-                        });
-                    }
+                    await openOrSaveMedia(cached, { username, sourceType: 'highlights', timestamp, filetype: 'jpg', shortcode: targetId }, isPreview);
                     return;
                 }
             }
@@ -188,91 +177,49 @@ export async function onHighlightsStory(isDownload = false, isPreview = false): 
             if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && !state.tempFetchRateLimit) {
                 const result = await getMediaInfo(target.id);
 
-                if (result.status === 'ok') {
-                    // OPTIMIZATION: cache first media item — accessed 5+ times below
-                    const mediaItem = result.items[0];
-                    if (mediaItem.video_versions) {
-                        const handled = await tryHandleDashFromMediaItem({
-                            mediaItem: mediaItem,
-                            username,
-                            sourceType: "highlights",
-                            timestamp,
-                            shortcode: mediaItem.id,
-                            isPreview,
-                        });
-                        if (handled) return;
-
-                        if (isPreview) {
-                            openNewTab(mediaItem.video_versions[0].url);
-                        }
-                        else {
-                            await saveFiles(mediaItem.video_versions[0].url,
-                                {
-                                    username,
-                                    sourceType: "highlights",
-                                    timestamp,
-                                    filetype: 'mp4',
-                                    shortcode: mediaItem.id
-                                });
-                        }
-                    }
-                    else {
-                        if (isPreview) {
-                            openNewTab(mediaItem.image_versions2.candidates[0].url);
-                        }
-                        else {
-                            await saveFiles(mediaItem.image_versions2.candidates[0].url, {
-                                username,
-                                sourceType: "highlights",
-                                timestamp,
-                                filetype: 'jpg',
-                                shortcode: mediaItem.id
-                            });
-                        }
-                    }
-                }
-                else {
+                if (result.status !== 'ok') {
                     if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED) {
                         delete state.GL_dataCache.highlights[highlightId];
                         state.tempFetchRateLimit = true;
-
-                        return await onHighlightsStory(true, isPreview);
+                        return onHighlightsStory(true, isPreview);
                     }
-                    else {
-                        alert('Fetch failed from Media API. API response message: ' + result.message);
-                    }
+                    alert('Fetch failed from Media API. API response message: ' + result.message);
+                    logger('onHighlightsStory()', 'Media API rejected request', result.message);
+                    return;
+                }
 
-                    logger('onHighlightsStory()', 'Media API rejected request', result?.message);
+                const mediaItem = result.items[0];
+                if (mediaItem.video_versions) {
+                    const handled = await tryHandleDashFromMediaItem({
+                        mediaItem,
+                        username,
+                        sourceType: 'highlights',
+                        timestamp,
+                        shortcode: mediaItem.id,
+                        isPreview,
+                    });
+                    if (handled) return;
+
+                    await openOrSaveMedia(mediaItem.video_versions[0].url, {
+                        username, sourceType: 'highlights', timestamp, filetype: 'mp4', shortcode: mediaItem.id,
+                    }, isPreview);
+                }
+                else {
+                    await openOrSaveMedia(mediaItem.image_versions2.candidates[0].url, {
+                        username, sourceType: 'highlights', timestamp, filetype: 'jpg', shortcode: mediaItem.id,
+                    }, isPreview);
                 }
             }
             else {
                 if (target.is_video) {
-                    if (isPreview) {
-                        openNewTab(target.video_resources.at(-1)?.src ?? '');
-                    }
-                    else {
-                        await saveFiles(target.video_resources.at(-1)?.src ?? '', {
-                            username,
-                            sourceType: "highlights",
-                            timestamp,
-                            filetype: 'mp4',
-                            shortcode: target.id
-                        });
-                    }
+                    await openOrSaveMedia(target.video_resources.at(-1)?.src ?? '', {
+                        username, sourceType: 'highlights', timestamp, filetype: 'mp4', shortcode: target.id,
+                    }, isPreview);
                 }
                 else {
-                    if (isPreview) {
-                        openNewTab(target.display_resources.at(-1)?.src ?? '');
-                    }
-                    else {
-                        await saveFiles(target.display_resources.at(-1)?.src ?? '', {
-                            username,
-                            sourceType: "highlights",
-                            timestamp,
-                            filetype: 'jpg',
-                            shortcode: target.id
-                        });
-                    }
+                    await openOrSaveMedia(target.display_resources.at(-1)?.src ?? '', {
+                        username, sourceType: 'highlights', timestamp, filetype: 'jpg', shortcode: target.id,
+                    }, isPreview);
                 }
 
                 state.tempFetchRateLimit = false;

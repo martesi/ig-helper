@@ -21,9 +21,8 @@ export function fetchMedia(url: string) {
 
 export function managerDownload(url: string, name: string, download: ManagerDownload = GM_download) {
     return Effect.callback<void, DownloadError>(resume => {
-        let handle: Tampermonkey.AbortHandle<boolean>;
-        try {
-            handle = download({
+        const handle = Effect.runSync(Effect.match(Effect.try({
+            try: () => download({
                 url,
                 name,
                 onload: () => resume(Effect.void),
@@ -33,13 +32,18 @@ export function managerDownload(url: string, name: string, download: ManagerDown
                 ontimeout: () => resume(Effect.fail(new DownloadError({
                     operation: 'save', message: 'The download timed out.',
                 }))),
-            });
-        } catch (cause) {
-            resume(Effect.fail(new DownloadError({
+            }),
+            catch: cause => new DownloadError({
                 operation: 'save', message: 'The userscript manager could not start the download.', cause,
-            })));
-            return;
-        }
+            }),
+        }), {
+            onFailure: error => {
+                resume(Effect.fail(error));
+                return undefined;
+            },
+            onSuccess: handle => handle,
+        }));
+        if (!handle) return;
         return Effect.sync(() => { handle.abort(); });
     });
 }

@@ -40,14 +40,17 @@ export function requestSettings(method: SettingsMethod, payload?: unknown): Prom
         }
 
         pending.set(id, value => {
-            try {
-                const response = parseSettingsResponse(method, value);
-                if (response.ok) finish(Effect.succeed(response.result));
-                else finish(Effect.fail(new Error(response.error || 'IG Helper settings request failed')));
-            } catch (cause) {
-                console.error('settings.response.invalid', method, cause instanceof Error ? cause.message : String(cause));
-                finish(Effect.fail(new Error('IG Helper sent an invalid settings response.')));
-            }
+            const parsed = Effect.try({ try: () => parseSettingsResponse(method, value), catch: cause => cause });
+            Effect.runSync(Effect.match(parsed, {
+                onFailure: cause => {
+                    console.error('settings.response.invalid', method, cause instanceof Error ? cause.message : String(cause));
+                    finish(Effect.fail(new Error('IG Helper sent an invalid settings response.')));
+                },
+                onSuccess: response => {
+                    if (response.ok) finish(Effect.succeed(response.result));
+                    else finish(Effect.fail(new Error(response.error || 'IG Helper settings request failed')));
+                },
+            }));
         });
         send();
         return Effect.sync(cleanup);

@@ -123,20 +123,18 @@ export function OptionsApp({ onHeaderChange }: { onHeaderChange: (header: { titl
         document.getElementById(`settings-${section}`)?.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
 
-    async function saveSetting(name: string, value: unknown) {
-        try {
-            await requestSettings('setSetting', { name, value });
+    function saveSetting(name: string, value: unknown) {
+        return requestSettings('setSetting', { name, value }).then(() => {
             setData(current => current && ({ ...current, settings: { ...current.settings, [name]: value } }));
             setError('');
-        } catch (reason) {
+        }).catch(reason => {
             setError(errorMessage(reason));
-        }
+        });
     }
 
-    async function saveLanguage(value: string) {
+    function saveLanguage(value: string) {
         const resolved = resolveLanguage(value);
-        try {
-            await requestSettings('setLanguage', { value: resolved });
+        return requestSettings('setLanguage', { value: resolved }).then(() => {
             const translations = loadLocale(resolved);
             const translate = createTranslator(translations);
             setLanguage(resolved);
@@ -146,42 +144,39 @@ export function OptionsApp({ onHeaderChange }: { onHeaderChange: (header: { titl
                 description: translate('SETTINGS_DESCRIPTION'),
             });
             setError('');
-        } catch (reason) {
+        }).catch(reason => {
             setError(errorMessage(reason));
-        }
+        });
     }
 
     async function saveVolume(value: string | number) {
         const next = Math.max(0, Math.min(1, Number(value)));
         setData(current => current && ({ ...current, videoVolume: next }));
-        try {
-            await requestSettings('setVideoVolume', { value: next });
+        return requestSettings('setVideoVolume', { value: next }).then(() => {
             setError('');
-        } catch (reason) {
+        }).catch(reason => {
             setError(errorMessage(reason));
-        }
+        });
     }
 
     async function saveRenameFormat(value: string) {
         setData(current => current && ({ ...current, renameFormat: value }));
-        try {
-            await requestSettings('setRenameFormat', { value });
+        return requestSettings('setRenameFormat', { value }).then(() => {
             setError('');
-        } catch (reason) {
+        }).catch(reason => {
             setError(errorMessage(reason));
-        }
+        });
     }
 
-    async function saveHotkey(stateKey: string, value: string | number) {
-        try {
-            const keyCode = await requestSettings('setHotkey', { stateKey, value: Number(value) });
+    function saveHotkey(stateKey: string, value: string | number) {
+        return requestSettings('setHotkey', { stateKey, value: Number(value) }).then(keyCode => {
             setData(current => current && ({ ...current, hotkeys: { ...current.hotkeys, [stateKey]: keyCode } }));
             setConflict(null);
             setError('');
-        } catch (reason) {
+        }).catch(reason => {
             setConflict(stateKey);
             if (!errorMessage(reason).includes('conflict')) setError(errorMessage(reason));
-        }
+        });
     }
 
     return (

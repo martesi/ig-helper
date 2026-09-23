@@ -153,12 +153,8 @@ export function translateText() {
  * @param  {String}  lang
  * @return {Object}
  */
-export function getTranslationText(lang: string): Record<string, string> {
-    const translation = translations[lang];
-    if (translation == null) {
-        throw new Error(`Translation not found for ${lang}`);
-    }
-    return translation;
+export function getTranslationText(lang: string): Record<string, string> | undefined {
+    return translations[lang];
 }
 
 /**

@@ -16,56 +16,35 @@ import { runWithLoadingBar } from './loading';
  */
 export async function onProfileAvatar(isDownload = false) {
     if (isDownload) {
-        try {
-            await runWithLoadingBar(async () => {
-                const timestamp = Math.floor(Date.now() / 1000);
-                const username = location.pathname.replaceAll(/(reels|tagged)\/$/ig, '').split('/').filter(s => s.length > 0).at(-1);
-                if (!username) throw new Error('Profile username is missing');
-                const userInfo = await getUserId(username);
-                try {
-                    const dataURL = await getUserHighSizeProfile(userInfo.user.pk);
-                    await saveFiles(dataURL, {
-                        username,
-                        sourceType: "avatar",
-                        timestamp,
-                        filetype: 'jpg',
-                        uid: userInfo.user.id
-                    });
-                }
-                catch (err) {
-                    logger('onProfileAvatar()', 'high-size avatar unavailable; using profile URL', err);
-                    await saveFiles(userInfo.user.profile_pic_url, {
-                        username,
-                        sourceType: "avatar",
-                        timestamp,
-                        filetype: 'jpg',
-                        uid: userInfo.user.id
-                    });
-                }
+        await runWithLoadingBar(async () => {
+            const timestamp = Math.floor(Date.now() / 1000);
+            const username = location.pathname.replaceAll(/(reels|tagged)\/$/ig, '').split('/').filter(s => s.length > 0).at(-1);
+            if (!username) throw new Error('Profile username is missing');
+            const userInfo = await getUserId(username);
+            const metadata = { username, sourceType: 'avatar', timestamp, filetype: 'jpg', uid: userInfo.user.id };
+            await getUserHighSizeProfile(userInfo.user.pk).then(dataURL => saveFiles(dataURL, metadata)).catch(err => {
+                logger('onProfileAvatar()', 'high-size avatar unavailable; using profile URL', err);
+                return saveFiles(userInfo.user.profile_pic_url, metadata);
             });
-        }
-        catch (err) {
-            logger('onProfileAvatar()', 'failed', err);
-        }
+        }).catch(err => logger('onProfileAvatar()', 'failed', err));
+        return;
     }
-    else {
-        if (!$('.IG_PROFILE_CONTROL').length) {
-            const profileTimer = currentRouteScope().setInterval(() => {
-                if ($('.IG_PROFILE_CONTROL').length) {
-                    clearInterval(profileTimer);
-                    return;
-                }
 
-                const selector = 'header > *[class]:first-child > *[class]:first-child img[alt]';
-                const $draggableElements = $(`${selector}[draggable]`).parent().parent();
-                const $nonDraggableElements = $(`${selector}:not([draggable])`).parent().parent().parent();
-                $draggableElements.each((_, element) => { mountProfileControl(element as HTMLElement, () => { void onProfileAvatar(true); }); });
-                $draggableElements.css('position', 'relative');
-                $nonDraggableElements.each((_, element) => { mountProfileControl(element as HTMLElement, () => { void onProfileAvatar(true); }); });
-                $nonDraggableElements.css('position', 'relative');
-            }, 150);
+    if ($('.IG_PROFILE_CONTROL').length) return;
+    const profileTimer = currentRouteScope().setInterval(() => {
+        if ($('.IG_PROFILE_CONTROL').length) {
+            clearInterval(profileTimer);
+            return;
         }
-    }
+
+        const selector = 'header > *[class]:first-child > *[class]:first-child img[alt]';
+        const $draggableElements = $(`${selector}[draggable]`).parent().parent();
+        const $nonDraggableElements = $(`${selector}:not([draggable])`).parent().parent().parent();
+        $draggableElements.each((_, element) => { mountProfileControl(element as HTMLElement, () => { void onProfileAvatar(true); }); });
+        $draggableElements.css('position', 'relative');
+        $nonDraggableElements.each((_, element) => { mountProfileControl(element as HTMLElement, () => { void onProfileAvatar(true); }); });
+        $nonDraggableElements.css('position', 'relative');
+    }, 150);
 }
 
 
@@ -78,14 +57,7 @@ export async function onProfileAvatar(isDownload = false) {
 export function skipSharedWithYouDialog() {
     if (!USER_SETTING.SKIP_SHARED_WITH_YOU_DIALOG) return;
 
-    let url;
-    try {
-        url = new URL(window.location.href);
-    }
-    catch (e) {
-        logger("[skipSharedWithYouDialog] invalid URL", e);
-        return;
-    }
+    const url = new URL(window.location.href);
 
     // only for shared links with the tracking param ?igsh=...
     if (!url.searchParams || !url.searchParams.has("igsh")) return;

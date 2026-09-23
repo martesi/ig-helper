@@ -37,45 +37,46 @@ interface DashRepresentation {
 }
 
 function parseDashManifest(mpdXml: string): { video: DashRepresentation | null; audio: DashRepresentation | null } {
-    try {
-        if (!mpdXml || typeof mpdXml !== 'string') return { video: null, audio: null };
+    const parsed = Effect.try({
+        try: () => {
+            if (!mpdXml || typeof mpdXml !== 'string') return { video: null, audio: null };
 
-        const xml = new DOMParser().parseFromString(mpdXml, 'application/xml');
-        if (xml.querySelector('parsererror')) return { video: null, audio: null };
+            const xml = new DOMParser().parseFromString(mpdXml, 'application/xml');
+            if (xml.querySelector('parsererror')) return { video: null, audio: null };
 
-        const reps = Array.from(xml.querySelectorAll('Representation'));
-        const candidates = reps.map((rep) => {
-            const base = rep.querySelector('BaseURL')?.textContent?.trim();
-            if (!base) return null;
+            const reps = Array.from(xml.querySelectorAll('Representation'));
+            const candidates = reps.map(rep => {
+                const base = rep.querySelector('BaseURL')?.textContent?.trim();
+                if (!base) return null;
 
-            const set = rep.closest('AdaptationSet');
-            const mimeType = rep.getAttribute('mimeType') || set?.getAttribute('mimeType') || '';
-            const contentType = set?.getAttribute('contentType') || '';
-            const codecs = rep.getAttribute('codecs') || set?.getAttribute('codecs') || '';
-            const bandwidth = parseInt(rep.getAttribute('bandwidth') || '0', 10) || 0;
-            const width = parseInt(rep.getAttribute('width') || '0', 10) || 0;
-            const height = parseInt(rep.getAttribute('height') || '0', 10) || 0;
-            const id = rep.getAttribute('id') || '';
+                const set = rep.closest('AdaptationSet');
+                const mimeType = rep.getAttribute('mimeType') || set?.getAttribute('mimeType') || '';
+                const contentType = set?.getAttribute('contentType') || '';
+                const codecs = rep.getAttribute('codecs') || set?.getAttribute('codecs') || '';
+                const bandwidth = parseInt(rep.getAttribute('bandwidth') || '0', 10) || 0;
+                const width = parseInt(rep.getAttribute('width') || '0', 10) || 0;
+                const height = parseInt(rep.getAttribute('height') || '0', 10) || 0;
+                const id = rep.getAttribute('id') || '';
 
-            return { id, url: base, mimeType, contentType, codecs, bandwidth, width, height };
-        }).filter((candidate): candidate is DashRepresentation => candidate !== null);
+                return { id, url: base, mimeType, contentType, codecs, bandwidth, width, height };
+            }).filter((candidate): candidate is DashRepresentation => candidate !== null);
 
-        const isVideo = (c: DashRepresentation) => (c.contentType.includes('video') || c.mimeType.startsWith('video'));
-        const isAudio = (c: DashRepresentation) => (c.contentType.includes('audio') || c.mimeType.startsWith('audio'));
-
-        const bestVideo = candidates
-            .filter(isVideo)
-            .sort((a, b) => (b.height - a.height) || (b.bandwidth - a.bandwidth) || (b.width - a.width))[0] || null;
-
-        const bestAudio = candidates
-            .filter(isAudio)
-            .sort((a, b) => (b.bandwidth - a.bandwidth))[0] || null;
-
-        return { video: bestVideo, audio: bestAudio };
-    } catch (e) {
-        logger('[DASH]', 'parseDashManifest() error:', e);
-        return { video: null, audio: null };
-    }
+            const isVideo = (candidate: DashRepresentation) => candidate.contentType.includes('video') || candidate.mimeType.startsWith('video');
+            const isAudio = (candidate: DashRepresentation) => candidate.contentType.includes('audio') || candidate.mimeType.startsWith('audio');
+            const bestVideo = candidates.filter(isVideo)
+                .sort((a, b) => (b.height - a.height) || (b.bandwidth - a.bandwidth) || (b.width - a.width))[0] ?? null;
+            const bestAudio = candidates.filter(isAudio).sort((a, b) => b.bandwidth - a.bandwidth)[0] ?? null;
+            return { video: bestVideo, audio: bestAudio };
+        },
+        catch: error => error,
+    });
+    return Effect.runSync(Effect.match(parsed, {
+        onFailure: error => {
+            logger('[DASH]', 'parseDashManifest() error:', error);
+            return { video: null, audio: null };
+        },
+        onSuccess: result => result,
+    }));
 }
 
 /**

@@ -68,13 +68,11 @@ export function triggerDownload(blob: Blob, filename: string): Promise<void> {
 
         const timer = setTimeout(() => resume(Effect.void), 250);
         return Effect.sync(() => clearTimeout(timer));
-    }).pipe(Effect.ensuring(Effect.sync(() => {
-        try {
-            link?.remove();
-        } finally {
+    }).pipe(Effect.ensuring(Effect.sync(() => link?.remove()).pipe(
+        Effect.ensuring(Effect.sync(() => {
             if (url !== undefined) URL.revokeObjectURL(url);
-        }
-    }))));
+        })),
+    ))));
 }
 
 /**
@@ -169,14 +167,11 @@ export async function createSaveFileElement(downloadLink: string, object: Blob, 
         if (username && !userIdCache.has(username)) {
             userIdCache.set(username, getUserId(username));
         }
-        try {
-            const userInfo = username ? await userIdCache.get(username) : undefined;
-            metadata.uid = userInfo?.user?.id ?? null;
-
-        } catch {
+        const userInfo = await Promise.resolve(username ? userIdCache.get(username) : undefined).catch(() => {
             if (username) userIdCache.delete(username);
-            metadata.uid = null;
-        }
+            return undefined;
+        });
+        metadata.uid = userInfo?.user?.id ?? null;
     }
 
     const downloadName = getSaveFileName(downloadLink, metadata);
@@ -188,13 +183,10 @@ export async function createSaveFileElement(downloadLink: string, object: Blob, 
         sourceType === 'photo' &&
         (object.type === 'image/jpeg' || object.type === 'image/webp')
     ) {
-        try {
-            const newBlob = await changeExifData(object, metadata);
-            await triggerDownload(newBlob, downloadName);
-        } catch (err) {
+        await changeExifData(object, metadata).then(newBlob => triggerDownload(newBlob, downloadName)).catch(err => {
             logger('createSaveFileElement()', 'EXIF processing failed; falling back to original blob', err);
-            await triggerDownload(object, downloadName);
-        }
+            return triggerDownload(object, downloadName);
+        });
         return;
     }
     else {

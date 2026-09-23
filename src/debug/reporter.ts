@@ -1,6 +1,7 @@
 import { state, USER_SETTING } from '../settings/state.ts';
 import { CONTROL_ORIGIN, DEBUG_CHANNEL, DEBUG_COMMANDS } from './protocol.ts';
 import type { DebugMethod, DebugSnapshot, DomCapture } from './protocol.ts';
+import { Effect } from 'effect';
 
 const MAX_LOGS = 200;
 const MAX_ERRORS = 50;
@@ -17,18 +18,22 @@ export function startDebugReporter() {
         if (id == null || !DEBUG_COMMANDS.has(method as DebugMethod) || !event.source) return;
         const source = event.source as Window;
 
-        try {
-            const result = handleRequest(method as DebugMethod);
-            source.postMessage({ channel: DEBUG_CHANNEL, direction: 'response', id, ok: true, result }, event.origin);
-        } catch (error) {
-            source.postMessage({
+        Effect.runSync(Effect.match(Effect.try({
+            try: () => {
+                const result = handleRequest(method as DebugMethod);
+                source.postMessage({ channel: DEBUG_CHANNEL, direction: 'response', id, ok: true, result }, event.origin);
+            },
+            catch: error => error,
+        }), {
+            onFailure: error => source.postMessage({
                 channel: DEBUG_CHANNEL,
                 direction: 'response',
                 id,
                 ok: false,
                 error: error instanceof Error ? error.message : String(error),
-            }, event.origin);
-        }
+            }, event.origin),
+            onSuccess: () => undefined,
+        }));
     });
 
     window.addEventListener('error', event => {
@@ -113,11 +118,7 @@ function rememberError(error: unknown) {
 }
 
 function safePath(value: string | null): string | null {
-    try {
-        return value ? new URL(value, location.origin).pathname : null;
-    } catch {
-        return null;
-    }
+    return value && URL.canParse(value, location.origin) ? new URL(value, location.origin).pathname : null;
 }
 
 function serializeValue(value: unknown, depth = 0, seen = new WeakSet<object>()): unknown {

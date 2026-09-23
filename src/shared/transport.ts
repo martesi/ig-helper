@@ -17,9 +17,8 @@ interface GetOptions {
 export function gmGet(operation: string, url: string, options: GetOptions = {}) {
     const request = options.request ?? GM_xmlhttpRequest;
     const attempt = Effect.callback<Tampermonkey.Response<object>, RequestError>((resume) => {
-        let handle: Tampermonkey.AbortHandle<void>;
-        try {
-            handle = request({
+        const handle = Effect.runSync(Effect.match(Effect.try({
+            try: () => request({
                 method: 'GET',
                 url,
                 headers: options.headers,
@@ -39,11 +38,16 @@ export function gmGet(operation: string, url: string, options: GetOptions = {}) 
                 },
                 onerror: cause => resume(Effect.fail(new RequestError({ operation, kind: 'network', cause }))),
                 ontimeout: () => resume(Effect.fail(new RequestError({ operation, kind: 'timeout' }))),
-            });
-        } catch (cause) {
-            resume(Effect.fail(new RequestError({ operation, kind: 'network', cause })));
-            return;
-        }
+            }),
+            catch: cause => new RequestError({ operation, kind: 'network', cause }),
+        }), {
+            onFailure: error => {
+                resume(Effect.fail(error));
+                return undefined;
+            },
+            onSuccess: handle => handle,
+        }));
+        if (!handle) return;
         return Effect.sync(() => handle.abort());
     });
 

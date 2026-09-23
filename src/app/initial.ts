@@ -9,17 +9,12 @@ export function initialize() {
     initSettings();
     registerMenuCommand();
 
-    try {
-        state.locale[state.lang] = getTranslationText(state.lang);
+    const translation = getTranslationText(state.lang);
+    if (translation) {
+        state.locale[state.lang] = translation;
         repaintingTranslations();
-        registerMenuCommand();
-    } catch (err) {
-        registerMenuCommand();
-
-        if (!state.lang.startsWith('en')) {
-            logger('getTranslationText()', 'failed', err);
-        }
     }
+    registerMenuCommand();
 
     let activeLanguage = state.lang;
     function syncSettings() {
@@ -28,11 +23,9 @@ export function initialize() {
 
         activeLanguage = state.lang;
         if (!state.lang.startsWith('en') && state.locale[state.lang] == null) {
-            try {
-                state.locale[state.lang] = getTranslationText(state.lang);
-            } catch (err) {
-                logger('getTranslationText()', 'focus sync failed', err);
-            }
+            const translation = getTranslationText(state.lang);
+            if (translation) state.locale[state.lang] = translation;
+            else logger('getTranslationText()', 'focus sync failed', `Missing translation for ${state.lang}`);
         }
         repaintingTranslations();
         registerMenuCommand();

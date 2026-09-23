@@ -9,6 +9,16 @@ export default [
   { ignores: ["dist/**", ".workspaces/**", ".browser-state/**", ".cache/**", "e2e/artifacts/**"] },
   ...tseslint.configs.recommended.map(config => ({ ...config, files: ["src/**/*.{ts,tsx}"] })),
   {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "max-depth": ["error", 3],
+      "no-restricted-syntax": ["error", {
+        selector: "TryStatement",
+        message: "Use Effect or Promise error handling.",
+      }],
+    },
+  },
+  {
     files: ["**/*.{js,mjs,jsx}"],
     plugins: {
       import: importPlugin,

@@ -29,17 +29,16 @@ export function DebuggerApp() {
     useEffect(() => {
         let cancelled = false;
 
-        async function refresh() {
-            try {
-                const snapshot = await requestDebug('getSnapshot');
+        function refresh() {
+            return requestDebug('getSnapshot').then(snapshot => {
                 if (cancelled) return;
                 setData(snapshot);
                 setError('');
-            } catch (reason) {
+            }, reason => {
                 if (cancelled) return;
                 setData(null);
                 setError(errorMessage(reason));
-            }
+            });
         }
 
         void refresh();
@@ -50,25 +49,24 @@ export function DebuggerApp() {
         };
     }, []);
 
-    async function runCommand(type: 'clearLogs' | 'getSnapshot') {
-        try {
-            const result = await requestDebug(type);
+    function runCommand(type: 'clearLogs' | 'getSnapshot') {
+        return requestDebug(type).then(result => {
             setData(result);
             setError('');
-        } catch (reason) {
+        }, reason => {
             setData(null);
             setError(errorMessage(reason));
-        }
+        });
     }
 
-    async function captureDom() {
-        try {
-            setDom(await requestDebug('captureDom'));
+    function captureDom() {
+        return requestDebug('captureDom').then(result => {
+            setDom(result);
             setError('');
-        } catch (reason) {
+        }, reason => {
             setData(null);
             setError(errorMessage(reason));
-        }
+        });
     }
 
     return (

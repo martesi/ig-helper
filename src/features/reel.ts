@@ -20,100 +20,95 @@ import { runWithLoadingBar } from './loading';
  * @return {void}
  */
 export async function onReels(isDownload = false, isVideo = false, isPreview = false) {
-    try {
-        if (isDownload) {
-            await runWithLoadingBar(async () => {
-                const reelsPath = (location.href.split('?').at(0) ?? '').split('instagram.com/reels/').at(-1)?.replaceAll('/', '') ?? '';
-                const result = await getBlobMedia(reelsPath);
+    if (isDownload) {
+        await runWithLoadingBar(async () => {
+            const reelsPath = (location.href.split('?').at(0) ?? '').split('instagram.com/reels/').at(-1)?.replaceAll('/', '') ?? '';
+            const result = await getBlobMedia(reelsPath);
 
-                if (result.type === 'query_hash') {
-                    const media = filterResourceData(result.data);
-                    const timestamp = USER_SETTING.RENAME_PUBLISH_DATE ? media.taken_at_timestamp : Date.now();
-                    if (isVideo && media.is_video) {
-                        if (!media.video_url) throw new Error('Reel response has no video URL');
-                        if (isPreview) {
-                            openNewTab(media.video_url);
-                        }
-                        else {
-                            const type = 'mp4';
-                            await saveFiles(media.video_url, {
-                                username: media.owner.username,
-                                sourceType: "reels",
-                                timestamp,
-                                filetype: type,
-                                shortcode: reelsPath
-                            });
-                        }
+            if (result.type === 'query_hash') {
+                const media = filterResourceData(result.data);
+                const timestamp = USER_SETTING.RENAME_PUBLISH_DATE ? media.taken_at_timestamp : Date.now();
+                if (isVideo && media.is_video) {
+                    if (!media.video_url) throw new Error('Reel response has no video URL');
+                    if (isPreview) {
+                        openNewTab(media.video_url);
                     }
                     else {
-                        const imageUrl = media.display_resources.at(-1)?.src;
-                        if (!imageUrl) throw new Error('Reel response has no image URL');
-                        if (isPreview) {
-                            openNewTab(imageUrl);
-                        }
-                        else {
-                            const type = 'jpg';
-                            await saveFiles(imageUrl, {
-                                username: media.owner.username,
-                                sourceType: "reels",
-                                timestamp,
-                                filetype: type,
-                                shortcode: reelsPath
-                            });
-                        }
+                        const type = 'mp4';
+                        await saveFiles(media.video_url, {
+                            username: media.owner.username,
+                            sourceType: "reels",
+                            timestamp,
+                            filetype: type,
+                            shortcode: reelsPath
+                        });
                     }
                 }
                 else {
-                    const media = filterResourceData(result.data);
-                    const timestamp = USER_SETTING.RENAME_PUBLISH_DATE ? media.taken_at : Date.now();
-                    if (isVideo && media.video_versions != null) {
-                        if (isPreview) {
-                            openNewTab(media.video_versions[0].url);
-                        }
-                        else {
-                            const type = 'mp4';
-                            await saveFiles(media.video_versions[0].url, {
-                                username: media.owner.username,
-                                sourceType: "reels",
-                                timestamp,
-                                filetype: type,
-                                shortcode: reelsPath
-                            });
-                        }
+                    const imageUrl = media.display_resources.at(-1)?.src;
+                    if (!imageUrl) throw new Error('Reel response has no image URL');
+                    if (isPreview) {
+                        openNewTab(imageUrl);
                     }
                     else {
-                        if (isPreview) {
-                            openNewTab(media.image_versions2.candidates[0].url);
-                        }
-                        else {
-                            const type = 'jpg';
-                            await saveFiles(media.image_versions2.candidates[0].url, {
-                                username: media.owner.username,
-                                sourceType: "reels",
-                                timestamp,
-                                filetype: type,
-                                shortcode: reelsPath
-                            });
-                        }
+                        const type = 'jpg';
+                        await saveFiles(imageUrl, {
+                            username: media.owner.username,
+                            sourceType: "reels",
+                            timestamp,
+                            filetype: type,
+                            shortcode: reelsPath
+                        });
                     }
                 }
-
-            });
-        }
-        else {
-            const svgClose = 'svg > polyline[points^="20.643 3.357 12 12 3.353 20.647"] ~ line';
-            const timer = currentRouteScope().setInterval(() => {
-                const hasTiktokStyleLayout = $(svgClose).length > 0;
-                if (hasTiktokStyleLayout || $('section > main[role="main"] > div div.x1qjc9v5 video').length > 0) {
-                    clearInterval(timer);
-                    refreshReelsControls();
+            }
+            else {
+                const media = filterResourceData(result.data);
+                const timestamp = USER_SETTING.RENAME_PUBLISH_DATE ? media.taken_at : Date.now();
+                if (isVideo && media.video_versions != null) {
+                    if (isPreview) {
+                        openNewTab(media.video_versions[0].url);
+                    }
+                    else {
+                        const type = 'mp4';
+                        await saveFiles(media.video_versions[0].url, {
+                            username: media.owner.username,
+                            sourceType: "reels",
+                            timestamp,
+                            filetype: type,
+                            shortcode: reelsPath
+                        });
+                    }
                 }
-            }, 250);
+                else {
+                    if (isPreview) {
+                        openNewTab(media.image_versions2.candidates[0].url);
+                    }
+                    else {
+                        const type = 'jpg';
+                        await saveFiles(media.image_versions2.candidates[0].url, {
+                            username: media.owner.username,
+                            sourceType: "reels",
+                            timestamp,
+                            filetype: type,
+                            shortcode: reelsPath
+                        });
+                    }
+                }
+            }
+
+        }).catch(err => logger('onReels()', 'failed', err));
+        return;
+    }
+
+    const svgClose = 'svg > polyline[points^="20.643 3.357 12 12 3.353 20.647"] ~ line';
+    const timer = currentRouteScope().setInterval(() => {
+        const hasTiktokStyleLayout = $(svgClose).length > 0;
+        if (hasTiktokStyleLayout || $('section > main[role="main"] > div div.x1qjc9v5 video').length > 0) {
+            clearInterval(timer);
+            refreshReelsControls();
         }
-    }
-    catch (err) {
-        logger('onReels()', 'failed', err);
-    }
+    }, 250);
 }
 
 export function refreshReelsControls() {

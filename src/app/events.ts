@@ -53,32 +53,28 @@ export function registerEvents() {
     // Running if user right-click profile picture in stories area
     $body.on('mousedown', 'button[role="menuitem"], div[role="menuitem"], ul > li[tabindex="-1"] > div[role="button"]', function (e) {
         // Right-Click || Middle-Click
-        if (e.which === 3 || e.which === 2) {
-            if (location.href === 'https://www.instagram.com/' && USER_SETTING.REDIRECT_CLICK_USER_STORY_PICTURE) {
-                e.preventDefault();
+        if (e.which !== 3 && e.which !== 2) return;
+        if (location.href !== 'https://www.instagram.com/' || !USER_SETTING.REDIRECT_CLICK_USER_STORY_PICTURE) return;
+        e.preventDefault();
 
-                const $this = $(this);
-                $this.find('img').each(function () {
-                    const $img = $(this);
-                    if (!$img.data('contextmenu')) {
-                        $img.data('contextmenu', true);
-                        $img.on('contextmenu', function (e) {
-                            e.preventDefault();
-                        });
-                    }
+        const $this = $(this);
+        $this.find('img').each(function () {
+            const $img = $(this);
+            if (!$img.data('contextmenu')) {
+                $img.data('contextmenu', true);
+                $img.on('contextmenu', function (e) {
+                    e.preventDefault();
                 });
-
-                if ($this.find('canvas._aarh, canvas + span > img').length > 0) {
-                    const targetUrl = 'https://www.instagram.com/' + $this.children('div').last().text();
-                    if (e.which === 2) {
-                        GM_openInTab(targetUrl);
-                    }
-                    else {
-                        location.href = targetUrl;
-                    }
-                }
             }
+        });
+
+        if ($this.find('canvas._aarh, canvas + span > img').length === 0) return;
+        const targetUrl = 'https://www.instagram.com/' + $this.children('div').last().text();
+        if (e.which === 2) {
+            GM_openInTab(targetUrl);
+            return;
         }
+        location.href = targetUrl;
     });
 
     registerPerformanceObserver();

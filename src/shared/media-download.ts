@@ -4,11 +4,15 @@ import { getPostOwner, getMediaInfo } from "./api";
 import { getImageFromCache } from "../features/media/image-cache";
 import { _i18n } from "./i18n";
 import { logger } from "./logger";
-import { saveFiles } from "./download";
+import { saveFiles, type SaveMetadata } from "./download";
 import { tryHandleDashFromMediaItem } from "./dash";
 import { openNewTab, replaceSameOriginHost } from "./navigation";
 import { updateLoadingBar } from "./ui/status.tsx";
 import { Effect } from 'effect';
+
+export function openOrSaveMedia(url: string, metadata: SaveMetadata, isPreview: boolean): void | Promise<boolean> {
+    return isPreview ? openNewTab(url) : saveFiles(url, metadata);
+}
 
 export function saveMediaThumbnail($element: JQuery<Element> | Element, fallbackPostPath: string | null = null) {
     const $link = $($element);
@@ -34,15 +38,10 @@ export function saveMediaThumbnail($element: JQuery<Element> | Element, fallback
 }
 
 function getInstagramImageScale(url: string): number {
-    try {
-        const stp = new URL(url).searchParams.get('stp') || '';
-        const match = stp.match(/_[sp](\d+)x(\d+)(?:_|$)/);
-        if (!match) return Infinity;
-        return Math.max(Number(match[1]), Number(match[2]));
-    }
-    catch {
-        return 0;
-    }
+    if (!URL.canParse(url)) return 0;
+    const stp = new URL(url).searchParams.get('stp') || '';
+    const match = stp.match(/_[sp](\d+)x(\d+)(?:_|$)/);
+    return match ? Math.max(Number(match[1]), Number(match[2])) : Infinity;
 }
 
 
