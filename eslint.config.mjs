@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
-  { ignores: ["dist/**", ".workspaces/**", ".browser-state/**", ".cache/**", "e2e/artifacts/**"] },
+  { ignores: ["dist/**", ".workspaces/**", ".browser-state/**", ".cache/**", "tests/e2e/artifacts/**"] },
   ...tseslint.configs.recommended.map(config => ({ ...config, files: ["src/**/*.{ts,tsx}"] })),
   {
     files: ["src/**/*.{ts,tsx}"],
@@ -51,7 +51,7 @@ export default [
     },
   },
   {
-    files: ["e2e/**/*.js"],
+    files: ["tests/e2e/**/*.js"],
     languageOptions: {
       globals: {
         ...globals.node,
@@ -60,7 +60,7 @@ export default [
     },
   },
   {
-    files: ["e2e/playwright/**/*.js", "playwright.config.js"],
+    files: ["tests/e2e/**/*.js", "playwright.config.js"],
     rules: {
       // eslint-plugin-import cannot resolve Playwright's generated named exports.
       "import/named": "off",

@@ -17,17 +17,19 @@ Agent sessions share the configured browser profile while remaining separate con
 
 ## Playwright regression suite
 
-The suite is tagged by purpose:
+Tests are grouped by feature (`post.e2e.js`, `reels.e2e.js`, and similar). Playwright tags select UI or execution coverage; auth-only groups use a conditional skip outside the authenticated `default` profile.
 
 ```sh
-bun run test:e2e:ui         # required after every code change
-bun run test:e2e:execution  # runtime/actions/download behavior
-bun run test:e2e            # both categories
+bun run test:e2e:ui         # all UI coverage, both profiles
+bun run test:e2e:execution  # all execution coverage, both profiles
+bun run test:e2e:exe        # alias for execution coverage
+bun run test:e2e            # full anonymous suite
+bun run test:e2e:all        # full suite, both profiles
 bun run test:e2e:anonymous  # cookie-free coverage only
 bun run test:e2e:auth       # authenticated-only coverage
 ```
 
-The normal runners execute cookie-free coverage first in the isolated `anonymous` profile, then authenticated-only tests in the default profile. A failure in the first phase does not prevent the second phase from running. UI tests never require a real file download. Run execution tests when functional behavior changes; they can be skipped for changes that do not affect functionality.
+UI and execution commands select matching Playwright tags for both profiles. Auth-only tests are skipped in the cookie-free `anonymous` profile. `test:e2e` runs anonymous coverage, `test:e2e:auth` runs auth-tagged tests, and `test:e2e:all` starts both profiles and runs their Playwright projects concurrently. Each project uses one worker, keeping its tests sequential against the shared browser session. The `anonymous` profile clears cookies; `default` retains the authenticated session. UI tests never require a real file download.
 
 The installed Arca harness owns Chromium lifecycle and injects its actual CDP endpoint into Playwright Test. The local Playwright harness contains only IG Helper-specific navigation, assertions, settings manipulation, and download checks.
 

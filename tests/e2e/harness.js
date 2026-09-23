@@ -3,9 +3,6 @@ import { chromium } from '@playwright/test';
 
 export const IMAGE_VIEWER_ROOT_ID = 'ig-helper-image-viewer-root';
 
-const CDP_HTTP = process.env.PLAYWRIGHT_CDP_ENDPOINT;
-if (!CDP_HTTP) throw new Error('PLAYWRIGHT_CDP_ENDPOINT is required; run Playwright through the E2E harness');
-
 export const INSTAGRAM_HOME = 'https://www.instagram.com/';
 export const PERMALINK_URL = 'https://www.instagram.com/p/Dc7Z80KGzLT/';
 export const PROFILE_URL = 'https://www.instagram.com/instagram/';
@@ -13,6 +10,23 @@ export const VITE_URL = 'http://127.0.0.1:9000';
 
 const actionDelayMin = Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MIN ?? 80);
 const actionDelayMax = Math.max(actionDelayMin, Number(process.env.IG_HELPER_E2E_ACTION_DELAY_MAX ?? 220));
+
+export function registerE2E(test, e2e) {
+    test.beforeAll(async ({ browserName }, workerInfo) => {
+        test.skip(browserName !== 'chromium', 'The managed E2E profiles require Chromium');
+        await e2e.start(workerInfo.project.name);
+    });
+    test.afterAll(() => e2e.stop());
+}
+
+export function requireAuthenticatedProfile(test) {
+    test.beforeAll(async ({ browserName }, workerInfo) => {
+        test.skip(
+            browserName !== 'chromium' || workerInfo.project.name !== 'default',
+            'Requires the authenticated Chromium profile',
+        );
+    });
+}
 
 export class IgHelperE2E {
     constructor() {
@@ -23,9 +37,9 @@ export class IgHelperE2E {
         this.downloadCdp = null;
     }
 
-    async start() {
+    async start(projectName) {
         try {
-            await this.connectBrowser();
+            await this.connectBrowser(projectName);
             this.page = await this.createPage();
             await this.goto(PERMALINK_URL);
         } catch (error) {
@@ -42,8 +56,11 @@ export class IgHelperE2E {
         this.context = null;
     }
 
-    async connectBrowser() {
-        this.browser = await chromium.connectOverCDP(CDP_HTTP);
+    async connectBrowser(projectName) {
+        const endpoints = JSON.parse(process.env.IG_HELPER_E2E_PROJECT_ENDPOINTS ?? '{}');
+        const endpoint = endpoints[projectName] ?? process.env.PLAYWRIGHT_CDP_ENDPOINT;
+        if (!endpoint) throw new Error(`No CDP endpoint is configured for Playwright project "${projectName}"`);
+        this.browser = await chromium.connectOverCDP(endpoint);
         this.context = this.browser.contexts()[0];
         if (!this.context) throw new Error('Connected Chrome has no default browser context');
     }

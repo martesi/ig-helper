@@ -3,7 +3,7 @@ package-lock.json
 dist/
 .browser-state/
 .cache/
-e2e/artifacts/
+tests/e2e/artifacts/
 cookies*
 
 
