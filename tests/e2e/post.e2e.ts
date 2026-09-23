@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DIRECT_DOWNLOAD_MODE_OPTIONS } from '../../src/settings/schema.js';
-import { IMAGE_VIEWER_ROOT_ID, PERMALINK_URL, VITE_URL, IgHelperE2E, registerE2E, requireAuthenticatedProfile } from './harness.js';
+import { IMAGE_VIEWER_ROOT_ID, PERMALINK_URL, VITE_URL, IgHelperE2E, registerE2E, requireAuthenticatedProfile } from './harness.ts';
 const RESOURCE_PICKER_ROOT_ID = 'ig-helper-resource-picker-root';
 const e2e = new IgHelperE2E();
 

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DIRECT_DOWNLOAD_MODE_OPTIONS } from '../../src/settings/schema.js';
-import { IgHelperE2E, registerE2E } from './harness.js';
+import { IgHelperE2E, registerE2E } from './harness.ts';
 const HOTKEY_OPTIONS_COUNT = 13;
 let hotkeys;
 const e2e = new IgHelperE2E();

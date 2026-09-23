@@ -7,11 +7,11 @@ import tseslint from "typescript-eslint";
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   { ignores: ["dist/**", ".workspaces/**", ".browser-state/**", ".cache/**", "tests/e2e/artifacts/**"] },
-  ...tseslint.configs.recommended.map(config => ({ ...config, files: ["src/**/*.{ts,tsx}"] })),
+  { rules: { "max-depth": ["error", 3] } },
+  ...tseslint.configs.recommended.map(config => ({ ...config, files: ["src/**/*.{ts,tsx}", "tests/**/*.ts", "playwright.config.ts"] })),
   {
     files: ["src/**/*.{ts,tsx}"],
     rules: {
-      "max-depth": ["error", 3],
       "no-restricted-syntax": ["error", {
         selector: "TryStatement",
         message: "Use Effect or Promise error handling.",
@@ -51,7 +51,7 @@ export default [
     },
   },
   {
-    files: ["tests/e2e/**/*.js"],
+    files: ["tests/**/*.ts"],
     languageOptions: {
       globals: {
         ...globals.node,
@@ -60,10 +60,11 @@ export default [
     },
   },
   {
-    files: ["tests/e2e/**/*.js", "playwright.config.js"],
+    files: ["tests/**/*.ts", "playwright.config.ts"],
     rules: {
       // eslint-plugin-import cannot resolve Playwright's generated named exports.
       "import/named": "off",
+      "no-restricted-syntax": "off",
     },
   },
   {

@@ -17,7 +17,7 @@ Agent sessions share the configured browser profile while remaining separate con
 
 ## Playwright regression suite
 
-Tests are grouped by feature (`post.e2e.js`, `reels.e2e.js`, and similar). Playwright tags select UI or execution coverage; auth-only groups use a conditional skip outside the authenticated `default` profile.
+Tests are grouped by feature (`post.e2e.ts`, `reels.e2e.ts`, and similar). Playwright tags select UI or execution coverage; auth-only groups use a conditional skip outside the authenticated `default` profile.
 
 ```sh
 bun run test:e2e:ui         # all UI coverage, both profiles

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { IgHelperE2E, registerE2E, requireAuthenticatedProfile } from './harness.js';
+import { IgHelperE2E, registerE2E, requireAuthenticatedProfile } from './harness.ts';
 const e2e = new IgHelperE2E();
 
 test.describe('IG Helper browser E2E', () => {
