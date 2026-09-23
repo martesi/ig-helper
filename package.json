@@ -15,6 +15,8 @@
     "build:page": "vite build --mode page",
     "build:script": "vite build --mode script",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "bun test tests/unit",
     "preview": "vite preview --outDir dist/page",
     "test:e2e": "node e2e/run.mjs",
     "test:e2e:ui": "node e2e/run.mjs ui",
@@ -34,11 +36,14 @@
     "eslint-plugin-react": "7.37.5",
     "globals": "^15.14.0",
     "tailwindcss": "4.3.1",
+    "typescript": "^5.9",
+    "typescript-eslint": "^8",
     "vite": "^8.2.2",
     "vite-userscript-plugin": "^2.5.0"
   },
   "dependencies": {
     "basecoat-css": "1.0.2",
+    "effect": "4.0.0-rc.117",
     "jquery": "^4.0.0",
     "mediabunny": "1.34.5",
     "preact": "10.29.8",

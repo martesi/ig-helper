@@ -1,0 +1,204 @@
+import $ from 'jquery';
+import { state, checkInterval, USER_SETTING } from "../settings/state";
+import { logger } from "../shared/logger";
+import { onReadyMyDW } from "../features/post/post";
+import { onReels } from "../features/reel";
+import { onProfileAvatar, skipSharedWithYouDialog } from "../features/profile";
+import { onHighlightsStory, onHighlightsStoryThumbnail } from "../features/highlight";
+import { onStory } from "../features/story";
+import { beginRouteScope, currentRouteScope } from '../shared/route-scope.ts';
+
+export let timer: ReturnType<typeof setInterval> | null = null;
+
+export function startTimer() {
+    beginRouteScope();
+    // Post-page observer belongs to the post/timer lifecycle, not the settings module.
+    const observer = new MutationObserver(() => onReadyMyDW());
+    state.GL_observer = observer;
+
+    // Main Timer
+    timer = setInterval(function () {
+    if (state.currentURL !== location.href) beginRouteScope();
+    const routeScope = currentRouteScope();
+    // page loading or unnecessary route
+    if ($('div#splash-screen').length > 0 && !$('div#splash-screen').is(':hidden') ||
+        location.pathname.match(/^\/(explore(\/.*)?|challenge\/?.*|direct\/?.*|qr\/?|accounts\/.*|emails\/.*|language\/?.*?|your_activity\/?.*|settings\/help(\/.*)?$)$/ig) ||
+        !location.hostname.startsWith('www.') || location.pathname.startsWith('/auth_platform/codeentry/') || location.pathname.startsWith('/auth_platform/recaptcha/') ||
+        location.pathname.startsWith('/challenge/') || location.pathname.startsWith('/consent/') || location.pathname.startsWith('/accounts/') ||
+        ((location.pathname.endsWith('/followers/') || location.pathname.endsWith('/following/')) && ($(`body > div[class]:not([id^="mount"]) div div[role="dialog"]`).length > 0))
+    ) {
+        state.pageLoaded = false;
+        return;
+    }
+
+    if (state.currentURL != location.href || !state.firstStarted || !state.pageLoaded) {
+        logger('Main Timer', 'trigging');
+
+        clearInterval(state.GL_repeat ?? undefined);
+        state.pageLoaded = false;
+        state.firstStarted = true;
+        state.currentURL = location.href;
+        if (!state.currentURL.includes('/stories/') || !location.pathname.startsWith('/stories/')) {
+            observer.disconnect();
+        }
+
+        // Auto-skip "X shared this with you" dialog on any ?igsh= link
+        if (USER_SETTING.SKIP_SHARED_WITH_YOU_DIALOG && window.location.search.includes("igsh")) {
+            let tries = 0;
+            const skipTimer = routeScope.setInterval(() => {
+                tries += 1;
+
+                // stop early if URL no longer has ?igsh (navigation changed)
+                if (!window.location.search.includes("igsh")) {
+                    clearInterval(skipTimer);
+                    return;
+                }
+
+                skipSharedWithYouDialog();
+
+                if (tries >= 20) {
+                    clearInterval(skipTimer);
+                }
+            }, 200);
+        }
+
+        if (location.pathname.startsWith("/p/") || location.pathname.match(/^\/(.*?)\/(p|reel)\//ig) || location.pathname.startsWith("/reel/")) {
+            state.GL_dataCache.stories = {};
+            state.GL_dataCache.highlights = {};
+
+            logger('isDialog');
+
+            // This is a delayed function call that prevents the dialog element from appearing before the function is called.
+            const dialogTimer = routeScope.setInterval(() => {
+                if ($(`body > div[class]:not([id^="mount"]) div div[role="dialog"] article,
+                            article:visible,
+                            section:visible > main > div > div > div > div > div > hr,
+                            section:visible > main > div > div > article > div > div > div > div > div > header
+                        `).length > 0) {
+                    clearInterval(dialogTimer);
+
+                    // This is to prevent the detection of the "Modify Video Volume" setting from being too slow.
+                    routeScope.setTimeout(() => {
+                        clearInterval(state.GL_repeat ?? undefined);
+                        state.GL_repeat = null;
+                        onReadyMyDW(false);
+                    }, 15);
+                }
+            }, 100);
+
+            state.pageLoaded = true;
+        }
+
+        if (location.pathname.startsWith("/reels/")) {
+            logger('isReelsPage');
+            routeScope.setTimeout(() => {
+                onReels(false);
+            }, 150);
+            state.pageLoaded = true;
+        }
+
+        if (location.pathname === "/") {
+            state.GL_dataCache.stories = {};
+            state.GL_dataCache.highlights = {};
+
+            const hasReferrer = state.GL_referrer?.match(/^\/(stories|highlights)\//ig) != null;
+
+            logger('isHomepage', hasReferrer);
+            routeScope.setTimeout(() => {
+                onReadyMyDW(false, hasReferrer);
+
+                const element = $('div[id^="mount"] > div > div div > section > main div:not([class]):not([style]) > div > article')?.parent()[0];
+                if (element) {
+                    observer.disconnect();
+                    routeScope.observe(observer, element, {
+                        childList: true
+                    });
+                }
+            }, 150);
+
+            state.pageLoaded = true;
+        }
+
+        if (
+            $('header > *[class]:first-child img[alt]').length &&
+
+            location.pathname.match(/^(\/)([0-9A-Za-z\.\-_]+)\/?(tagged|reels|saved)?\/?$/ig) &&
+            !location.pathname.match(/^(\/explore\/?$|\/stories(\/.*)?$|\/p\/)/ig)
+        ) {
+            logger('isProfile');
+            routeScope.setTimeout(() => {
+                onProfileAvatar(false);
+            }, 150);
+            state.pageLoaded = true;
+        }
+
+        if (!state.pageLoaded) {
+            // Call Instagram stories function
+            if (location.pathname.startsWith("/stories/highlights/")) {
+                state.GL_dataCache.highlights = {};
+
+                logger('isHighlightsStory');
+
+                onHighlightsStory(false);
+                state.GL_repeat = routeScope.setInterval(() => {
+                    onHighlightsStoryThumbnail(false);
+                }, checkInterval);
+
+                if (document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')) {
+                    routeScope.setTimeout(() => {
+                        if (USER_SETTING.SKIP_VIEW_STORY_CONFIRM) {
+                            const $viewStoryButton = $('div[id^="mount"] section:last-child > div > div:not([class]) div:last-child > div[role="button"]').filter(function () {
+                                return $(this).children().length === 0 && this.textContent.trim() !== "";
+                            });
+                            $viewStoryButton?.trigger("click");
+                        }
+
+                        state.pageLoaded = true;
+                    }, 150);
+                }
+            }
+            else if (location.pathname.startsWith("/stories/")) {
+                logger('isStory');
+
+                /*
+                 *
+                 *  $('body div[id^="mount"] > div > div > div[class]').length >= 2 &&
+                 *  $('body div[id^="mount"] > div > div > div[class]').last().find('svg > path[d^="M16.792"], svg > path[d^="M34.6 3.1c-4.5"]').length > 0 &&
+                 *  $('body div[id^="mount"] > div > div > div[class]').last().find('svg > polyline + line').length > 0
+                 *
+                 */
+                $('.IG_STORY_CONTROL_BAR').remove();
+                onStory(false);
+
+                // Prevent buttons from being eaten by black holes sometimes
+                routeScope.setTimeout(() => {
+                    onStory(false);
+                }, 150);
+
+                if (document.querySelector('.IG_STORY_CONTROL_BAR')) {
+                    routeScope.setTimeout(() => {
+                        if (USER_SETTING.SKIP_VIEW_STORY_CONFIRM) {
+                            const $viewStoryButton = $('div[id^="mount"] section:last-child > div > div:not([class]) div:last-child > div[role="button"]').filter(function () {
+                                return $(this).children().length === 0 && this.textContent.trim() !== "";
+                            });
+                            $viewStoryButton?.trigger("click");
+                        }
+
+                        state.pageLoaded = true;
+                    }, 150);
+                }
+            }
+            else {
+                state.pageLoaded = false;
+                // Remove icons
+                // OPTIMIZATION: Single combined selector + .remove() — replaces 8 separate
+                // $('.CLASS').length checks + removes. Behavior is identical because
+                // .remove() is a no-op on an empty set.
+                $('.IG_STORY_CONTROL_BAR, .IG_HIGHLIGHT_CONTROL_BAR, .IG_HIGHLIGHT_POSITION').remove();
+            }
+        }
+
+        state.GL_referrer = new URL(location.href).pathname;
+    }
+    }, checkInterval);
+}

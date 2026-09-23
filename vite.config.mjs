@@ -29,7 +29,7 @@ export default defineConfig(({ command, mode }) => {
     if (!isPageBuild) {
         plugins.push(
             userscript({
-                entry: isScriptBuild ? 'entry.prod.js' : 'src/app/entry.js',
+                entry: isScriptBuild ? 'entry.prod.ts' : 'src/app/entry.ts',
                 fileName: 'ig-helper',
                 header: {
                     ...localizedMetadata('name', {

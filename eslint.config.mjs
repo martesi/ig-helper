@@ -2,10 +2,12 @@ import globals from "globals";
 import pluginJs from "@eslint/js";
 import importPlugin from "eslint-plugin-import";
 import reactPlugin from "eslint-plugin-react";
+import tseslint from "typescript-eslint";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   { ignores: ["dist/**", ".workspaces/**", ".browser-state/**", ".cache/**", "e2e/artifacts/**"] },
+  ...tseslint.configs.recommended.map(config => ({ ...config, files: ["src/**/*.{ts,tsx}"] })),
   {
     files: ["**/*.{js,mjs,jsx}"],
     plugins: {
@@ -45,6 +47,13 @@ export default [
         ...globals.node,
         Bun: "readonly",
       },
+    },
+  },
+  {
+    files: ["e2e/playwright/**/*.js", "playwright.config.js"],
+    rules: {
+      // eslint-plugin-import cannot resolve Playwright's generated named exports.
+      "import/named": "off",
     },
   },
   {
