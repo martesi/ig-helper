@@ -5,7 +5,6 @@ import { saveFiles } from "../shared/download";
 import { getStoryProgress, getStoryId } from "../shared/story";
 import { openNewTab } from "../shared/navigation";
 import { tryHandleDashFromMediaItem } from "../shared/dash";
-import { updateLoadingBar } from "../shared/ui/status.tsx";
 import { logger } from "../shared/logger";
 import { getUserId, getStories, getMediaInfo } from "../shared/api";
 import { _i18n } from "../shared/i18n";
@@ -13,6 +12,7 @@ import { getImageFromCache } from "./media/image-cache";
 import { batchDownloadPostFiles } from './post/post.ts';
 import { mountMediaControls } from './post/controls.tsx';
 import { openResourcePicker } from '../shared/ui/resource-picker.tsx';
+import { runWithLoadingBar } from './loading';
 import type { StoryResponse } from '../shared/instagram-data.ts';
 
 /**
@@ -65,17 +65,13 @@ export function createStoryResourceElements(obj: StoryResponse, type: string): H
  * @return {void}
  */
 export async function onStoryAll() {
-    updateLoadingBar(true);
-    try {
+    return runWithLoadingBar(async () => {
         const username = $("body > div section._ac0a header._ac0k ._ac0l a + div a").first().text()
             || location.pathname.split("/").filter(Boolean).at(1) || '';
         const userInfo = await getUserId(username);
         const stories = await getStories(userInfo.user.pk);
         await downloadStoryResources(stories, 'stories', `Story · ${username}`);
-    }
-    finally {
-        updateLoadingBar(false);
-    }
+    }).catch(err => { logger('onStoryAll()', 'failed', err); });
 }
 
 export async function downloadStoryResources(data: StoryResponse, type: string, title: string): Promise<void> {
@@ -244,236 +240,205 @@ export function resolveStoryMediaIdByTimestamp(stories: StoryResponse): string |
  * @param  {Boolean}  isPreview - Check if it is need to open new tab
  * @return {void}
  */
-export async function onStory(isDownload = false, isForce = false, isPreview = false) {
+export async function onStory(isDownload = false, isForce = false, isPreview = false): Promise<void> {
     const username = $("body > div section._ac0a header._ac0k ._ac0l a + div a").first().text() || location.pathname.split("/").filter(s => s.length > 0).at(1) || '';
     if (isDownload) {
         const date = new Date().getTime();
         let timestamp = Math.floor(date / 1000);
 
-        updateLoadingBar(true);
-        if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && !state.tempFetchRateLimit) {
-            let mediaId: string | null = null;
+        return runWithLoadingBar(async () => {
+            if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && !state.tempFetchRateLimit) {
+                let mediaId: string | null = null;
 
-            const userInfo = await getUserId(username);
-            const userId = userInfo.user.pk;
-            const stories = await getStories(userId);
-            const urlID = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1);
-
-            // OPTIMIZATION: cache items reference (used 4+ times)
-            const items = stories.data.reels_media[0].items;
-
-            items.forEach(item => {
-                if (item.id == urlID) {
-                    mediaId = item.id;
-                }
-            });
-			
-            // FIX: timestamp-based match before fragile index/CSS fallbacks
-            if (mediaId == null) {
-                mediaId = resolveStoryMediaIdByTimestamp(stories);
-            }
-
-            if (mediaId == null) {
-                const $header = getStoryProgress(username);
-
-                $header.each(function (index) {
-                    if ($(this).children().length > 0) {
-                        mediaId = items[index].id;
-                    }
-                });
-            }
-
-            if (mediaId == null) {
-                // appear in from profile page to story page
-                $('body > div section:visible div.x1ned7t2.x78zum5 > div').each(function (index) {
-                    const $this = $(this);
-                    if ($this.hasClass('x1lix1fw')) {
-                        if ($this.children().length > 0) {
-                            mediaId = items[index].id;
-                        }
-                    }
-                });
-
-                // appear in from home page to story page
-                $('body > div section:visible ._ac0k > ._ac3r > div').each(function (index) {
-                    if ($(this).children().hasClass('_ac3q')) {
-                        mediaId = items[index].id;
-                    }
-                });
-            }
-
-            if (mediaId == null) {
-                mediaId = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1) ?? null;
-            }
-
-            if (!mediaId) {
-                updateLoadingBar(false);
-                alert('Could not identify the current story.');
-                return;
-            }
-
-            if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
-                const cached = getImageFromCache(mediaId);
-                if (cached && items.find(item => item.id === mediaId)?.is_video === false) {
-                    logger("[Restore Cached onStory]", mediaId);
-                    if (isPreview) {
-                        openNewTab(cached);
-                    }
-                    else {
-                        saveFiles(cached, {
-                            username,
-                            sourceType: "stories",
-                            timestamp,
-                            filetype: 'jpg',
-                            shortcode: mediaId
-                        });
-                    }
-                    return;
-                }
-            }
-
-            const result = await getMediaInfo(mediaId);
-
-            if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                timestamp = result.items[0].taken_at;
-            }
-
-            if (result.status === 'ok') {
-                // OPTIMIZATION: cache result.items[0]
-                const mediaItem = result.items[0];
-                if (mediaItem.video_versions) {
-                    const handled = await tryHandleDashFromMediaItem({
-                        mediaItem: mediaItem,
-                        username,
-                        sourceType: "stories",
-                        timestamp,
-                        shortcode: mediaId,
-                        isPreview,
-                    });
-                    if (handled) {
-                        updateLoadingBar(false);
-                        return;
-                    }
-
-                    if (isPreview) {
-                        openNewTab(mediaItem.video_versions[0].url);
-                    }
-                    else {
-                        saveFiles(mediaItem.video_versions[0].url, {
-                            username,
-                            sourceType: "stories",
-                            timestamp,
-                            filetype: 'mp4',
-                            shortcode: mediaId
-                        });
-                    }
-                }
-                else {
-                    if (isPreview) {
-                        openNewTab(mediaItem.image_versions2.candidates[0].url);
-                    }
-                    else {
-                        saveFiles(mediaItem.image_versions2.candidates[0].url, {
-                            username,
-                            sourceType: "stories",
-                            timestamp,
-                            filetype: 'jpg',
-                            shortcode: mediaId
-                        });
-                    }
-                }
-            }
-            else {
-                if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED) {
-                    state.tempFetchRateLimit = true;
-                    onStory(isDownload, isForce, isPreview);
-                }
-                else {
-                    alert('Fetch failed from Media API. API response message: ' + result.message);
-                }
-                logger('onStory()', 'Media API rejected request', result?.message);
-            }
-
-            updateLoadingBar(false);
-            return;
-        }
-
-        if ($('body > div section:visible video[playsinline]').length > 0) {
-            // Download stories if it is video
-            const type = "mp4";
-            let videoURL = "";
-            const targetURL = location.pathname.replace(/\/$/ig, '').split("/").at(-1);
-            let mediaId = null;
-
-            if (state.GL_dataCache.stories[username] && !isForce) {
-                logger('Fetch from memory cache:', username);
-                state.GL_dataCache.stories[username].data.reels_media[0].items.forEach(item => {
-                    if (item.id == targetURL) {
-                        videoURL = item.video_resources[0].src;
-                        if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                            timestamp = item.taken_at_timestamp;
-                            mediaId = item.id;
-                        }
-                    }
-                });
-
-                if (videoURL.length == 0) {
-                    logger('Memory cache not found, try fetch from API:', username);
-                    onStory(true, true);
-                    return;
-                }
-            }
-            else {
                 const userInfo = await getUserId(username);
                 const userId = userInfo.user.pk;
                 const stories = await getStories(userId);
-                // OPTIMIZATION: cache items
+                const urlID = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1);
+
+                // OPTIMIZATION: cache items reference (used 4+ times)
                 const items = stories.data.reels_media[0].items;
 
                 items.forEach(item => {
-                    if (item.id == targetURL) {
-                        videoURL = item.video_resources[0].src;
-                        if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                            timestamp = item.taken_at_timestamp;
-                            mediaId = item.id;
-                        }
+                    if (item.id == urlID) {
+                        mediaId = item.id;
                     }
                 });
 
-                // GitHub issue #4: thinkpad4
-                if (videoURL.length == 0) {
+                // FIX: timestamp-based match before fragile index/CSS fallbacks
+                if (mediaId == null) {
+                    mediaId = resolveStoryMediaIdByTimestamp(stories);
+                }
 
+                if (mediaId == null) {
                     const $header = getStoryProgress(username);
 
                     $header.each(function (index) {
                         if ($(this).children().length > 0) {
-                            videoURL = items[index].video_resources[0].src;
-                            if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                                timestamp = items[index].taken_at_timestamp;
+                            mediaId = items[index].id;
+                        }
+                    });
+                }
+
+                if (mediaId == null) {
+                    // appear in from profile page to story page
+                    $('body > div section:visible div.x1ned7t2.x78zum5 > div').each(function (index) {
+                        const $this = $(this);
+                        if ($this.hasClass('x1lix1fw')) {
+                            if ($this.children().length > 0) {
                                 mediaId = items[index].id;
                             }
                         }
                     });
 
+                    // appear in from home page to story page
+                    $('body > div section:visible ._ac0k > ._ac3r > div').each(function (index) {
+                        if ($(this).children().hasClass('_ac3q')) {
+                            mediaId = items[index].id;
+                        }
+                    });
+                }
+
+                if (mediaId == null) {
+                    mediaId = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1) ?? null;
+                }
+
+                if (!mediaId) {
+                    alert('Could not identify the current story.');
+                    return;
+                }
+
+                if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
+                    const cached = getImageFromCache(mediaId);
+                    if (cached && items.find(item => item.id === mediaId)?.is_video === false) {
+                        logger("[Restore Cached onStory]", mediaId);
+                        if (isPreview) {
+                            openNewTab(cached);
+                        }
+                        else {
+                            await saveFiles(cached, {
+                                username,
+                                sourceType: "stories",
+                                timestamp,
+                                filetype: 'jpg',
+                                shortcode: mediaId
+                            });
+                        }
+                        return;
+                    }
+                }
+
+                const result = await getMediaInfo(mediaId);
+
+                if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                    timestamp = result.items[0].taken_at;
+                }
+
+                if (result.status === 'ok') {
+                    // OPTIMIZATION: cache result.items[0]
+                    const mediaItem = result.items[0];
+                    if (mediaItem.video_versions) {
+                        const handled = await tryHandleDashFromMediaItem({
+                            mediaItem: mediaItem,
+                            username,
+                            sourceType: "stories",
+                            timestamp,
+                            shortcode: mediaId,
+                            isPreview,
+                        });
+                        if (handled) {
+                            return;
+                        }
+
+                        if (isPreview) {
+                            openNewTab(mediaItem.video_versions[0].url);
+                        }
+                        else {
+                            await saveFiles(mediaItem.video_versions[0].url, {
+                                username,
+                                sourceType: "stories",
+                                timestamp,
+                                filetype: 'mp4',
+                                shortcode: mediaId
+                            });
+                        }
+                    }
+                    else {
+                        if (isPreview) {
+                            openNewTab(mediaItem.image_versions2.candidates[0].url);
+                        }
+                        else {
+                            await saveFiles(mediaItem.image_versions2.candidates[0].url, {
+                                username,
+                                sourceType: "stories",
+                                timestamp,
+                                filetype: 'jpg',
+                                shortcode: mediaId
+                            });
+                        }
+                    }
+                }
+                else {
+                    if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED) {
+                        state.tempFetchRateLimit = true;
+                        return await onStory(isDownload, isForce, isPreview);
+                    }
+                    else {
+                        alert('Fetch failed from Media API. API response message: ' + result.message);
+                    }
+                    logger('onStory()', 'Media API rejected request', result?.message);
+                }
+
+                return;
+            }
+
+            if ($('body > div section:visible video[playsinline]').length > 0) {
+                // Download stories if it is video
+                const type = "mp4";
+                let videoURL = "";
+                const targetURL = location.pathname.replace(/\/$/ig, '').split("/").at(-1);
+                let mediaId = null;
+
+                if (state.GL_dataCache.stories[username] && !isForce) {
+                    logger('Fetch from memory cache:', username);
+                    state.GL_dataCache.stories[username].data.reels_media[0].items.forEach(item => {
+                        if (item.id == targetURL) {
+                            videoURL = item.video_resources[0].src;
+                            if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                                timestamp = item.taken_at_timestamp;
+                                mediaId = item.id;
+                            }
+                        }
+                    });
 
                     if (videoURL.length == 0) {
-                        // appear in from profile page to story page
-                        $('body > div section:visible div.x1ned7t2.x78zum5 > div').each(function (index) {
-                            const $this = $(this);
-                            if ($this.hasClass('x1lix1fw')) {
-                                if ($this.children().length > 0) {
-                                    videoURL = items[index].video_resources[0].src;
-                                    if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                                        timestamp = items[index].taken_at_timestamp;
-                                        mediaId = items[index].id;
-                                    }
-                                }
-                            }
-                        });
+                        logger('Memory cache not found, try fetch from API:', username);
+                        return await onStory(true, true);
+                    }
+                }
+                else {
+                    const userInfo = await getUserId(username);
+                    const userId = userInfo.user.pk;
+                    const stories = await getStories(userId);
+                    // OPTIMIZATION: cache items
+                    const items = stories.data.reels_media[0].items;
 
-                        // appear in from home page to story page
-                        $('body > div section:visible ._ac0k > ._ac3r > div').each(function (index) {
-                            if ($(this).children().hasClass('_ac3q')) {
+                    items.forEach(item => {
+                        if (item.id == targetURL) {
+                            videoURL = item.video_resources[0].src;
+                            if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                                timestamp = item.taken_at_timestamp;
+                                mediaId = item.id;
+                            }
+                        }
+                    });
+
+                    // GitHub issue #4: thinkpad4
+                    if (videoURL.length == 0) {
+
+                        const $header = getStoryProgress(username);
+
+                        $header.each(function (index) {
+                            if ($(this).children().length > 0) {
                                 videoURL = items[index].video_resources[0].src;
                                 if (USER_SETTING.RENAME_PUBLISH_DATE) {
                                     timestamp = items[index].taken_at_timestamp;
@@ -481,21 +446,109 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
                                 }
                             }
                         });
+
+
+                        if (videoURL.length == 0) {
+                            // appear in from profile page to story page
+                            $('body > div section:visible div.x1ned7t2.x78zum5 > div').each(function (index) {
+                                const $this = $(this);
+                                if ($this.hasClass('x1lix1fw')) {
+                                    if ($this.children().length > 0) {
+                                        videoURL = items[index].video_resources[0].src;
+                                        if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                                            timestamp = items[index].taken_at_timestamp;
+                                            mediaId = items[index].id;
+                                        }
+                                    }
+                                }
+                            });
+
+                            // appear in from home page to story page
+                            $('body > div section:visible ._ac0k > ._ac3r > div').each(function (index) {
+                                if ($(this).children().hasClass('_ac3q')) {
+                                    videoURL = items[index].video_resources[0].src;
+                                    if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                                        timestamp = items[index].taken_at_timestamp;
+                                        mediaId = items[index].id;
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    state.GL_dataCache.stories[username] = stories;
+                }
+
+                if (videoURL.length == 0) {
+                    alert(_i18n("NO_VID_URL"));
+                }
+                else {
+                    if (isPreview) {
+                        openNewTab(videoURL);
+                    }
+                    else {
+                        await saveFiles(videoURL, {
+                            username,
+                            sourceType: "stories",
+                            timestamp,
+                            filetype: type,
+                            shortcode: mediaId
+                        });
+                    }
+                }
+            }
+            else {
+                // Download stories if it is image
+                const srcset = $('body > div section:visible img[referrerpolicy][class], body > div section:visible img[crossorigin][class]:not([alt])').attr('srcset')?.split(',')[0]?.split(' ')[0];
+                let link = (srcset) ? srcset : $('body > div section:visible img[referrerpolicy][class], body > div section:visible img[crossorigin][class]:not([alt])').filter(function () {
+                    const $this = $(this);
+                    return $this.parents('a').length === 0 && $this.width() === $this.parent().width();
+                }).attr('src');
+
+                if (!link) {
+                    // _aa63 mean stories picture in stories page (not avatar)
+                    const $element = $('body > div section:visible img._aa63');
+                    link = ($element.attr('srcset')) ? $element.attr('srcset')?.split(',')[0]?.split(' ')[0] : $element.attr('src');
+                }
+
+                if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                    timestamp = new Date($('body > div section:visible time[datetime][class]').first().attr('datetime') ?? '').getTime();
+                }
+
+                const downloadLink = link;
+                const type = 'jpg';
+
+                const mediaId = getStoryId(downloadLink);
+
+                if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE && mediaId) {
+                    const cached = getImageFromCache(mediaId);
+                    if (cached) {
+                        if (isPreview) {
+                            openNewTab(cached);
+                        }
+                        else {
+                            await saveFiles(cached, {
+                                username,
+                                sourceType: "stories",
+                                timestamp,
+                                filetype: 'jpg',
+                                shortcode: mediaId
+                            });
+                        }
+                        return;
                     }
                 }
 
-                state.GL_dataCache.stories[username] = stories;
-            }
+                if (!downloadLink) {
+                    alert('Could not find the current story image.');
+                    return;
+                }
 
-            if (videoURL.length == 0) {
-                alert(_i18n("NO_VID_URL"));
-            }
-            else {
                 if (isPreview) {
-                    openNewTab(videoURL);
+                    openNewTab(downloadLink);
                 }
                 else {
-                    saveFiles(videoURL, {
+                    await saveFiles(downloadLink, {
                         username,
                         sourceType: "stories",
                         timestamp,
@@ -504,71 +557,9 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
                     });
                 }
             }
-        }
-        else {
-            // Download stories if it is image
-            const srcset = $('body > div section:visible img[referrerpolicy][class], body > div section:visible img[crossorigin][class]:not([alt])').attr('srcset')?.split(',')[0]?.split(' ')[0];
-            let link = (srcset) ? srcset : $('body > div section:visible img[referrerpolicy][class], body > div section:visible img[crossorigin][class]:not([alt])').filter(function () {
-                const $this = $(this);
-                return $this.parents('a').length === 0 && $this.width() === $this.parent().width();
-            }).attr('src');
 
-            if (!link) {
-                // _aa63 mean stories picture in stories page (not avatar)
-                const $element = $('body > div section:visible img._aa63');
-                link = ($element.attr('srcset')) ? $element.attr('srcset')?.split(',')[0]?.split(' ')[0] : $element.attr('src');
-            }
-
-            if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                timestamp = new Date($('body > div section:visible time[datetime][class]').first().attr('datetime') ?? '').getTime();
-            }
-
-            const downloadLink = link;
-            const type = 'jpg';
-
-            const mediaId = getStoryId(downloadLink);
-
-            if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE && mediaId) {
-                const cached = getImageFromCache(mediaId);
-                if (cached) {
-                    if (isPreview) {
-                        openNewTab(cached);
-                    }
-                    else {
-                        saveFiles(cached, {
-                            username,
-                            sourceType: "stories",
-                            timestamp,
-                            filetype: 'jpg',
-                            shortcode: mediaId
-                        });
-                    }
-                    return;
-                }
-            }
-
-            if (!downloadLink) {
-                updateLoadingBar(false);
-                alert('Could not find the current story image.');
-                return;
-            }
-
-            if (isPreview) {
-                openNewTab(downloadLink);
-            }
-            else {
-                saveFiles(downloadLink, {
-                    username,
-                    sourceType: "stories",
-                    timestamp,
-                    filetype: type,
-                    shortcode: mediaId
-                });
-            }
-        }
-
-        state.tempFetchRateLimit = false;
-        updateLoadingBar(false);
+            state.tempFetchRateLimit = false;
+        }).catch(err => { logger('onStory()', 'failed', err); });
     }
     else {
         if (!document.querySelector('.IG_STORY_CONTROL_BAR')) {
@@ -614,7 +605,7 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
  * @param  {Boolean}  isForce - Check if downloading directly from API instead of cache
  * @return {void}
  */
-export async function onStoryThumbnail(isDownload = false, isForce = false) {
+export async function onStoryThumbnail(isDownload = false, isForce = false): Promise<void> {
     if (isDownload) {
         // Download stories if it is video
         const date = new Date().getTime();
@@ -626,173 +617,43 @@ export async function onStoryThumbnail(isDownload = false, isForce = false) {
         let videoThumbnailURL = "";
         let mediaId: string | null = null;
 
-        updateLoadingBar(true);
+        return runWithLoadingBar(async () => {
+            if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && !state.tempFetchRateLimit) {
+                const userInfo = await getUserId(username);
+                const userId = userInfo.user.pk;
+                const stories = await getStories(userId);
+                const urlID = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1);
+                // OPTIMIZATION: cache items reference
+                const items = stories.data.reels_media[0].items;
 
-        if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && !state.tempFetchRateLimit) {
-            const userInfo = await getUserId(username);
-            const userId = userInfo.user.pk;
-            const stories = await getStories(userId);
-            const urlID = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1);
-            // OPTIMIZATION: cache items reference
-            const items = stories.data.reels_media[0].items;
-
-            items.forEach(item => {
-                if (item.id == urlID) {
-                    mediaId = item.id;
-                }
-            });
-			
-            // FIX: timestamp-based match before fragile index/CSS fallbacks
-            if (mediaId == null) {
-                mediaId = resolveStoryMediaIdByTimestamp(stories);
-            }
-
-            if (mediaId == null) {
-                const $header = getStoryProgress(username);
-
-                $header.each(function (index) {
-                    if ($(this).children().length > 0) {
-                        mediaId = items[index].id;
+                items.forEach(item => {
+                    if (item.id == urlID) {
+                        mediaId = item.id;
                     }
                 });
-            }
 
-            if (mediaId == null) {
-                // appear in from profile page to story page
-                $('body > div section:visible div.x1ned7t2.x78zum5 > div').each(function (index) {
-                    const $this = $(this);
-                    if ($this.hasClass('x1lix1fw')) {
-                        if ($this.children().length > 0) {
+                // FIX: timestamp-based match before fragile index/CSS fallbacks
+                if (mediaId == null) {
+                    mediaId = resolveStoryMediaIdByTimestamp(stories);
+                }
+
+                if (mediaId == null) {
+                    const $header = getStoryProgress(username);
+
+                    $header.each(function (index) {
+                        if ($(this).children().length > 0) {
                             mediaId = items[index].id;
                         }
-                    }
-                });
-
-                // appear in from home page to story page
-                $('body > div section:visible ._ac0k > ._ac3r > div').each(function (index) {
-                    if ($(this).children().hasClass('_ac3q')) {
-                        mediaId = items[index].id;
-                    }
-                });
-            }
-
-            if (mediaId == null) {
-                mediaId = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1) ?? null;
-            }
-
-            if (!mediaId) {
-                updateLoadingBar(false);
-                alert('Could not identify the current story thumbnail.');
-                return;
-            }
-
-            if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
-                const cached = getImageFromCache(mediaId);
-                if (cached) {
-                    logger("[Restore Cached onStoryThumbnail]", mediaId);
-                    saveFiles(cached, {
-                        username,
-                        sourceType: "stories",
-                        timestamp,
-                        filetype: 'jpg',
-                        shortcode: mediaId
                     });
-                    return;
-                }
-            }
-
-            const result = await getMediaInfo(mediaId);
-
-            if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                timestamp = result.items[0].taken_at;
-            }
-
-            if (result.status === 'ok') {
-                saveFiles(result.items[0].image_versions2.candidates[0].url, {
-                    username,
-                    sourceType: "stories",
-                    timestamp,
-                    filetype: 'jpg',
-                    shortcode: mediaId
-                });
-
-            }
-            else {
-                if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED) {
-                    state.tempFetchRateLimit = true;
-                    onStoryThumbnail(true, isForce);
-                }
-                else {
-                    alert('Fetch failed from Media API. API response message: ' + result.message);
                 }
 
-                logger('onStoryThumbnail()', 'Media API rejected request', result?.message);
-            }
-
-            updateLoadingBar(false);
-            return;
-        }
-
-        if (state.GL_dataCache.stories[username] && !isForce) {
-            logger('Fetch from memory cache:', username);
-            state.GL_dataCache.stories[username].data.reels_media[0].items.forEach(item => {
-                if (item.id == targetURL) {
-                    videoThumbnailURL = item.display_url;
-                    if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                        timestamp = item.taken_at_timestamp;
-                        mediaId = item.id;
-                    }
-                }
-            });
-
-            if (videoThumbnailURL.length == 0) {
-                logger('Memory cache not found, try fetch from API:', username);
-                onStoryThumbnail(true, true);
-                return;
-            }
-        }
-        else {
-            const userInfo = await getUserId(username);
-            const userId = userInfo.user.pk;
-            const stories = await getStories(userId);
-            // OPTIMIZATION: cache items
-            const items = stories.data.reels_media[0].items;
-
-            items.forEach(item => {
-                if (item.id == targetURL) {
-                    videoThumbnailURL = item.display_url;
-                    if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                        timestamp = item.taken_at_timestamp;
-                        mediaId = item.id;
-                    }
-                }
-            });
-
-            // GitHub issue #4: thinkpad4
-            if (videoThumbnailURL.length == 0) {
-                const $header = getStoryProgress(username);
-
-                $header.each(function (index) {
-                    if ($(this).children().length > 0) {
-                        videoThumbnailURL = items[index].display_url;
-                        if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                            timestamp = items[index].taken_at_timestamp;
-                            mediaId = items[index].id;
-                        }
-                    }
-                });
-
-                if (videoThumbnailURL.length == 0) {
+                if (mediaId == null) {
                     // appear in from profile page to story page
                     $('body > div section:visible div.x1ned7t2.x78zum5 > div').each(function (index) {
                         const $this = $(this);
                         if ($this.hasClass('x1lix1fw')) {
                             if ($this.children().length > 0) {
-                                videoThumbnailURL = items[index].display_url;
-                                if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                                    timestamp = items[index].taken_at_timestamp;
-                                    mediaId = items[index].id;
-                                }
+                                mediaId = items[index].id;
                             }
                         }
                     });
@@ -800,6 +661,106 @@ export async function onStoryThumbnail(isDownload = false, isForce = false) {
                     // appear in from home page to story page
                     $('body > div section:visible ._ac0k > ._ac3r > div').each(function (index) {
                         if ($(this).children().hasClass('_ac3q')) {
+                            mediaId = items[index].id;
+                        }
+                    });
+                }
+
+                if (mediaId == null) {
+                    mediaId = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1) ?? null;
+                }
+
+                if (!mediaId) {
+                    alert('Could not identify the current story thumbnail.');
+                    return;
+                }
+
+                if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
+                    const cached = getImageFromCache(mediaId);
+                    if (cached) {
+                        logger("[Restore Cached onStoryThumbnail]", mediaId);
+                        await saveFiles(cached, {
+                            username,
+                            sourceType: "stories",
+                            timestamp,
+                            filetype: 'jpg',
+                            shortcode: mediaId
+                        });
+                        return;
+                    }
+                }
+
+                const result = await getMediaInfo(mediaId);
+
+                if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                    timestamp = result.items[0].taken_at;
+                }
+
+                if (result.status === 'ok') {
+                    await saveFiles(result.items[0].image_versions2.candidates[0].url, {
+                        username,
+                        sourceType: "stories",
+                        timestamp,
+                        filetype: 'jpg',
+                        shortcode: mediaId
+                    });
+
+                }
+                else {
+                    if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED) {
+                        state.tempFetchRateLimit = true;
+                        return await onStoryThumbnail(true, isForce);
+                    }
+                    else {
+                        alert('Fetch failed from Media API. API response message: ' + result.message);
+                    }
+
+                    logger('onStoryThumbnail()', 'Media API rejected request', result?.message);
+                }
+
+                return;
+            }
+
+            if (state.GL_dataCache.stories[username] && !isForce) {
+                logger('Fetch from memory cache:', username);
+                state.GL_dataCache.stories[username].data.reels_media[0].items.forEach(item => {
+                    if (item.id == targetURL) {
+                        videoThumbnailURL = item.display_url;
+                        if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                            timestamp = item.taken_at_timestamp;
+                            mediaId = item.id;
+                        }
+                    }
+                });
+
+                if (videoThumbnailURL.length == 0) {
+                    logger('Memory cache not found, try fetch from API:', username);
+                    return await onStoryThumbnail(true, true);
+                }
+            }
+            else {
+                const userInfo = await getUserId(username);
+                const userId = userInfo.user.pk;
+                const stories = await getStories(userId);
+                // OPTIMIZATION: cache items
+                const items = stories.data.reels_media[0].items;
+
+                items.forEach(item => {
+                    if (item.id == targetURL) {
+                        videoThumbnailURL = item.display_url;
+                        if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                            timestamp = item.taken_at_timestamp;
+                            mediaId = item.id;
+                        }
+                    }
+                });
+
+                // GitHub issue #4: thinkpad4
+                if (videoThumbnailURL.length == 0) {
+                    const $header = getStoryProgress(username);
+
+                    $header.each(function (index) {
+                        if ($(this).children().length > 0) {
                             videoThumbnailURL = items[index].display_url;
                             if (USER_SETTING.RENAME_PUBLISH_DATE) {
                                 timestamp = items[index].taken_at_timestamp;
@@ -807,19 +768,45 @@ export async function onStoryThumbnail(isDownload = false, isForce = false) {
                             }
                         }
                     });
+
+                    if (videoThumbnailURL.length == 0) {
+                        // appear in from profile page to story page
+                        $('body > div section:visible div.x1ned7t2.x78zum5 > div').each(function (index) {
+                            const $this = $(this);
+                            if ($this.hasClass('x1lix1fw')) {
+                                if ($this.children().length > 0) {
+                                    videoThumbnailURL = items[index].display_url;
+                                    if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                                        timestamp = items[index].taken_at_timestamp;
+                                        mediaId = items[index].id;
+                                    }
+                                }
+                            }
+                        });
+
+                        // appear in from home page to story page
+                        $('body > div section:visible ._ac0k > ._ac3r > div').each(function (index) {
+                            if ($(this).children().hasClass('_ac3q')) {
+                                videoThumbnailURL = items[index].display_url;
+                                if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                                    timestamp = items[index].taken_at_timestamp;
+                                    mediaId = items[index].id;
+                                }
+                            }
+                        });
+                    }
                 }
             }
-        }
 
-        saveFiles(videoThumbnailURL, {
-            username,
-            sourceType: "thumbnail",
-            timestamp,
-            filetype: type,
-            shortcode: mediaId
-        });
-        state.tempFetchRateLimit = false;
-        updateLoadingBar(false);
+            await saveFiles(videoThumbnailURL, {
+                username,
+                sourceType: "thumbnail",
+                timestamp,
+                filetype: type,
+                shortcode: mediaId
+            });
+            state.tempFetchRateLimit = false;
+        }).catch(err => { logger('onStoryThumbnail()', 'failed', err); });
     }
     else {
         const $element = findStoryControlElement();

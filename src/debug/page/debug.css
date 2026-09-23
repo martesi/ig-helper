@@ -5,6 +5,10 @@
     padding: 20px 24px 32px;
 }
 
+.IG_DEBUGGER_ERROR {
+    color: var(--color-destructive);
+}
+
 .IG_DEBUGGER_PLACEHOLDER {
     display: grid;
     min-height: 280px;

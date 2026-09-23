@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
+import { Effect } from 'effect';
 import { Link } from 'wouter-preact';
 import { Button, IconButton } from '../../shared/ui/components.tsx';
 import { CopyIcon, DownloadIcon, RotateCwIcon, Trash2Icon } from '../../shared/ui/icons.tsx';
@@ -13,6 +14,17 @@ export function DebuggerApp() {
     const [data, setData] = useState<DebugSnapshot | null>(null);
     const [dom, setDom] = useState<DomCapture | null>(null);
     const [error, setError] = useState('');
+    const [actionError, setActionError] = useState('');
+
+    function copyToClipboard(text: string) {
+        void copyText(text).then(
+            () => setActionError(''),
+            reason => {
+                console.error('debug.clipboard.failed', reason);
+                setActionError('Could not copy to clipboard. Allow clipboard access or use the Download button instead.');
+            },
+        );
+    }
 
     useEffect(() => {
         let cancelled = false;
@@ -74,6 +86,7 @@ export function DebuggerApp() {
                         </footer>
                     </div>
                 )}
+                {data && actionError && <p class="IG_DEBUGGER_ERROR" role="alert">{actionError}</p>}
 
                 {data && (
                     <>
@@ -86,7 +99,7 @@ export function DebuggerApp() {
                                 {dom ? (
                                     <div role="group" class="button-group">
                                         <IconButton icon={CopyIcon} label="Copy DOM snapshot" variant="outline"
-                                            onClick={() => copyText(dom.html ?? '')} />
+                                            onClick={() => copyToClipboard(dom.html ?? '')} />
                                         <IconButton icon={DownloadIcon} label="Download DOM snapshot" variant="outline"
                                             onClick={() => downloadText(`DOMTree-${Date.now()}.txt`, dom.html ?? '')} />
                                         <IconButton icon={RotateCwIcon} label="Capture DOM again" variant="outline"
@@ -119,7 +132,7 @@ export function DebuggerApp() {
 
                         <DebugSection title={`Logs (latest ${data.logs.length})`} actions={
                             <div role="group" class="button-group IG_DEBUGGER_SECTION_ACTIONS">
-                                <IconButton icon={CopyIcon} label="Copy logs" onClick={() => copyText(formatEntries(data.logs))} />
+                                <IconButton icon={CopyIcon} label="Copy logs" onClick={() => copyToClipboard(formatEntries(data.logs))} />
                                 <IconButton icon={DownloadIcon} label="Export debug data"
                                     onClick={() => downloadText('ig-helper-debug.json', JSON.stringify(data, null, 2))} />
                                 <IconButton icon={Trash2Icon} label="Clear logs" onClick={() => runCommand('clearLogs')} />
@@ -168,8 +181,11 @@ function formatAge(timestamp: number) {
     return seconds < 2 ? 'now' : `${seconds}s ago`;
 }
 
-async function copyText(text: string) {
-    await navigator.clipboard.writeText(text);
+function copyText(text: string) {
+    return Effect.runPromise(Effect.tryPromise({
+        try: () => navigator.clipboard.writeText(text),
+        catch: cause => new Error('Clipboard write failed.', { cause }),
+    }));
 }
 
 function downloadText(name: string, text: string) {

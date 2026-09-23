@@ -8,6 +8,7 @@ import { saveFiles } from "./download";
 import { tryHandleDashFromMediaItem } from "./dash";
 import { openNewTab, replaceSameOriginHost } from "./navigation";
 import { updateLoadingBar } from "./ui/status.tsx";
+import { Effect } from 'effect';
 
 export function saveMediaThumbnail($element: JQuery<Element> | Element, fallbackPostPath: string | null = null) {
     const $link = $($element);
@@ -51,10 +52,10 @@ function getInstagramImageScale(url: string): number {
  *
  * @param  {Object}   element     - The element containing resource link metadata.
  * @param  {Boolean}  [isPreview] - True to preview in a new tab instead of downloading.
- * @return {void}
+ * @return {Promise<void>}
  */
-export async function triggerLinkElement($element: JQuery<Element> | Element, isPreview = false): Promise<void> {
-    try {
+export function triggerLinkElement($element: JQuery<Element> | Element, isPreview = false): Promise<void> {
+    const program = Effect.gen(function* () {
         const $el = $($element);
 
         const date = new Date().getTime();
@@ -64,10 +65,13 @@ export async function triggerLinkElement($element: JQuery<Element> | Element, is
 
         if (!username && $el.data('path')) {
             logger('catching owner name from shortcode', $el.data('href'));
-            username = await getPostOwner(String($el.data('path'))).catch(err => {
-                logger('get username failed, replace with default string, error message', err instanceof Error ? err.message : err);
+            username = yield* Effect.tryPromise({
+                try: () => getPostOwner(String($el.data('path'))),
+                catch: cause => cause,
+            }).pipe(Effect.catchCause(cause => Effect.sync(() => {
+                logger('get username failed, replace with default string, error message', cause);
                 return 'NONE';
-            });
+            })));
         }
 
         if (username == null) username = 'NONE';
@@ -92,14 +96,17 @@ export async function triggerLinkElement($element: JQuery<Element> | Element, is
         if (USER_SETTING.PREFER_DASH_MANIFEST && mediaId && state.GL_mediaDataCache[mediaId]) {
             logger('Video Dash Stream, Processing video with DASH manifest', 'mediaId', mediaId);
 
-            const handled = await tryHandleDashFromMediaItem({
-                mediaItem: state.GL_mediaDataCache[mediaId],
-                username,
-                sourceType,
-                timestamp,
-                shortcode,
-                isPreview: downloadOnly ? false : isPreview,
-                index
+            const handled = yield* Effect.tryPromise({
+                try: () => tryHandleDashFromMediaItem({
+                    mediaItem: state.GL_mediaDataCache[mediaId],
+                    username,
+                    sourceType,
+                    timestamp,
+                    shortcode,
+                    isPreview: downloadOnly ? false : isPreview,
+                    index,
+                }),
+                catch: cause => cause,
             });
 
             if (handled) return;
@@ -112,13 +119,16 @@ export async function triggerLinkElement($element: JQuery<Element> | Element, is
                 if (!downloadOnly && isPreview) {
                     openNewTab(cached);
                 } else {
-                    await saveFiles(cached, {
-                        username,
-                        sourceType,
-                        timestamp,
-                        filetype: filetype || 'jpg',
-                        shortcode,
-                        index
+                    yield* Effect.tryPromise({
+                        try: () => saveFiles(cached, {
+                            username,
+                            sourceType,
+                            timestamp,
+                            filetype: filetype || 'jpg',
+                            shortcode,
+                            index,
+                        }),
+                        catch: cause => cause,
                     });
                 }
                 return;
@@ -127,8 +137,10 @@ export async function triggerLinkElement($element: JQuery<Element> | Element, is
 
         if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && mediaId) {
             updateLoadingBar(true);
-            const result = await getMediaInfo(mediaId);
-            updateLoadingBar(false);
+            const result = yield* Effect.tryPromise({
+                try: () => getMediaInfo(mediaId),
+                catch: cause => cause,
+            }).pipe(Effect.ensuring(Effect.sync(() => updateLoadingBar(false))));
 
             if (result?.status === 'ok') {
                 let resource_url = null;
@@ -172,13 +184,16 @@ export async function triggerLinkElement($element: JQuery<Element> | Element, is
                 if (!downloadOnly && isPreview) {
                     openNewTab(replaceSameOriginHost(resource_url));
                 } else {
-                    await saveFiles(resource_url, {
-                        username,
-                        sourceType,
-                        timestamp,
-                        filetype,
-                        shortcode,
-                        index
+                    yield* Effect.tryPromise({
+                        try: () => saveFiles(resource_url, {
+                            username,
+                            sourceType,
+                            timestamp,
+                            filetype,
+                            shortcode,
+                            index,
+                        }),
+                        catch: cause => cause,
                     });
                 }
                 return;
@@ -188,13 +203,16 @@ export async function triggerLinkElement($element: JQuery<Element> | Element, is
                 if (!downloadOnly && isPreview) {
                     openNewTab(replaceSameOriginHost(href));
                 } else {
-                    await saveFiles(href, {
-                        username,
-                        sourceType,
-                        timestamp,
-                        filetype,
-                        shortcode,
-                        index
+                    yield* Effect.tryPromise({
+                        try: () => saveFiles(href, {
+                            username,
+                            sourceType,
+                            timestamp,
+                            filetype,
+                            shortcode,
+                            index,
+                        }),
+                        catch: cause => cause,
                     });
                 }
                 return;
@@ -209,21 +227,24 @@ export async function triggerLinkElement($element: JQuery<Element> | Element, is
             if (!downloadOnly && isPreview) {
                 openNewTab(replaceSameOriginHost(href));
             } else {
-                await saveFiles(href, {
-                    username,
-                    sourceType,
-                    timestamp,
-                    filetype,
-                    shortcode,
-                    index
+                yield* Effect.tryPromise({
+                    try: () => saveFiles(href, {
+                        username,
+                        sourceType,
+                        timestamp,
+                        filetype,
+                        shortcode,
+                        index,
+                    }),
+                    catch: cause => cause,
                 });
             }
             return;
         }
 
         alert('Cannot find download URL.');
-    } catch (err) {
-        logger('triggerLinkElement()', 'failed', err);
-        logger('Occur error in triggerLinkElement:', err);
-    }
+    }).pipe(Effect.catchCause(cause => Effect.sync(() => {
+        logger('triggerLinkElement()', 'failed', cause);
+    })));
+    return Effect.runPromise(program);
 }

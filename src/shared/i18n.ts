@@ -153,7 +153,7 @@ export function translateText() {
  * @param  {String}  lang
  * @return {Object}
  */
-export async function getTranslationText(lang: string): Promise<Record<string, string>> {
+export function getTranslationText(lang: string): Record<string, string> {
     const translation = translations[lang];
     if (translation == null) {
         throw new Error(`Translation not found for ${lang}`);

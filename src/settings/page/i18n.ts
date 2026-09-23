@@ -87,7 +87,7 @@ export function resolveLanguage(language: string | null | undefined): string {
     return Object.keys(localeManifest).find(candidate => candidate === base || candidate.startsWith(`${base}-`)) || 'en-US';
 }
 
-export async function loadLocale(language: string): Promise<Record<string, string>> {
+export function loadLocale(language: string): Record<string, string> {
     const resolved = resolveLanguage(language);
     if (resolved === 'en-US') return {};
     return translations[resolved] ?? {};

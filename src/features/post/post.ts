@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import { Effect } from 'effect';
 import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state, resourceCountSelector } from "../../settings/state";
 import { triggerLinkElement, saveMediaThumbnail } from "../../shared/media-download";
 import { openNewTab, replaceSameOriginHost } from "../../shared/navigation";
@@ -1052,7 +1053,7 @@ export async function batchDownloadPostFiles($elements: Array<Element | JQuery<E
 
         index++;
         setDownloadProgress(index, totalLen);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (index < totalLen) await Effect.runPromise(Effect.sleep('1 second'));
     }
 }
 

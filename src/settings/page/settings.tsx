@@ -82,9 +82,9 @@ export function OptionsApp({ onHeaderChange }: { onHeaderChange: (header: { titl
 
     useEffect(() => {
         let cancelled = false;
-        requestSettings('getState').then(async result => {
+        requestSettings('getState').then(result => {
             const resolvedLanguage = resolveLanguage(result.language);
-            const translations = await loadLocale(resolvedLanguage);
+            const translations = loadLocale(resolvedLanguage);
             if (cancelled) return;
             const translate = createTranslator(translations);
             setData(result);
@@ -137,7 +137,7 @@ export function OptionsApp({ onHeaderChange }: { onHeaderChange: (header: { titl
         const resolved = resolveLanguage(value);
         try {
             await requestSettings('setLanguage', { value: resolved });
-            const translations = await loadLocale(resolved);
+            const translations = loadLocale(resolved);
             const translate = createTranslator(translations);
             setLanguage(resolved);
             setLocale(translations);
@@ -290,7 +290,7 @@ function SettingRow({ name, isChild, parentName, data, t, onSettingChange, onVol
     return (
         <div class={`IG_SETTING_ROW${isChild ? ' IG_SETTING_ROW_CHILD' : ''}${disabled ? ' IG_SETTING_ROW_DISABLED' : ''}`}>
             <div class="IG_SETTING_COPY">
-                <label for={name}>{label}</label>
+                <label for={isDownloadMode ? `${name}-trigger` : name}>{label}</label>
                 <p>{settingDescription(t, name)}</p>
             </div>
             {isDownloadMode ? (

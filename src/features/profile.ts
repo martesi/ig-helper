@@ -1,11 +1,11 @@
 import $ from 'jquery';
 import { USER_SETTING } from "../settings/state";
 import { saveFiles } from "../shared/download";
-import { updateLoadingBar } from "../shared/ui/status.tsx";
 import { logger } from "../shared/logger";
 import { getUserId, getUserHighSizeProfile } from "../shared/api";
 import { mountProfileControl } from "./profile/controls.tsx";
 import { currentRouteScope } from "../shared/route-scope";
+import { runWithLoadingBar } from './loading';
 
 /**
  * onProfileAvatar
@@ -16,35 +16,37 @@ import { currentRouteScope } from "../shared/route-scope";
  */
 export async function onProfileAvatar(isDownload = false) {
     if (isDownload) {
-        updateLoadingBar(true);
-
-        const date = new Date().getTime();
-        const timestamp = Math.floor(date / 1000);
-        const username = location.pathname.replaceAll(/(reels|tagged)\/$/ig, '').split('/').filter(s => s.length > 0).at(-1);
-        if (!username) throw new Error('Profile username is missing');
-        const userInfo = await getUserId(username);
         try {
-            const dataURL = await getUserHighSizeProfile(userInfo.user.pk);
-            saveFiles(dataURL, {
-                username,
-                sourceType: "avatar",
-                timestamp,
-                filetype: 'jpg',
-                uid: userInfo.user.id
+            await runWithLoadingBar(async () => {
+                const timestamp = Math.floor(Date.now() / 1000);
+                const username = location.pathname.replaceAll(/(reels|tagged)\/$/ig, '').split('/').filter(s => s.length > 0).at(-1);
+                if (!username) throw new Error('Profile username is missing');
+                const userInfo = await getUserId(username);
+                try {
+                    const dataURL = await getUserHighSizeProfile(userInfo.user.pk);
+                    await saveFiles(dataURL, {
+                        username,
+                        sourceType: "avatar",
+                        timestamp,
+                        filetype: 'jpg',
+                        uid: userInfo.user.id
+                    });
+                }
+                catch (err) {
+                    logger('onProfileAvatar()', 'high-size avatar unavailable; using profile URL', err);
+                    await saveFiles(userInfo.user.profile_pic_url, {
+                        username,
+                        sourceType: "avatar",
+                        timestamp,
+                        filetype: 'jpg',
+                        uid: userInfo.user.id
+                    });
+                }
             });
         }
-
-        catch {
-            saveFiles(userInfo.user.profile_pic_url, {
-                username,
-                sourceType: "avatar",
-                timestamp,
-                filetype: 'jpg',
-                uid: userInfo.user.id
-            });
+        catch (err) {
+            logger('onProfileAvatar()', 'failed', err);
         }
-
-        updateLoadingBar(false);
     }
     else {
         if (!$('.IG_PROFILE_CONTROL').length) {

@@ -15,18 +15,19 @@ const CHANNEL = 'ig-helper:settings';
 const hotkeysByStateKey = new Map(HOTKEY_SETTINGS.map(config => [config.stateKey, config]));
 
 export function startSettingsBridge() {
-    window.addEventListener('message', async event => {
+    window.addEventListener('message', event => {
         if (event.source !== window || event.origin !== location.origin) return;
         if (event.data?.channel !== CHANNEL || event.data.direction !== 'request') return;
 
         const id = Number.isInteger(event.data.id) && event.data.id > 0 ? event.data.id : null;
+        if (id == null) return;
         try {
             const message = parseSettingsRequest(event.data);
-            const result = await handleRequest(message);
+            const result = handleRequest(message);
             respond(message.id, true, result);
         } catch (error) {
             console.error('settings.request.failed', error);
-            if (id != null) respond(id, false, null, error instanceof Error ? error.message : String(error));
+            respond(id, false, null, error instanceof Error ? error.message : String(error));
         }
     });
 }

@@ -9,27 +9,27 @@ export function initialize() {
     initSettings();
     registerMenuCommand();
 
-    getTranslationText(state.lang).then((res) => {
-        state.locale[state.lang] = res;
+    try {
+        state.locale[state.lang] = getTranslationText(state.lang);
         repaintingTranslations();
         registerMenuCommand();
-    }).catch((err) => {
+    } catch (err) {
         registerMenuCommand();
 
         if (!state.lang.startsWith('en')) {
             logger('getTranslationText()', 'failed', err);
         }
-    });
+    }
 
     let activeLanguage = state.lang;
-    async function syncSettings() {
+    function syncSettings() {
         initSettings();
         if (state.lang === activeLanguage) return;
 
         activeLanguage = state.lang;
         if (!state.lang.startsWith('en') && state.locale[state.lang] == null) {
             try {
-                state.locale[state.lang] = await getTranslationText(state.lang);
+                state.locale[state.lang] = getTranslationText(state.lang);
             } catch (err) {
                 logger('getTranslationText()', 'focus sync failed', err);
             }
@@ -45,7 +45,7 @@ export function initialize() {
     ];
     for (const key of settingsStorageKeys) {
         GM_addValueChangeListener(key, () => {
-            void syncSettings();
+            syncSettings();
         });
     }
 

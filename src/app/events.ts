@@ -107,7 +107,7 @@ export function registerEvents() {
                             node instanceof Element && node.tagName === "DIV"
                         ) {
                             // replace something times ago format to publish time when switch highlight
-                            const $time = getHighlightCurrentTimeElement($(node as Element));
+                            const $time = getHighlightCurrentTimeElement($(node));
                             setTimeElementDateAndLocaleTime($time);
                         }
                     }

@@ -4,16 +4,17 @@ import { logger } from "./logger";
 import { createSaveFileElement, saveFiles } from "./download";
 import { openNewTab } from "./navigation";
 import { updateLoadingBar } from "./ui/status.tsx";
+import { Effect } from 'effect';
 
-async function fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
-    updateLoadingBar(true);
-    try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.arrayBuffer();
-    } finally {
-        updateLoadingBar(false);
-    }
+function fetchArrayBuffer(url: string): Effect.Effect<ArrayBuffer, Error> {
+    return Effect.tryPromise({
+        try: async signal => {
+            const response = await fetch(url, { signal });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.arrayBuffer();
+        },
+        catch: cause => cause instanceof Error ? cause : new Error('Could not fetch DASH media.', { cause }),
+    });
 }
 
 /**
@@ -22,7 +23,7 @@ async function fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
  *              Returns best video/audio representation URLs.
  *
  * @param  {string} mpdXml
- * @return {{ video: any|null, audio: any|null }}
+ * @return {{ video: DashRepresentation | null, audio: DashRepresentation | null }}
  */
 interface DashRepresentation {
     id: string;
@@ -83,82 +84,87 @@ function parseDashManifest(mpdXml: string): { video: DashRepresentation | null; 
  *
  * @param {ArrayBuffer} videoBuf
  * @param {ArrayBuffer} audioBuf
- * @return {Promise<ArrayBuffer>}
+ * @return {Effect<ArrayBuffer, Error>}
  */
-async function muxDashVideoAudioToMp4(videoBuf: ArrayBuffer, audioBuf: ArrayBuffer): Promise<ArrayBuffer> {
-    const MB = Mediabunny;
+function muxDashVideoAudioToMp4(videoBuf: ArrayBuffer, audioBuf: ArrayBuffer): Effect.Effect<ArrayBuffer, Error> {
+    return Effect.tryPromise({
+        try: async () => {
+            const MB = Mediabunny;
 
-    const videoInput = new MB.Input({
-        formats: [MB.MP4],
-        source: new MB.BufferSource(videoBuf),
+            const videoInput = new MB.Input({
+                formats: [MB.MP4],
+                source: new MB.BufferSource(videoBuf),
+            });
+            const audioInput = new MB.Input({
+                formats: [MB.MP4],
+                source: new MB.BufferSource(audioBuf),
+            });
+
+            const vTrack = await videoInput.getPrimaryVideoTrack();
+            if (!vTrack || !vTrack.codec) throw new Error('No video track found');
+
+            const aTrack = await audioInput.getPrimaryAudioTrack();
+            if (!aTrack || !aTrack.codec) throw new Error('No audio track found');
+
+            const vSink = new MB.EncodedPacketSink(vTrack);
+            const aSink = new MB.EncodedPacketSink(aTrack);
+
+            const output = new MB.Output({
+                format: new MB.Mp4OutputFormat({ fastStart: 'in-memory' }),
+                target: new MB.BufferTarget(),
+            });
+
+            const vSource = new MB.EncodedVideoPacketSource(vTrack.codec);
+            const aSource = new MB.EncodedAudioPacketSource(aTrack.codec);
+
+            output.addVideoTrack(vSource, { rotation: vTrack.rotation || 0 });
+            output.addAudioTrack(aSource);
+
+            await output.start();
+
+            const vDecoderConfig = await vTrack.getDecoderConfig();
+            const aDecoderConfig = await aTrack.getDecoderConfig();
+
+            const vMeta = vDecoderConfig ? { decoderConfig: vDecoderConfig } : undefined;
+            const aMeta = aDecoderConfig ? { decoderConfig: aDecoderConfig } : undefined;
+
+            const vIter = vSink.packets();
+            const aIter = aSink.packets();
+
+            let vNext = await vIter.next();
+            let aNext = await aIter.next();
+            let vSentMeta = false;
+            let aSentMeta = false;
+
+            while (!vNext.done || !aNext.done) {
+                const takeVideo = (() => {
+                    if (vNext.done) return false;
+                    if (aNext.done) return true;
+                    return vNext.value.timestamp <= aNext.value.timestamp;
+                })();
+
+                if (takeVideo && !vNext.done) {
+                    await vSource.add(vNext.value, vSentMeta ? undefined : vMeta);
+                    vSentMeta = true;
+                    vNext = await vIter.next();
+                } else if (!aNext.done) {
+                    await aSource.add(aNext.value, aSentMeta ? undefined : aMeta);
+                    aSentMeta = true;
+                    aNext = await aIter.next();
+                }
+            }
+
+            await output.finalize();
+
+            const outBuf = output.target.buffer;
+            if (outBuf instanceof ArrayBuffer) return outBuf;
+            throw new Error('Unexpected output buffer type');
+        },
+        catch: cause => cause instanceof Error ? cause : new Error('Could not mux DASH media.', { cause }),
     });
-    const audioInput = new MB.Input({
-        formats: [MB.MP4],
-        source: new MB.BufferSource(audioBuf),
-    });
-
-    const vTrack = await videoInput.getPrimaryVideoTrack();
-    if (!vTrack || !vTrack.codec) throw new Error('No video track found');
-
-    const aTrack = await audioInput.getPrimaryAudioTrack();
-    if (!aTrack || !aTrack.codec) throw new Error('No audio track found');
-
-    const vSink = new MB.EncodedPacketSink(vTrack);
-    const aSink = new MB.EncodedPacketSink(aTrack);
-
-    const output = new MB.Output({
-        format: new MB.Mp4OutputFormat({ fastStart: 'in-memory' }),
-        target: new MB.BufferTarget(),
-    });
-
-    const vSource = new MB.EncodedVideoPacketSource(vTrack.codec);
-    const aSource = new MB.EncodedAudioPacketSource(aTrack.codec);
-
-    output.addVideoTrack(vSource, { rotation: vTrack.rotation || 0 });
-    output.addAudioTrack(aSource);
-
-    await output.start();
-
-    const vDecoderConfig = await vTrack.getDecoderConfig();
-    const aDecoderConfig = await aTrack.getDecoderConfig();
-
-    const vMeta = vDecoderConfig ? { decoderConfig: vDecoderConfig } : undefined;
-    const aMeta = aDecoderConfig ? { decoderConfig: aDecoderConfig } : undefined;
-
-    const vIter = vSink.packets();
-    const aIter = aSink.packets();
-
-    let vNext = await vIter.next();
-    let aNext = await aIter.next();
-    let vSentMeta = false;
-    let aSentMeta = false;
-
-    while (!vNext.done || !aNext.done) {
-        const takeVideo = (() => {
-            if (vNext.done) return false;
-            if (aNext.done) return true;
-            return vNext.value.timestamp <= aNext.value.timestamp;
-        })();
-
-        if (takeVideo && !vNext.done) {
-            await vSource.add(vNext.value, vSentMeta ? undefined : vMeta);
-            vSentMeta = true;
-            vNext = await vIter.next();
-        } else if (!aNext.done) {
-            await aSource.add(aNext.value, aSentMeta ? undefined : aMeta);
-            aSentMeta = true;
-            aNext = await aIter.next();
-        }
-    }
-
-    await output.finalize();
-
-    const outBuf = output.target.buffer;
-    if (outBuf instanceof ArrayBuffer) return outBuf;
-    throw new Error('Unexpected output buffer type');
 }
 
-async function downloadDashStreams(videoUrl: string, audioUrl: string | null, username: string, sourceType: string, timestamp: number, shortcode: string | null) {
+function downloadDashStreams(videoUrl: string, audioUrl: string | null, username: string, sourceType: string, timestamp: number, shortcode: string | null): Effect.Effect<boolean, Error> {
     logger('[DASH]', 'downloadDashStreams()', {
         videoUrl: videoUrl,
         audioUrl: audioUrl || null,
@@ -168,48 +174,50 @@ async function downloadDashStreams(videoUrl: string, audioUrl: string | null, us
 
     if (!audioUrl) {
         logger('[DASH]', 'Downloaded DASH video only (no audio rep / has_audio=false).');
-        await saveFiles(videoUrl, {
-            username,
-            sourceType,
-            timestamp,
-            filetype: 'mp4',
-            shortcode
-        });
-        return true;
+        return Effect.tryPromise({
+            try: () => saveFiles(videoUrl, { username, sourceType, timestamp, filetype: 'mp4', shortcode }),
+            catch: cause => cause instanceof Error ? cause : new Error('Could not save DASH video.', { cause }),
+        }).pipe(Effect.as(true));
     }
 
-    try {
+    const fallback = Effect.gen(function* () {
+        yield* Effect.tryPromise({
+            try: () => saveFiles(videoUrl, { username, sourceType, timestamp, filetype: 'mp4', shortcode }),
+            catch: cause => cause instanceof Error ? cause : new Error('Could not save DASH video.', { cause }),
+        });
+        yield* Effect.tryPromise({
+            try: () => saveFiles(audioUrl, { username, sourceType, timestamp, filetype: 'm4a', shortcode }),
+            catch: cause => cause instanceof Error ? cause : new Error('Could not save DASH audio.', { cause }),
+        });
+        return true;
+    });
+
+    const merge = Effect.gen(function* () {
         logger('[DASH]', 'Fetching DASH streams for mux...');
-        const [vBuf, aBuf] = await Promise.all([
+        yield* Effect.sync(() => updateLoadingBar(true));
+        const [vBuf, aBuf] = yield* Effect.all([
             fetchArrayBuffer(videoUrl),
-            fetchArrayBuffer(audioUrl)
-        ]);
+            fetchArrayBuffer(audioUrl),
+        ], { concurrency: 'unbounded' }).pipe(
+            Effect.ensuring(Effect.sync(() => updateLoadingBar(false))),
+        );
 
         logger('[DASH]', 'Muxing DASH video+audio into one MP4 (mp4box main thread)...');
-        const mergedBuf = await muxDashVideoAudioToMp4(vBuf, aBuf);
+        const mergedBuf = yield* muxDashVideoAudioToMp4(vBuf, aBuf);
         const mergedBlob = new Blob([mergedBuf], { type: 'video/mp4' });
 
-        await createSaveFileElement(videoUrl, mergedBlob, { username, sourceType, timestamp, filetype: 'mp4', shortcode });
+        yield* Effect.tryPromise({
+            try: () => createSaveFileElement(videoUrl, mergedBlob, { username, sourceType, timestamp, filetype: 'mp4', shortcode }),
+            catch: cause => cause instanceof Error ? cause : new Error('Could not save merged DASH media.', { cause }),
+        });
         logger('[DASH]', 'Merged MP4 download triggered.');
         return true;
-    } catch (e) {
-        logger('[DASH]', 'Mux failed -> fallback to separate downloads', e instanceof Error ? e.message : e);
-        await saveFiles(videoUrl, {
-            username,
-            sourceType,
-            timestamp,
-            filetype: 'mp4',
-            shortcode
-        });
-        await saveFiles(audioUrl, {
-            username,
-            sourceType,
-            timestamp,
-            filetype: 'm4a',
-            shortcode
-        });
-        return true;
-    }
+    });
+
+    return merge.pipe(Effect.catchCause(cause => {
+        logger('[DASH]', 'Mux failed -> fallback to separate downloads', cause);
+        return fallback;
+    }));
 }
 
 /**
@@ -221,7 +229,7 @@ async function downloadDashStreams(videoUrl: string, audioUrl: string | null, us
  *
  * @return {Promise<boolean>} true if DASH path handled it, false to let caller fallback.
  */
-export async function tryHandleDashFromMediaItem({
+export function tryHandleDashFromMediaItem({
     mediaItem,
     username,
     sourceType,
@@ -238,7 +246,7 @@ export async function tryHandleDashFromMediaItem({
     isPreview?: boolean;
     index?: number;
 }): Promise<boolean> {
-    try {
+    const program = Effect.gen(function* () {
         if (!USER_SETTING.PREFER_DASH_MANIFEST) return false;
         if (!USER_SETTING.FORCE_RESOURCE_VIA_MEDIA) return false;
         if (!mediaItem?.video_dash_manifest) return false;
@@ -264,22 +272,26 @@ export async function tryHandleDashFromMediaItem({
 
         if (!aUrl) {
             logger('[DASH]', 'download mode -> VIDEO-ONLY DASH (no audio rep)');
-            await saveFiles(vUrl, {
-                username,
-                sourceType,
-                timestamp,
-                filetype: 'mp4',
-                shortcode,
-                index
+            yield* Effect.tryPromise({
+                try: () => saveFiles(vUrl, {
+                    username,
+                    sourceType,
+                    timestamp,
+                    filetype: 'mp4',
+                    shortcode,
+                    index,
+                }),
+                catch: cause => cause instanceof Error ? cause : new Error('Could not save DASH video.', { cause }),
             });
             return true;
         }
 
         logger('[DASH]', 'download mode -> DASH video+audio');
-        await downloadDashStreams(vUrl, aUrl, username ?? '', sourceType, timestamp, shortcode ?? null);
+        yield* downloadDashStreams(vUrl, aUrl, username ?? '', sourceType, timestamp, shortcode ?? null);
         return true;
-    } catch (e) {
-        logger('[DASH]', 'tryHandleDashFromMediaItem failed -> fallback', e instanceof Error ? e.message : e);
+    }).pipe(Effect.catchCause(cause => Effect.sync(() => {
+        logger('[DASH]', 'tryHandleDashFromMediaItem failed -> fallback', cause);
         return false;
-    }
+    })));
+    return Effect.runPromise(program);
 }

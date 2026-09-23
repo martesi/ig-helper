@@ -54,23 +54,27 @@ export function triggerDownload(blob: Blob, filename: string): Promise<void> {
         ));
     }
 
-    return new Promise<void>(resolve => {
-        const url = URL.createObjectURL(blob);
+    let url: string | undefined;
+    let link: HTMLAnchorElement | undefined;
+    return Effect.runPromise(Effect.callback<void, never>(resume => {
+        url = URL.createObjectURL(blob);
+        link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.rel = 'noopener';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
 
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = filename;
-            link.rel = "noopener";
-            link.style.display = "none";
-            document.body.appendChild(link);
-            link.click();
-            setTimeout(() => {
-
-                try { document.body.removeChild(link); } catch { /* noop */ }
-                URL.revokeObjectURL(url);
-                resolve();
-            }, 250);
-    });
+        const timer = setTimeout(() => resume(Effect.void), 250);
+        return Effect.sync(() => clearTimeout(timer));
+    }).pipe(Effect.ensuring(Effect.sync(() => {
+        try {
+            link?.remove();
+        } finally {
+            if (url !== undefined) URL.revokeObjectURL(url);
+        }
+    }))));
 }
 
 /**

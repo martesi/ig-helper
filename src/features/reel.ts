@@ -3,12 +3,12 @@ import { USER_SETTING, state } from "../settings/state";
 import { saveFiles } from "../shared/download";
 import { openNewTab } from "../shared/navigation";
 import { triggerReactClickHandler } from "../shared/react";
-import { updateLoadingBar } from "../shared/ui/status.tsx";
 import { logger } from "../shared/logger";
 import { getBlobMedia } from "../shared/api";
 import { filterResourceData } from "./post/post";
 import { mountReelControls } from "./reel/controls.tsx";
 import { currentRouteScope } from "../shared/route-scope";
+import { runWithLoadingBar } from './loading';
 
 /**
  * onReels
@@ -22,84 +22,83 @@ import { currentRouteScope } from "../shared/route-scope";
 export async function onReels(isDownload = false, isVideo = false, isPreview = false) {
     try {
         if (isDownload) {
-            updateLoadingBar(true);
+            await runWithLoadingBar(async () => {
+                const reelsPath = (location.href.split('?').at(0) ?? '').split('instagram.com/reels/').at(-1)?.replaceAll('/', '') ?? '';
+                const result = await getBlobMedia(reelsPath);
 
-            const reelsPath = (location.href.split('?').at(0) ?? '').split('instagram.com/reels/').at(-1)?.replaceAll('/', '') ?? '';
-            const result = await getBlobMedia(reelsPath);
-
-            if (result.type === 'query_hash') {
-                const media = filterResourceData(result.data);
-                const timestamp = USER_SETTING.RENAME_PUBLISH_DATE ? media.taken_at_timestamp : Date.now();
-                if (isVideo && media.is_video) {
-                    if (!media.video_url) throw new Error('Reel response has no video URL');
-                    if (isPreview) {
-                        openNewTab(media.video_url);
+                if (result.type === 'query_hash') {
+                    const media = filterResourceData(result.data);
+                    const timestamp = USER_SETTING.RENAME_PUBLISH_DATE ? media.taken_at_timestamp : Date.now();
+                    if (isVideo && media.is_video) {
+                        if (!media.video_url) throw new Error('Reel response has no video URL');
+                        if (isPreview) {
+                            openNewTab(media.video_url);
+                        }
+                        else {
+                            const type = 'mp4';
+                            await saveFiles(media.video_url, {
+                                username: media.owner.username,
+                                sourceType: "reels",
+                                timestamp,
+                                filetype: type,
+                                shortcode: reelsPath
+                            });
+                        }
                     }
                     else {
-                        const type = 'mp4';
-                        saveFiles(media.video_url, {
-                            username: media.owner.username,
-                            sourceType: "reels",
-                            timestamp,
-                            filetype: type,
-                            shortcode: reelsPath
-                        });
+                        const imageUrl = media.display_resources.at(-1)?.src;
+                        if (!imageUrl) throw new Error('Reel response has no image URL');
+                        if (isPreview) {
+                            openNewTab(imageUrl);
+                        }
+                        else {
+                            const type = 'jpg';
+                            await saveFiles(imageUrl, {
+                                username: media.owner.username,
+                                sourceType: "reels",
+                                timestamp,
+                                filetype: type,
+                                shortcode: reelsPath
+                            });
+                        }
                     }
                 }
                 else {
-                    const imageUrl = media.display_resources.at(-1)?.src;
-                    if (!imageUrl) throw new Error('Reel response has no image URL');
-                    if (isPreview) {
-                        openNewTab(imageUrl);
+                    const media = filterResourceData(result.data);
+                    const timestamp = USER_SETTING.RENAME_PUBLISH_DATE ? media.taken_at : Date.now();
+                    if (isVideo && media.video_versions != null) {
+                        if (isPreview) {
+                            openNewTab(media.video_versions[0].url);
+                        }
+                        else {
+                            const type = 'mp4';
+                            await saveFiles(media.video_versions[0].url, {
+                                username: media.owner.username,
+                                sourceType: "reels",
+                                timestamp,
+                                filetype: type,
+                                shortcode: reelsPath
+                            });
+                        }
                     }
                     else {
-                        const type = 'jpg';
-                        saveFiles(imageUrl, {
-                            username: media.owner.username,
-                            sourceType: "reels",
-                            timestamp,
-                            filetype: type,
-                            shortcode: reelsPath
-                        });
+                        if (isPreview) {
+                            openNewTab(media.image_versions2.candidates[0].url);
+                        }
+                        else {
+                            const type = 'jpg';
+                            await saveFiles(media.image_versions2.candidates[0].url, {
+                                username: media.owner.username,
+                                sourceType: "reels",
+                                timestamp,
+                                filetype: type,
+                                shortcode: reelsPath
+                            });
+                        }
                     }
                 }
-            }
-            else {
-                const media = filterResourceData(result.data);
-                const timestamp = USER_SETTING.RENAME_PUBLISH_DATE ? media.taken_at : Date.now();
-                if (isVideo && media.video_versions != null) {
-                    if (isPreview) {
-                        openNewTab(media.video_versions[0].url);
-                    }
-                    else {
-                        const type = 'mp4';
-                        saveFiles(media.video_versions[0].url, {
-                            username: media.owner.username,
-                            sourceType: "reels",
-                            timestamp,
-                            filetype: type,
-                            shortcode: reelsPath
-                        });
-                    }
-                }
-                else {
-                    if (isPreview) {
-                        openNewTab(media.image_versions2.candidates[0].url);
-                    }
-                    else {
-                        const type = 'jpg';
-                        saveFiles(media.image_versions2.candidates[0].url, {
-                            username: media.owner.username,
-                            sourceType: "reels",
-                            timestamp,
-                            filetype: type,
-                            shortcode: reelsPath
-                        });
-                    }
-                }
-            }
 
-            updateLoadingBar(false);
+            });
         }
         else {
             const svgClose = 'svg > polyline[points^="20.643 3.357 12 12 3.353 20.647"] ~ line';

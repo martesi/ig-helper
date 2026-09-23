@@ -8,13 +8,13 @@ import {
     getHighlightCurrentTimeElement, setTimeElementDateAndLocaleTime,
     setStoryProgressIndexText, setStoryProgressIndexByUsername
 } from "../shared/story";
-import { updateLoadingBar } from "../shared/ui/status.tsx";
 import { logger } from "../shared/logger";
 import { getHighlightStories, getMediaInfo } from "../shared/api";
 import { downloadStoryResources } from "./story";
 import { getImageFromCache } from "./media/image-cache";
 import { mountMediaControls } from './post/controls.tsx';
 import type { StoryItem } from '../shared/instagram-data.ts';
+import { runWithLoadingBar } from './loading';
 
 /**
  * getHighlightsStoryUsername
@@ -98,16 +98,12 @@ function mountHighlightControlBar($element: JQuery<Element>, username: string, m
  * @return {void}
  */
 export async function onHighlightsStoryAll() {
-    updateLoadingBar(true);
-    try {
+    return runWithLoadingBar(async () => {
         const highlightId = location.href.replace(/\/$/ig, '').split('/').at(-1) ?? '';
         const highStories = await getHighlightStories(highlightId);
         const username = highStories.data.reels_media[0].owner.username;
         await downloadStoryResources(highStories, 'highlights', `Highlight · ${username}`);
-    }
-    finally {
-        updateLoadingBar(false);
-    }
+    }).catch(err => { logger('onHighlightsStoryAll()', 'failed', err); });
 }
 
 export function onHighlightsStoryDownload() {
@@ -125,7 +121,7 @@ export function onHighlightsStoryDownload() {
  * @param  {Boolean}  isPreview - Check if it is need to open new tab
  * @return {void}
  */
-export async function onHighlightsStory(isDownload = false, isPreview = false) {
+export async function onHighlightsStory(isDownload = false, isPreview = false): Promise<void> {
     let username = getHighlightsStoryUsername();
 
     if (isDownload) {
@@ -137,153 +133,152 @@ export async function onHighlightsStory(isDownload = false, isPreview = false) {
             $('body > div div:not([hidden]) section:visible > div div[style]:not([class]) > div').find('div div.x1ned7t2.x78zum5 div.x1caxmr6').length;
         let target: StoryItem | undefined;
 
-        updateLoadingBar(true);
+        return runWithLoadingBar(async () => {
+            if (state.GL_dataCache.highlights[highlightId]) {
+                logger('Fetch from memory cache:', highlightId);
 
-        if (state.GL_dataCache.highlights[highlightId]) {
-            logger('Fetch from memory cache:', highlightId);
+                // OPTIMIZATION: cache items array — avoids 4 repeated property lookups
+                const items = state.GL_dataCache.highlights[highlightId].data.reels_media[0].items;
+                const totIndex = items.length;
+                username = state.GL_dataCache.highlights[highlightId].data.reels_media[0].owner.username;
+                target = items[totIndex - nowIndex];
+            }
+            else {
+                const highStories = await getHighlightStories(highlightId);
+                const items = highStories.data.reels_media[0].items;
+                const totIndex = items.length;
+                username = highStories.data.reels_media[0].owner.username;
+                target = items[totIndex - nowIndex];
 
-            // OPTIMIZATION: cache items array — avoids 4 repeated property lookups
-            const items = state.GL_dataCache.highlights[highlightId].data.reels_media[0].items;
-            const totIndex = items.length;
-            username = state.GL_dataCache.highlights[highlightId].data.reels_media[0].owner.username;
-            target = items[totIndex - nowIndex];
-        }
-        else {
-            const highStories = await getHighlightStories(highlightId);
-            const items = highStories.data.reels_media[0].items;
-            const totIndex = items.length;
-            username = highStories.data.reels_media[0].owner.username;
-            target = items[totIndex - nowIndex];
+                state.GL_dataCache.highlights[highlightId] = highStories;
+            }
 
-            state.GL_dataCache.highlights[highlightId] = highStories;
-        }
+            logger('onHighlightsStory', highlightId, state.GL_dataCache.highlights[highlightId]);
 
-        logger('onHighlightsStory', highlightId, state.GL_dataCache.highlights[highlightId]);
-
-        if (!target) {
-            updateLoadingBar(false);
-            alert('Could not identify the current highlight.');
-            return;
-        }
-
-        if (USER_SETTING.RENAME_PUBLISH_DATE) {
-            timestamp = target.taken_at_timestamp;
-        }
-
-        if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
-            const cached = getImageFromCache(target.id);
-            if (cached && state.GL_dataCache.highlights[highlightId].data.reels_media[0].items.find(item => item.id === target.id)?.is_video === false) {
-                logger("[Restore Cached onHighlight]", target.id);
-                if (isPreview) {
-                    openNewTab(cached);
-                }
-                else {
-                    saveFiles(cached, {
-                        username,
-                        sourceType: "highlights",
-                        timestamp,
-                        filetype: 'jpg',
-                        shortcode: target.id
-                    });
-                }
+            if (!target) {
+                alert('Could not identify the current highlight.');
                 return;
             }
-        }
+            const targetId = target.id;
 
-        if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && !state.tempFetchRateLimit) {
-            const result = await getMediaInfo(target.id);
+            if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                timestamp = target.taken_at_timestamp;
+            }
 
-            if (result.status === 'ok') {
-                // OPTIMIZATION: cache first media item — accessed 5+ times below
-                const mediaItem = result.items[0];
-                if (mediaItem.video_versions) {
-                    const handled = await tryHandleDashFromMediaItem({
-                        mediaItem: mediaItem,
-                        username,
-                        sourceType: "highlights",
-                        timestamp,
-                        shortcode: mediaItem.id,
-                        isPreview,
-                    });
-                    if (handled) return;
-
+            if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
+                const cached = getImageFromCache(targetId);
+                if (cached && state.GL_dataCache.highlights[highlightId].data.reels_media[0].items.find(item => item.id === targetId)?.is_video === false) {
+                    logger("[Restore Cached onHighlight]", targetId);
                     if (isPreview) {
-                        openNewTab(mediaItem.video_versions[0].url);
+                        openNewTab(cached);
                     }
                     else {
-                        saveFiles(mediaItem.video_versions[0].url,
-                            {
-                                username,
-                                sourceType: "highlights",
-                                timestamp,
-                                filetype: 'mp4',
-                                shortcode: mediaItem.id
-                            });
-                    }
-                }
-                else {
-                    if (isPreview) {
-                        openNewTab(mediaItem.image_versions2.candidates[0].url);
-                    }
-                    else {
-                        saveFiles(mediaItem.image_versions2.candidates[0].url, {
+                        await saveFiles(cached, {
                             username,
                             sourceType: "highlights",
                             timestamp,
                             filetype: 'jpg',
-                            shortcode: mediaItem.id
+                            shortcode: targetId
+                        });
+                    }
+                    return;
+                }
+            }
+
+            if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && !state.tempFetchRateLimit) {
+                const result = await getMediaInfo(target.id);
+
+                if (result.status === 'ok') {
+                    // OPTIMIZATION: cache first media item — accessed 5+ times below
+                    const mediaItem = result.items[0];
+                    if (mediaItem.video_versions) {
+                        const handled = await tryHandleDashFromMediaItem({
+                            mediaItem: mediaItem,
+                            username,
+                            sourceType: "highlights",
+                            timestamp,
+                            shortcode: mediaItem.id,
+                            isPreview,
+                        });
+                        if (handled) return;
+
+                        if (isPreview) {
+                            openNewTab(mediaItem.video_versions[0].url);
+                        }
+                        else {
+                            await saveFiles(mediaItem.video_versions[0].url,
+                                {
+                                    username,
+                                    sourceType: "highlights",
+                                    timestamp,
+                                    filetype: 'mp4',
+                                    shortcode: mediaItem.id
+                                });
+                        }
+                    }
+                    else {
+                        if (isPreview) {
+                            openNewTab(mediaItem.image_versions2.candidates[0].url);
+                        }
+                        else {
+                            await saveFiles(mediaItem.image_versions2.candidates[0].url, {
+                                username,
+                                sourceType: "highlights",
+                                timestamp,
+                                filetype: 'jpg',
+                                shortcode: mediaItem.id
+                            });
+                        }
+                    }
+                }
+                else {
+                    if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED) {
+                        delete state.GL_dataCache.highlights[highlightId];
+                        state.tempFetchRateLimit = true;
+
+                        return await onHighlightsStory(true, isPreview);
+                    }
+                    else {
+                        alert('Fetch failed from Media API. API response message: ' + result.message);
+                    }
+
+                    logger('onHighlightsStory()', 'Media API rejected request', result?.message);
+                }
+            }
+            else {
+                if (target.is_video) {
+                    if (isPreview) {
+                        openNewTab(target.video_resources.at(-1)?.src ?? '');
+                    }
+                    else {
+                        await saveFiles(target.video_resources.at(-1)?.src ?? '', {
+                            username,
+                            sourceType: "highlights",
+                            timestamp,
+                            filetype: 'mp4',
+                            shortcode: target.id
                         });
                     }
                 }
-            }
-            else {
-                if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED) {
-                    delete state.GL_dataCache.highlights[highlightId];
-                    state.tempFetchRateLimit = true;
-
-                    onHighlightsStory(true, isPreview);
-                }
                 else {
-                    alert('Fetch failed from Media API. API response message: ' + result.message);
+                    if (isPreview) {
+                        openNewTab(target.display_resources.at(-1)?.src ?? '');
+                    }
+                    else {
+                        await saveFiles(target.display_resources.at(-1)?.src ?? '', {
+                            username,
+                            sourceType: "highlights",
+                            timestamp,
+                            filetype: 'jpg',
+                            shortcode: target.id
+                        });
+                    }
                 }
 
-                logger('onHighlightsStory()', 'Media API rejected request', result?.message);
-            }
-        }
-        else {
-            if (target.is_video) {
-                if (isPreview) {
-                    openNewTab(target.video_resources.at(-1)?.src ?? '');
-                }
-                else {
-                    saveFiles(target.video_resources.at(-1)?.src ?? '', {
-                        username,
-                        sourceType: "highlights",
-                        timestamp,
-                        filetype: 'mp4',
-                        shortcode: target.id
-                    });
-                }
-            }
-            else {
-                if (isPreview) {
-                    openNewTab(target.display_resources.at(-1)?.src ?? '');
-                }
-                else {
-                    saveFiles(target.display_resources.at(-1)?.src ?? '', {
-                        username,
-                        sourceType: "highlights",
-                        timestamp,
-                        filetype: 'jpg',
-                        shortcode: target.id
-                    });
-                }
+                state.tempFetchRateLimit = false;
             }
 
-            state.tempFetchRateLimit = false;
-        }
-
-        updateLoadingBar(false);
+        }).catch(err => { logger('onHighlightsStory()', 'failed', err); });
     }
     else {
         const $element = findHighlightControlElement();
@@ -300,7 +295,7 @@ export async function onHighlightsStory(isDownload = false, isPreview = false) {
  * @param  {Boolean}  isDownload - Check if it is a download operation
  * @return {void}
  */
-export async function onHighlightsStoryThumbnail(isDownload = false) {
+export async function onHighlightsStoryThumbnail(isDownload = false): Promise<void> {
     if (isDownload) {
         const date = new Date().getTime();
         let timestamp = Math.floor(date / 1000);
@@ -311,89 +306,88 @@ export async function onHighlightsStoryThumbnail(isDownload = false) {
             $('body > div div:not([hidden]) section:visible > div div[style]:not([class]) > div').find('div div.x1ned7t2.x78zum5 div.x1caxmr6').length;
         let target: StoryItem | undefined;
 
-        updateLoadingBar(true);
+        return runWithLoadingBar(async () => {
 
-        if (state.GL_dataCache.highlights[highlightId]) {
-            logger('Fetch from memory cache:', highlightId);
+            if (state.GL_dataCache.highlights[highlightId]) {
+                logger('Fetch from memory cache:', highlightId);
 
-            const items = state.GL_dataCache.highlights[highlightId].data.reels_media[0].items;
-            const totIndex = items.length;
-            username = state.GL_dataCache.highlights[highlightId].data.reels_media[0].owner.username;
-            target = items[totIndex - nowIndex];
-        }
-        else {
-            const highStories = await getHighlightStories(highlightId);
-            const items = highStories.data.reels_media[0].items;
-            const totIndex = items.length;
-            username = highStories.data.reels_media[0].owner.username;
-            target = items[totIndex - nowIndex];
+                const items = state.GL_dataCache.highlights[highlightId].data.reels_media[0].items;
+                const totIndex = items.length;
+                username = state.GL_dataCache.highlights[highlightId].data.reels_media[0].owner.username;
+                target = items[totIndex - nowIndex];
+            }
+            else {
+                const highStories = await getHighlightStories(highlightId);
+                const items = highStories.data.reels_media[0].items;
+                const totIndex = items.length;
+                username = highStories.data.reels_media[0].owner.username;
+                target = items[totIndex - nowIndex];
 
-            state.GL_dataCache.highlights[highlightId] = highStories;
-        }
+                state.GL_dataCache.highlights[highlightId] = highStories;
+            }
 
-        if (!target) {
-            updateLoadingBar(false);
-            alert('Could not identify the current highlight thumbnail.');
-            return;
-        }
-
-        if (USER_SETTING.RENAME_PUBLISH_DATE) {
-            timestamp = target.taken_at_timestamp;
-        }
-
-        if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
-            const cached = getImageFromCache(target.id);
-            if (cached) {
-                logger("[Restore Cached onHighlightsStoryThumbnail]", target.id);
-                saveFiles(cached, {
-                    username,
-                    sourceType: "highlights",
-                    timestamp,
-                    filetype: 'jpg',
-                    shortcode: target.id
-                });
+            if (!target) {
+                alert('Could not identify the current highlight thumbnail.');
                 return;
             }
-        }
 
-        if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && !state.tempFetchRateLimit) {
-            const result = await getMediaInfo(target.id);
+            if (USER_SETTING.RENAME_PUBLISH_DATE) {
+                timestamp = target.taken_at_timestamp;
+            }
 
-            if (result.status === 'ok') {
-                saveFiles(result.items[0].image_versions2.candidates[0].url, {
+            if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
+                const cached = getImageFromCache(target.id);
+                if (cached) {
+                    logger("[Restore Cached onHighlightsStoryThumbnail]", target.id);
+                    await saveFiles(cached, {
+                        username,
+                        sourceType: "highlights",
+                        timestamp,
+                        filetype: 'jpg',
+                        shortcode: target.id
+                    });
+                    return;
+                }
+            }
+
+            if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && !state.tempFetchRateLimit) {
+                const result = await getMediaInfo(target.id);
+
+                if (result.status === 'ok') {
+                    await saveFiles(result.items[0].image_versions2.candidates[0].url, {
+                        username,
+                        sourceType: "highlights",
+                        timestamp,
+                        filetype: 'jpg',
+                        shortcode: highlightId
+                    });
+                }
+                else {
+                    if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED) {
+                        delete state.GL_dataCache.highlights[highlightId];
+                        state.tempFetchRateLimit = true;
+
+                        return await onHighlightsStoryThumbnail(true);
+                    }
+                    else {
+                        alert('Fetch failed from Media API. API response message: ' + result.message);
+                    }
+
+                    logger('onHighlightsStoryThumbnail()', 'Media API rejected request', result?.message);
+                }
+            }
+            else {
+                await saveFiles(target.display_resources.at(-1)?.src ?? '', {
                     username,
                     sourceType: "highlights",
                     timestamp,
                     filetype: 'jpg',
                     shortcode: highlightId
                 });
+                state.tempFetchRateLimit = false;
             }
-            else {
-                if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED) {
-                    delete state.GL_dataCache.highlights[highlightId];
-                    state.tempFetchRateLimit = true;
 
-                    onHighlightsStoryThumbnail(true);
-                }
-                else {
-                    alert('Fetch failed from Media API. API response message: ' + result.message);
-                }
-
-                logger('onHighlightsStoryThumbnail()', 'Media API rejected request', result?.message);
-            }
-        }
-        else {
-            saveFiles(target.display_resources.at(-1)?.src ?? '', {
-                username,
-                sourceType: "highlights",
-                timestamp,
-                filetype: 'jpg',
-                shortcode: highlightId
-            });
-            state.tempFetchRateLimit = false;
-        }
-
-        updateLoadingBar(false);
+        }).catch(err => { logger('onHighlightsStoryThumbnail()', 'failed', err); });
     }
     else {
         const $element = findHighlightControlElement();

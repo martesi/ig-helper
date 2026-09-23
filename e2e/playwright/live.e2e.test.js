@@ -701,14 +701,14 @@ test.describe('IG Helper live browser E2E', () => {
     test('download failures do not create a toast', EXECUTION, async () => {
         const page = await e2e.context.newPage();
         try {
-            await page.goto(`${VITE_URL}/src/shared/general.js`, { waitUntil: 'domcontentloaded' });
+            await page.goto(`${VITE_URL}/src/shared/download.ts`, { waitUntil: 'domcontentloaded' });
             const result = await page.evaluate(async () => {
                 globalThis.GM_getResourceText = () => '{}';
                 globalThis.GM_getValue = (_key, fallback) => fallback;
                 globalThis.GM_setValue = () => {};
                 globalThis.GM_info = { script: { version: 'e2e' } };
 
-                const { saveFiles } = await import('/src/shared/general.js?e2e-download-failure=1');
+                const { saveFiles } = await import('/src/shared/download.ts?e2e-download-failure=1');
                 const originalFetch = globalThis.fetch;
                 globalThis.fetch = async () => new Response('', { status: 503 });
 

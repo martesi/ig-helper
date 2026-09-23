@@ -1,6 +1,7 @@
 import { render } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { _i18n } from '../i18n';
+import { logger } from '../logger';
 import { Button, Checkbox, IconButton } from './components.tsx';
 import { XIcon } from './icons.tsx';
 import { adoptShadowStyles } from './shadow-styles.ts';
@@ -76,14 +77,18 @@ function ResourcePicker({ title, resources, onDownload, returnFocus }: ResourceP
                 return;
             }
 
-            const first = focusable[0];
-            const last = focusable[focusable.length - 1];
-            if (event.shiftKey && document.activeElement === first) {
+            const root = dialogRef.current?.getRootNode();
+            const active = root instanceof ShadowRoot ? root.activeElement : document.activeElement;
+            const activeIndex = focusable.findIndex(element => element === active);
+            if (activeIndex < 0) {
                 event.preventDefault();
-                last.focus();
-            } else if (!event.shiftKey && document.activeElement === last) {
+                (event.shiftKey ? focusable.at(-1) : focusable[0])?.focus();
+            } else if (event.shiftKey && activeIndex === 0) {
                 event.preventDefault();
-                first.focus();
+                focusable.at(-1)?.focus();
+            } else if (!event.shiftKey && activeIndex === focusable.length - 1) {
+                event.preventDefault();
+                focusable[0]?.focus();
             }
         }
 
@@ -109,7 +114,7 @@ function ResourcePicker({ title, resources, onDownload, returnFocus }: ResourceP
         const resources = selectedResources;
         removeResourcePicker();
         void Promise.resolve().then(() => onDownload(resources)).catch(reason => {
-            console.error('resourcePicker.download', reason);
+            logger('resourcePicker.download.failed', reason);
             alert('The selected media could not be downloaded. Please try again.');
         });
     }
