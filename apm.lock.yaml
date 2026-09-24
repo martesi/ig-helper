@@ -4,7 +4,7 @@ dependencies:
 - repo_url: martesi/arca
   name: e2e
   host: github.com
-  resolved_commit: 456a2962c7a0fdd05323bff063d85484cb80532f
+  resolved_commit: 6525d656d84775c2235ac949aa9a5273044b2375
   version: unknown
   virtual_path: skills/e2e
   is_virtual: true
@@ -50,12 +50,12 @@ dependencies:
     .agents/skills/e2e/references/tauri.md: sha256:2769582caf0d55bad8c4a5b1363d1eab82a28fdbb841a00fd8caa35ddd4c2c7a
     .agents/skills/e2e/references/userscripts.md: sha256:4f2f1f8253ae2843f35ac9f9b92280b68e363f113cf87fac540f00ddb3d86adb
     .agents/skills/e2e/references/workflow.md: sha256:744a8c06652caacaaba512d8b3e115acd5b9e089f6d3d5319437ab55cde5188a
-    .agents/skills/e2e/scripts/harness.ts: sha256:dce531df6ab6abffa336da4354595c552550e797867520f46c79ef1e6f0dda2f
+    .agents/skills/e2e/scripts/harness.ts: sha256:42a15cf1a84f9775fc0646243b7f22010bdd19fcf98b2c991ff62059b0dbb2fc
     .agents/skills/e2e/tsconfig.json: sha256:f777f5c70915ddad2c129bc3937c9e99bbcf08e207fe86c344224d051674430d
-  content_hash: sha256:32afbc64363a352600d43a280389396bfb77b7ce74f7e5ed3263de1f588377c7
+  content_hash: sha256:046ef907d81c2b0d5aac56f3dd909d93d9efc88350d5a705783f8cbb032a1c5b
 deployments:
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e
   runtime: null
   scope: project
@@ -64,7 +64,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: null
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/SKILL.md
   runtime: null
   scope: project
@@ -73,7 +73,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:2ba745fc3e89a1f375db6e5fe1e7c4a5504b7b192487d3fef195b9d0a78950bf
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/agents/openai.yaml
   runtime: null
   scope: project
@@ -82,7 +82,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:ac97ba3e0c4f2aff0d6b38ecd2eceab366f8ba220119f76d7de608b8d3fdce52
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/assets/browser/cdp-runtime.ts
   runtime: null
   scope: project
@@ -91,7 +91,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:2ee07b948f3f3ede80ebfc1b7d8b950c6960f3922ad03a990851799d5333eb36
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/assets/browser/cookie-loader.ts
   runtime: null
   scope: project
@@ -100,7 +100,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:c2fb6a08fb4a6c208ec7223ddf13b59e35b9549931d871ba689aeb6b31cb590b
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/assets/browser/runtime.ts
   runtime: null
   scope: project
@@ -109,7 +109,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:adc56a064009ba5f78f0b2a49f78f00633c9ceb9c0da831cbf942a8e708a402e
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/assets/disable-csp/manifest.json
   runtime: null
   scope: project
@@ -118,7 +118,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:70683028af16cc8904b8574c8305923f8fd3cd6b3c54c315954d1f2a339eba93
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/assets/disable-csp/rules.json
   runtime: null
   scope: project
@@ -127,7 +127,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:87c9d3eb885c9874730e2b129d6538b9d29c79face38fee9fb186771158aa499
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/package.json
   runtime: null
   scope: project
@@ -136,7 +136,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:4032aa3ff6de46a4196b4d4309fe5cb32c8d77195fbac4817bcde2cfff8d8889
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/references/driving.md
   runtime: null
   scope: project
@@ -145,7 +145,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:2c5cdc0502beb696291b384068851126445bad3d8b32f46514499e52bd33d69c
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/references/e2e-shell.md
   runtime: null
   scope: project
@@ -154,7 +154,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:95d8fb1ce379c322bd62e05308922b6bd2b41a2527ded33c4203ab96f27b0112
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/references/electron.md
   runtime: null
   scope: project
@@ -163,7 +163,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:68defc20c54ad27b85241bae3b55cfcb7b87d7a1bf8abe4239340a43cd997cf1
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/references/harness.md
   runtime: null
   scope: project
@@ -172,7 +172,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:244f4dd85180ee675905fa0b218f08f3031abae9fbbe12f48f139100abca56e9
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/references/installation.md
   runtime: null
   scope: project
@@ -181,7 +181,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:f8831f390bcd66e63c39a512fa95e485469a02171659ff0a30cbe675e86ff712
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/references/nix.md
   runtime: null
   scope: project
@@ -190,7 +190,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:5ef5bd41173549877ef2390eb460875f6ae259a331c05a85cc8cb0d4f1e71f82
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/references/playwright.md
   runtime: null
   scope: project
@@ -199,7 +199,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:73db0f1c6b21ce0a81c64fe9cbeeca161d21e35703f94584f9cd1ad55534ee57
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/references/tauri.md
   runtime: null
   scope: project
@@ -208,7 +208,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:2769582caf0d55bad8c4a5b1363d1eab82a28fdbb841a00fd8caa35ddd4c2c7a
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/references/userscripts.md
   runtime: null
   scope: project
@@ -217,7 +217,7 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:4f2f1f8253ae2843f35ac9f9b92280b68e363f113cf87fac540f00ddb3d86adb
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/references/workflow.md
   runtime: null
   scope: project
@@ -226,16 +226,16 @@ deployments:
   active_owner: martesi/arca/skills/e2e
   content_hash: sha256:744a8c06652caacaaba512d8b3e115acd5b9e089f6d3d5319437ab55cde5188a
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/scripts/harness.ts
   runtime: null
   scope: project
   owners:
   - martesi/arca/skills/e2e
   active_owner: martesi/arca/skills/e2e
-  content_hash: sha256:dce531df6ab6abffa336da4354595c552550e797867520f46c79ef1e6f0dda2f
+  content_hash: sha256:42a15cf1a84f9775fc0646243b7f22010bdd19fcf98b2c991ff62059b0dbb2fc
 - kind: project-relative
-  target: legacy
+  target: agent-skills
   value: .agents/skills/e2e/tsconfig.json
   runtime: null
   scope: project
