@@ -7,7 +7,7 @@ const pending = new Map<number, (value: unknown) => void>();
 let nextId = 0;
 
 window.addEventListener('message', event => {
-    if (event.source !== window || event.origin !== location.origin) return;
+    // Userscript sandboxes do not preserve MessageEvent source/origin identity.
     if (event.data?.channel !== CHANNEL || event.data.direction !== 'response') return;
     pending.get(event.data.id)?.(event.data);
 });

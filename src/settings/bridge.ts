@@ -17,7 +17,7 @@ const hotkeysByStateKey = new Map(HOTKEY_SETTINGS.map(config => [config.stateKey
 
 export function startSettingsBridge() {
     const onMessage = (event: MessageEvent) => {
-        if (event.source !== window || event.origin !== location.origin) return;
+        // Userscript sandboxes do not preserve MessageEvent source/origin identity.
         if (event.data?.channel !== CHANNEL || event.data.direction !== 'request') return;
 
         const id = Number.isInteger(event.data.id) && event.data.id > 0 ? event.data.id : null;
