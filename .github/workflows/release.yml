@@ -48,7 +48,6 @@ jobs:
           path: |
             dist/script/ig-helper.user.js
             dist/script/ig-helper.meta.js
-            dist/script/i18n.json
           if-no-files-found: error
 
       - name: Configure Pages
@@ -71,7 +70,6 @@ jobs:
           gh release create "$TAG" \
             dist/script/ig-helper.user.js \
             dist/script/ig-helper.meta.js \
-            dist/script/i18n.json \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "$TAG" \
