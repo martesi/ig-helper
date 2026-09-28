@@ -438,7 +438,9 @@ function openPostImageViewer(target: HTMLElement) {
 
 function getCurrentPostImageUrl(target: HTMLElement): string | null {
     const $article = getPostContainerFromButton(target);
-    let url = $article.data('igHelper_displayResourceURL');
+    const index = getVisibleNodeIndex($article);
+    const currentImage = $article.find(resourceCountSelector).eq(index).find<HTMLImageElement>('img[alt][src]').first()[0];
+    let url: string | undefined = currentImage?.currentSrc || currentImage?.src;
 
     if (!url) {
         url = $article.find('img:visible').filter(function () {

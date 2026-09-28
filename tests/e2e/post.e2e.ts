@@ -234,6 +234,44 @@ test.describe('IG Helper browser E2E', () => {
             });
         });
 
+        test('image viewer ignores a stale cached carousel image', async () => {
+            await e2e.withSettings({ SHOW_MEDIA_PREVIEW: true }, async () => {
+                await e2e.ensurePostControls();
+                const initialSrc = await e2e.page.locator('[data-snig="canDownload"] img[alt][src]').first().evaluate(image =>
+                    (image as HTMLImageElement).currentSrc || (image as HTMLImageElement).src
+                );
+                const next = e2e.page.getByRole('button', { name: 'Next' }).first();
+                await next.click();
+                await e2e.page.waitForTimeout(700);
+
+                const expected = await e2e.page.evaluate(() => {
+                    const article = document.querySelector<HTMLElement>('[data-snig="canDownload"]');
+                    if (!article) return null;
+                    const images = [...article.querySelectorAll<HTMLImageElement>('img[alt][src]')]
+                        .filter(image => {
+                            const rect = image.getBoundingClientRect();
+                            return rect.width > 64 && rect.height > 64 && rect.left >= 0 && rect.right <= innerWidth;
+                        });
+                    const current = images[0];
+                    if (!current) return null;
+                    return current.currentSrc || current.src;
+                });
+                expect(expected).toBeTruthy();
+
+                await e2e.page.evaluate(staleSrc => {
+                    const article = document.querySelector<HTMLElement>('[data-snig="canDownload"]');
+                    const host = article?.querySelector<HTMLElement>('.button_wrapper.IG_CONTROL_BAR');
+                    if (!article || !host) throw new Error('Could not find post preview controls');
+                    globalThis.jQuery(article).data('igHelper_displayResourceURL', staleSrc);
+                    host.shadowRoot?.querySelector<HTMLButtonElement>('.IG_IMAGE_VIEWER')?.click();
+                }, initialSrc);
+                await e2e.waitFor(`!!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})`, 3000);
+
+                const viewerSrc = await e2e.shadowJson(IMAGE_VIEWER_ROOT_ID, `root.querySelector('#iv_image')?.src`);
+                expect(viewerSrc).toBe(expected);
+            });
+        });
+
         test('resource picker selection and responsive styling', async () => {
             await e2e.withSettings({
                 DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.ASK,
