@@ -71,11 +71,8 @@ export class IgHelperE2E {
 
     async hasAuthenticatedSession() {
         if (this.authenticatedSession !== undefined) return this.authenticatedSession;
-        await this.goto(INSTAGRAM_HOME);
-        this.authenticatedSession = await this.page.locator('a[href="/direct/inbox/"]').first().waitFor({
-            state: 'attached',
-            timeout: 10000,
-        }).then(() => true, () => false);
+        const cookies = await this.context.cookies('https://www.instagram.com');
+        this.authenticatedSession = cookies.some(cookie => cookie.name === 'sessionid' && cookie.value.length > 0);
         return this.authenticatedSession;
     }
 

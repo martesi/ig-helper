@@ -1,12 +1,36 @@
 import { expect, test } from '@playwright/test';
-import { IgHelperE2E, registerE2E, requireAuthenticatedProfile } from './harness.ts';
+import { PROFILE_URL, IgHelperE2E, registerE2E, requireAuthenticatedProfile } from './harness.ts';
 const e2e = new IgHelperE2E();
 
 test.describe('IG Helper browser E2E', () => {
+    registerE2E(test, e2e);
+
+    test.describe('UI', { tag: '@ui' }, () => {
+        test('profile reel permalink mounts post controls without a feed', async () => {
+            await e2e.goto(PROFILE_URL);
+            const reelUrl = await e2e.evaluate(`(() => {
+                const link = document.querySelector('a[href*="/reel/"]');
+                return link ? new URL(link.href, location.origin).href : '';
+            })()`);
+            expect(reelUrl).toBeTruthy();
+
+            await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
+                await e2e.goto(reelUrl);
+                await e2e.waitFor(`document.querySelector('.button_wrapper.IG_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN')`, 15000);
+                const controls = await e2e.json(`(() => {
+                    const root = document.querySelector('.button_wrapper.IG_CONTROL_BAR')?.shadowRoot;
+                    return {
+                        download: Boolean(root?.querySelector('.IG_DW_MAIN')),
+                        newTab: Boolean(root?.querySelector('.IG_NEWTAB_MAIN')),
+                    };
+                })()`);
+                expect(controls).toEqual({ download: true, newTab: true });
+            });
+        });
+    });
 
     test.describe('Authenticated UI', { tag: ['@ui', '@auth'] }, () => {
         requireAuthenticatedProfile(test, e2e);
-        registerE2E(test, e2e);
         test('Reels controls remount after Instagram replaces the helper subtree', async () => {
             await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
                 await e2e.goto('https://www.instagram.com/reels/');

@@ -3,10 +3,26 @@ import { INSTAGRAM_HOME, PROFILE_URL, IgHelperE2E, registerE2E, requireAuthentic
 const e2e = new IgHelperE2E();
 
 test.describe('IG Helper browser E2E', () => {
+    registerE2E(test, e2e);
+
+    test.describe('UI', { tag: '@ui' }, () => {
+        test('Highlight controls mount when the public profile exposes a highlight', async () => {
+            await e2e.goto(PROFILE_URL);
+            const highlightUrl = await e2e.evaluate(`(() => {
+                const link = document.querySelector('a[href^="/stories/highlights/"]');
+                return link ? new URL(link.href, location.origin).href : '';
+            })()`);
+            expect(highlightUrl).toBeTruthy();
+
+            await e2e.goto(highlightUrl);
+            await e2e.waitFor(`document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN')`, 15000);
+            expect(await e2e.json(`Boolean(document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN'))`)).toBe(true);
+            expect(await e2e.json(`Boolean(document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN'))`)).toBe(true);
+        });
+    });
 
     test.describe('Authenticated UI', { tag: ['@ui', '@auth'] }, () => {
         requireAuthenticatedProfile(test, e2e);
-        registerE2E(test, e2e);
         test('Story controls mount when the authenticated home feed exposes a live story', async () => {
             await e2e.goto(INSTAGRAM_HOME);
             const storyUrl = await e2e.evaluate(`(() => {
@@ -46,20 +62,6 @@ test.describe('IG Helper browser E2E', () => {
                 await e2e.waitFor(`document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN')`, 15000);
                 expect(await e2e.json(`Boolean(document.querySelector('.IG_STORY_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN'))`)).toBe(true);
             });
-        });
-
-        test('Highlight controls mount when the profile exposes a highlight', async () => {
-            await e2e.goto(PROFILE_URL);
-            const highlightUrl = await e2e.evaluate(`(() => {
-                const link = document.querySelector('a[href^="/stories/highlights/"]');
-                return link ? new URL(link.href, location.origin).href : '';
-            })()`);
-            test.skip(!highlightUrl, 'No highlight is available on the configured profile');
-
-            await e2e.goto(highlightUrl);
-            await e2e.waitFor(`document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN')`, 15000);
-            expect(await e2e.json(`Boolean(document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_DW_MAIN'))`)).toBe(true);
-            expect(await e2e.json(`Boolean(document.querySelector('.IG_HIGHLIGHT_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_NEWTAB_MAIN'))`)).toBe(true);
         });
     });
 

@@ -17,7 +17,7 @@ Agent sessions share the configured browser profile while remaining separate con
 
 ## Playwright regression suite
 
-Tests are grouped by feature (`post.e2e.ts`, `reels.e2e.ts`, and similar). Playwright tags select UI or execution coverage; auth-only groups use a conditional skip outside the authenticated `default` profile.
+Tests are grouped by feature (`post.e2e.ts`, `reels.e2e.ts`, and similar). Playwright tags select UI or execution coverage. Public profile, permalink, reel, and highlight surfaces run cookie-free; only feed/live-story/global-reels coverage is auth-only.
 
 ```sh
 bun run test:e2e:ui         # all UI coverage, both profiles
@@ -29,7 +29,7 @@ bun run test:e2e:anonymous  # cookie-free coverage only
 bun run test:e2e:auth       # authenticated-only coverage
 ```
 
-UI and execution commands select matching Playwright tags for both profiles. Auth-only tests are skipped in the cookie-free `anonymous` profile. `test:e2e` runs anonymous coverage, `test:e2e:auth` runs auth-tagged tests, and `test:e2e:all` starts both profiles and runs their Playwright projects concurrently. Each project uses one worker, keeping its tests sequential against the shared browser session. The `anonymous` profile clears cookies; `default` retains the authenticated session. UI tests never require a real file download.
+UI and execution commands select matching Playwright tags for both profiles. Auth-only tests are skipped in the cookie-free `default` profile. `test:e2e` runs public anonymous coverage, `test:e2e:auth` runs auth-tagged tests, and `test:e2e:all` starts both profiles and runs their Playwright projects concurrently. Each project uses one worker, keeping its tests sequential against the shared browser session. The `default` profile clears cookies; `authenticated` retains imported cookies. Authentication detection checks the Instagram session cookie rather than relying on the home-feed DOM. UI tests never require a real file download.
 
 The installed Arca harness owns Chromium lifecycle and injects its actual CDP endpoint into Playwright Test. The local Playwright harness contains only IG Helper-specific navigation, assertions, settings manipulation, and download checks.
 
