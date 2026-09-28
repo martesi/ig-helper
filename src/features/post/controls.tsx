@@ -1,9 +1,10 @@
 import { render } from 'preact';
 import type { JSX } from 'preact';
+import { useState } from 'preact/hooks';
 import { SVG, USER_SETTING } from '../../settings/state';
 import { _i18n } from '../../shared/i18n';
 import { Button } from '../../shared/ui/components.tsx';
-import { CopyIcon } from '../../shared/ui/icons.tsx';
+import { CheckIcon, CopyIcon } from '../../shared/ui/icons.tsx';
 import { adoptShadowStyles } from '../../shared/ui/shadow-styles.ts';
 import styles from './controls.css?inline';
 
@@ -62,12 +63,22 @@ function MediaControls({ showDownloadAll, showMediaPreview, showOpenInNewTab, sh
     );
 }
 
-function CopyControlButton(props: JSX.IntrinsicElements['button']) {
+function CopyControlButton({ onClick }: { onClick?: () => unknown }) {
+    const [copied, setCopied] = useState(false);
     const label = _i18n('COPY_MEDIA');
+
+    async function copy() {
+        const result = await Promise.resolve(onClick?.());
+        if (result !== true) return;
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    }
+
     return (
         <Button class="IG_POST_CONTROL IG_COPY_MAIN" variant="ghost" size="icon-sm"
-            data-ih-locale-title="COPY_MEDIA" title={label} aria-label={label} {...props}>
-            <CopyIcon />
+            data-ih-locale-title="COPY_MEDIA" data-copied={copied || undefined} title={label} aria-label={label}
+            onClick={() => void copy()}>
+            {copied ? <CheckIcon /> : <CopyIcon />}
         </Button>
     );
 }

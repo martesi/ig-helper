@@ -13,6 +13,7 @@ import { batchDownloadPostFiles } from './post/post.ts';
 import { mountMediaControls } from './post/controls.tsx';
 import { openResourcePicker } from '../shared/ui/resource-picker.tsx';
 import { runWithLoadingBar } from './loading';
+import { showToast } from '../shared/ui/status.tsx';
 import type { StoryItem, StoryResponse } from '../shared/instagram-data.ts';
 
 /**
@@ -320,7 +321,7 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
                 }
 
                 if (!mediaId) {
-                    alert('Could not identify the current story.');
+                    showToast('Could not identify the current story.');
                     return;
                 }
 
@@ -344,7 +345,7 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
                         state.tempFetchRateLimit = true;
                         return onStory(isDownload, isForce, isPreview);
                     }
-                    alert('Fetch failed from Media API. API response message: ' + result.message);
+                    showToast('Could not fetch this story from Instagram.');
                     logger('onStory()', 'Media API rejected request', result?.message);
                     return;
                 }
@@ -428,7 +429,7 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
                 }
 
                 if (videoURL.length == 0) {
-                    alert(_i18n("NO_VID_URL"));
+                    showToast(_i18n("NO_VID_URL"));
                 }
                 else {
                     await openOrSaveMedia(videoURL, { username, sourceType: 'stories', timestamp, filetype: type, shortcode: mediaId }, isPreview);
@@ -466,7 +467,7 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
                 }
 
                 if (!downloadLink) {
-                    alert('Could not find the current story image.');
+                    showToast('Could not find the current story image.');
                     return;
                 }
 
@@ -584,7 +585,7 @@ export async function onStoryThumbnail(isDownload = false, isForce = false): Pro
                 }
 
                 if (!mediaId) {
-                    alert('Could not identify the current story thumbnail.');
+                    showToast('Could not identify the current story thumbnail.');
                     return;
                 }
 
@@ -625,7 +626,7 @@ export async function onStoryThumbnail(isDownload = false, isForce = false): Pro
                         return await onStoryThumbnail(true, isForce);
                     }
                     else {
-                        alert('Fetch failed from Media API. API response message: ' + result.message);
+                        showToast('Could not fetch this story from Instagram.');
                     }
 
                     logger('onStoryThumbnail()', 'Media API rejected request', result?.message);

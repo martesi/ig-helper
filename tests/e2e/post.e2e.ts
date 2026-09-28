@@ -402,16 +402,13 @@ test.describe('IG Helper browser E2E', () => {
             await copyButton.waitFor({ state: 'visible', timeout: 15000 });
 
             await e2e.evaluate(`(() => {
-                window.__igHelperCopyMessage = '';
                 window.__igHelperCopyWrites = 0;
                 window.__igHelperCopyType = '';
                 window.__igHelperCopyBlobType = '';
                 window.__igHelperCopyMocks = {
-                    alert: window.alert,
                     clipboard: Object.getOwnPropertyDescriptor(navigator, 'clipboard'),
                     clipboardItem: Object.getOwnPropertyDescriptor(window, 'ClipboardItem'),
                 };
-                window.alert = message => { window.__igHelperCopyMessage = String(message); };
                 Object.defineProperty(window, 'ClipboardItem', {
                     configurable: true,
                     writable: true,
@@ -439,22 +436,20 @@ test.describe('IG Helper browser E2E', () => {
                 await e2e.dismissInstagramNotificationPrompt();
                 await e2e.actionDelay();
                 await copyButton.click();
-                await e2e.waitFor(`window.__igHelperCopyWrites === 1 && window.__igHelperCopyMessage.length > 0`, 3000);
+                await e2e.waitFor(`window.__igHelperCopyWrites === 1`, 3000);
+                await expect(copyButton).toHaveAttribute('data-copied', 'true');
                 const result = await e2e.json(`({
                     writes: window.__igHelperCopyWrites,
-                    message: window.__igHelperCopyMessage,
                     type: window.__igHelperCopyType,
                     blobType: window.__igHelperCopyBlobType,
                 })`);
                 expect(result.writes).toBe(1);
-                expect(result.message).toBe('Media copied to clipboard.');
                 expect(result.type).toMatch(/^image\//);
                 expect(result.blobType).toBe(result.type);
             } finally {
                 await e2e.evaluate(`(() => {
                     const mocks = window.__igHelperCopyMocks;
                     if (!mocks) return;
-                    window.alert = mocks.alert;
                     if (mocks.clipboardItem) Object.defineProperty(window, 'ClipboardItem', mocks.clipboardItem);
                     else delete window.ClipboardItem;
                     if (mocks.clipboard) Object.defineProperty(navigator, 'clipboard', mocks.clipboard);

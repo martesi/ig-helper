@@ -6,6 +6,7 @@ import { Button, Checkbox, IconButton } from './components.tsx';
 import { XIcon } from './icons.tsx';
 import { adoptShadowStyles } from './shadow-styles.ts';
 import styles from './resource-picker.css?inline';
+import { showToast } from './status.tsx';
 
 export const RESOURCE_PICKER_ROOT_ID = 'ig-helper-resource-picker-root';
 
@@ -115,7 +116,7 @@ function ResourcePicker({ title, resources, onDownload, returnFocus }: ResourceP
         removeResourcePicker();
         void Promise.resolve().then(() => onDownload(resources)).catch(reason => {
             logger('resourcePicker.download.failed', reason);
-            alert('The selected media could not be downloaded. Please try again.');
+            showToast('The selected media could not be downloaded. Please try again.');
         });
     }
 

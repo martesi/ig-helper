@@ -4,7 +4,7 @@ dependencies:
 - repo_url: martesi/arca
   name: e2e
   host: github.com
-  resolved_commit: 6525d656d84775c2235ac949aa9a5273044b2375
+  resolved_commit: 65f8a403950329076f0d2910571507ef50197792
   version: unknown
   virtual_path: skills/e2e
   is_virtual: true
@@ -50,9 +50,9 @@ dependencies:
     .agents/skills/e2e/references/tauri.md: sha256:2769582caf0d55bad8c4a5b1363d1eab82a28fdbb841a00fd8caa35ddd4c2c7a
     .agents/skills/e2e/references/userscripts.md: sha256:4f2f1f8253ae2843f35ac9f9b92280b68e363f113cf87fac540f00ddb3d86adb
     .agents/skills/e2e/references/workflow.md: sha256:744a8c06652caacaaba512d8b3e115acd5b9e089f6d3d5319437ab55cde5188a
-    .agents/skills/e2e/scripts/harness.ts: sha256:42a15cf1a84f9775fc0646243b7f22010bdd19fcf98b2c991ff62059b0dbb2fc
+    .agents/skills/e2e/scripts/harness.ts: sha256:c51c44002398ea6891534ea644b7d8b0df6c77cabece9a83a46b2206ce9bcfec
     .agents/skills/e2e/tsconfig.json: sha256:f777f5c70915ddad2c129bc3937c9e99bbcf08e207fe86c344224d051674430d
-  content_hash: sha256:046ef907d81c2b0d5aac56f3dd909d93d9efc88350d5a705783f8cbb032a1c5b
+  content_hash: sha256:98266b0e1a8fc1deed3e2c1537c5dd713eaf98732e4a6b3abe8c24b2e31793d0
 deployments:
 - kind: project-relative
   target: agent-skills
@@ -233,7 +233,7 @@ deployments:
   owners:
   - martesi/arca/skills/e2e
   active_owner: martesi/arca/skills/e2e
-  content_hash: sha256:42a15cf1a84f9775fc0646243b7f22010bdd19fcf98b2c991ff62059b0dbb2fc
+  content_hash: sha256:c51c44002398ea6891534ea644b7d8b0df6c77cabece9a83a46b2206ce9bcfec
 - kind: project-relative
   target: agent-skills
   value: .agents/skills/e2e/tsconfig.json

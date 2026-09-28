@@ -7,7 +7,7 @@ import { logger } from "./logger";
 import { saveFiles, type SaveMetadata } from "./download";
 import { tryHandleDashFromMediaItem } from "./dash";
 import { openNewTab, replaceSameOriginHost } from "./navigation";
-import { updateLoadingBar } from "./ui/status.tsx";
+import { showToast, updateLoadingBar } from "./ui/status.tsx";
 import { Effect } from 'effect';
 
 export function openOrSaveMedia(url: string, metadata: SaveMetadata, isPreview: boolean): void | Promise<boolean> {
@@ -88,7 +88,7 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
         const downloadOnly = !isPreview;
 
         if (!isPreview && index < 0) {
-            alert(_i18n('NO_CHECK_RESOURCE'));
+            showToast(_i18n('NO_CHECK_RESOURCE'), 'warning');
             return;
         }
 
@@ -168,7 +168,7 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
                 }
 
                 if (!resource_url) {
-                    alert('Cannot find download URL.');
+                    showToast('Cannot find download URL.');
                     return;
                 }
 
@@ -217,7 +217,7 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
                 return;
             }
 
-            alert(`Fetch failed from Media API. API response message: ${result?.message}`);
+            showToast('Could not fetch this media from Instagram.');
             logger('triggerLinkElement()', 'Media API rejected request', result?.message);
             return;
         }
@@ -241,7 +241,7 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
             return;
         }
 
-        alert('Cannot find download URL.');
+        showToast('Cannot find download URL.');
     }).pipe(Effect.catchCause(cause => Effect.sync(() => {
         logger('triggerLinkElement()', 'failed', cause);
     })));

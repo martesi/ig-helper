@@ -5,6 +5,39 @@
     z-index: 50000;
 }
 
+:host(#ig-helper-feedback) {
+    position: fixed;
+    inset: 0;
+    z-index: 50000;
+    pointer-events: none;
+}
+
+.IG_FEEDBACK_TOASTER {
+    z-index: 50000;
+}
+
+.IG_FEEDBACK_MARK {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    place-items: center;
+    border-radius: 9999px;
+    background: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.toast[data-category='success'] .IG_FEEDBACK_MARK {
+    color: #00a400;
+}
+
+.toast[data-category='warning'] .IG_FEEDBACK_MARK,
+.toast[data-category='error'] .IG_FEEDBACK_MARK {
+    color: var(--destructive);
+}
+
 .IG_DOWNLOAD_PROGRESS {
     display: flex;
     width: fit-content;

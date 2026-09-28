@@ -4,7 +4,7 @@ import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state, resourceCountSelecto
 import { triggerLinkElement, saveMediaThumbnail } from "../../shared/media-download";
 import { openNewTab, replaceSameOriginHost } from "../../shared/navigation";
 import { triggerReactClickHandler } from "../../shared/react";
-import { setDownloadProgress, updateLoadingBar } from "../../shared/ui/status.tsx";
+import { setDownloadProgress, showToast, updateLoadingBar } from "../../shared/ui/status.tsx";
 import { logger } from "../../shared/logger";
 import { getBlobMedia, getMediaInfo } from "../../shared/api";
 import { _i18n } from "../../shared/i18n";
@@ -51,7 +51,6 @@ export function onReadyMyDW(NoDialog = false, hasReferrer = false) {
                 state.GL_repeat = null;
 
                 if (i > maxCall) {
-                    //alert('Trying to call button creation method reached to maximum try times. If you want to re-register method, please open script menu and press "Reload Script" button or hotkey "R" to reload main timer.');
                     logger('onReadyMyDW()', 'maximum number of repetitions reached, terminated');
                 }
             }
@@ -432,7 +431,7 @@ function openPostImageViewer(target: HTMLElement) {
     if (url) {
         openImageViewer(url);
     } else {
-        alert("Cannot find resource url.");
+        showToast('Cannot find resource URL.');
     }
 }
 
@@ -452,21 +451,21 @@ function getCurrentPostImageUrl(target: HTMLElement): string | null {
     return typeof url === 'string' ? url : null;
 }
 
-async function copyPostResourceToClipboard(target: HTMLElement) {
+async function copyPostResourceToClipboard(target: HTMLElement): Promise<boolean> {
     if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-        alert(_i18n('COPY_MEDIA_CLIPBOARD_UNAVAILABLE'));
-        return;
+        showToast(_i18n('COPY_MEDIA_CLIPBOARD_UNAVAILABLE'), 'warning');
+        return false;
     }
 
     if ($(target).find('.IG_THUMBNAIL_MAIN').length > 0) {
-        alert(_i18n('COPY_MEDIA_UNSUPPORTED'));
-        return;
+        showToast(_i18n('COPY_MEDIA_UNSUPPORTED'), 'warning');
+        return false;
     }
 
     const url = getCurrentPostImageUrl(target);
     if (!url) {
-        alert(_i18n('COPY_MEDIA_FAILED'));
-        return;
+        showToast(_i18n('COPY_MEDIA_FAILED'));
+        return false;
     }
 
     const copy = Effect.tryPromise({
@@ -480,9 +479,10 @@ async function copyPostResourceToClipboard(target: HTMLElement) {
         },
         catch: cause => cause,
     });
-    await Effect.runPromise(copy).then(() => alert(_i18n('COPY_MEDIA_SUCCESS')), err => {
+    return Effect.runPromise(copy).then(() => true, err => {
         logger('copyPostResourceToClipboard', err);
-        alert(_i18n('COPY_MEDIA_FAILED'));
+        showToast(_i18n('COPY_MEDIA_FAILED'));
+        return false;
     });
 }
 
@@ -515,7 +515,7 @@ function openPostVideoThumbnail(target: HTMLElement) {
     return runWithLoadingBar(async () => {
         const { $article, postPath } = await getPostContextFromButton(target);
         if ($article.length === 0 || !postPath) {
-            alert('Cannot determine post path.');
+            showToast('Cannot determine post path.');
             return;
         }
 
@@ -531,17 +531,17 @@ function openPostVideoThumbnail(target: HTMLElement) {
         );
 
         if (!totalInserted || totalInserted < 1) {
-            alert('Cannot find thumbnail URL.');
+            showToast('Cannot find thumbnail URL.');
             return;
         }
 
         const $link = $(resourceRoot).find('a[data-globalindex="' + (index + 1) + '"]').first();
         if ($link.length === 0 || !await saveMediaThumbnail($link, postPath)) {
-            alert('Cannot find thumbnail URL.');
+            showToast('Cannot find thumbnail URL.');
         }
     }).catch(err => {
         logger('openPostVideoThumbnail', err);
-        alert('Cannot find thumbnail URL.');
+        showToast('Cannot find thumbnail URL.');
     });
 }
 
@@ -549,7 +549,7 @@ function openPostResourceInNewTab(target: HTMLElement) {
     return runWithLoadingBar(async () => {
         const { $article, postPath } = await getPostContextFromButton(target);
         if ($article.length === 0 || !postPath) {
-            alert('Cannot determine post path.');
+            showToast('Cannot determine post path.');
             return;
         }
 
@@ -565,13 +565,13 @@ function openPostResourceInNewTab(target: HTMLElement) {
         );
 
         if (!totalInserted || totalInserted < 1) {
-            alert('Cannot find open tab URL.');
+            showToast('Cannot find open tab URL.');
             return;
         }
 
         const $link = $(resourceRoot).find('a[data-globalindex="' + (index + 1) + '"]').first();
         if ($link.length === 0) {
-            alert('Cannot find open tab URL.');
+            showToast('Cannot find open tab URL.');
             return;
         }
 
@@ -582,10 +582,10 @@ function openPostResourceInNewTab(target: HTMLElement) {
 
         const href = $link.data('href');
         if (href) openNewTab(replaceSameOriginHost(href));
-        else alert('Cannot find open tab URL.');
+        else showToast('Cannot find open tab URL.');
     }).catch(err => {
         logger('openPostResourceInNewTab', err);
-        alert('Cannot find open tab URL.');
+        showToast('Cannot find open tab URL.');
     });
 }
 
@@ -593,7 +593,7 @@ async function downloadAllPostResources(target: HTMLElement) {
     await (async () => {
         const { $article, postPath } = await getPostContextFromButton(target);
         if ($article.length === 0 || !postPath) {
-            alert('Cannot determine post path.');
+            showToast('Cannot determine post path.');
             return;
         }
 
@@ -679,7 +679,7 @@ async function downloadPostResource(target: HTMLElement) {
     await (async () => {
         const { $article, postPath } = await getPostContextFromButton(target);
         if ($article.length === 0 || !postPath) {
-            alert('Cannot determine post path.');
+            showToast('Cannot determine post path.');
             return;
         }
 
@@ -697,7 +697,7 @@ async function downloadPostResource(target: HTMLElement) {
                 );
 
                 if (!totalInserted) {
-                    alert('Cannot find download URL.');
+                    showToast('Cannot find download URL.');
                     return;
                 }
 
@@ -731,7 +731,7 @@ async function downloadPostResource(target: HTMLElement) {
                 );
 
                 if (!totalInserted || totalInserted < 1) {
-                    alert('Cannot find download URL.');
+                    showToast('Cannot find download URL.');
                     return;
                 }
 
@@ -742,11 +742,11 @@ async function downloadPostResource(target: HTMLElement) {
                     await triggerLinkElement($targetLink.first()[0], false);
                 }
                 else {
-                    alert('Cannot find download URL.');
+                    showToast('Cannot find download URL.');
                 }
             }).catch(err => {
                 logger('downloadPostResource visibleResource', err);
-                alert('Cannot find download URL.');
+                showToast('Cannot find download URL.');
             });
 
             return;

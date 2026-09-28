@@ -15,6 +15,7 @@ import { getImageFromCache } from "./media/image-cache";
 import { mountMediaControls } from './post/controls.tsx';
 import type { StoryItem } from '../shared/instagram-data.ts';
 import { runWithLoadingBar } from './loading';
+import { showToast } from '../shared/ui/status.tsx';
 
 /**
  * getHighlightsStoryUsername
@@ -156,7 +157,7 @@ export async function onHighlightsStory(isDownload = false, isPreview = false): 
             logger('onHighlightsStory', highlightId, state.GL_dataCache.highlights[highlightId]);
 
             if (!target) {
-                alert('Could not identify the current highlight.');
+                showToast('Could not identify the current highlight.');
                 return;
             }
             const targetId = target.id;
@@ -183,7 +184,7 @@ export async function onHighlightsStory(isDownload = false, isPreview = false): 
                         state.tempFetchRateLimit = true;
                         return onHighlightsStory(true, isPreview);
                     }
-                    alert('Fetch failed from Media API. API response message: ' + result.message);
+                    showToast('Could not fetch this highlight from Instagram.');
                     logger('onHighlightsStory()', 'Media API rejected request', result.message);
                     return;
                 }
@@ -274,7 +275,7 @@ export async function onHighlightsStoryThumbnail(isDownload = false): Promise<vo
             }
 
             if (!target) {
-                alert('Could not identify the current highlight thumbnail.');
+                showToast('Could not identify the current highlight thumbnail.');
                 return;
             }
 
@@ -317,7 +318,7 @@ export async function onHighlightsStoryThumbnail(isDownload = false): Promise<vo
                         return await onHighlightsStoryThumbnail(true);
                     }
                     else {
-                        alert('Fetch failed from Media API. API response message: ' + result.message);
+                        showToast('Could not fetch this highlight from Instagram.');
                     }
 
                     logger('onHighlightsStoryThumbnail()', 'Media API rejected request', result?.message);
