@@ -1,7 +1,7 @@
 import $ from 'jquery';
 import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state } from "../settings/state";
 import { saveFiles } from "../shared/download";
-import { openOrSaveMedia } from "../shared/media-download";
+import { openOrSaveMedia, showMediaActionFailure } from "../shared/media-download";
 import { tryHandleDashFromMediaItem } from "../shared/dash";
 import {
     getStoryProgress,
@@ -15,7 +15,6 @@ import { getImageFromCache } from "./media/image-cache";
 import { mountMediaControls } from './post/controls.tsx';
 import type { StoryItem } from '../shared/instagram-data.ts';
 import { runWithLoadingBar } from './loading';
-import { showToast } from '../shared/ui/status.tsx';
 
 /**
  * getHighlightsStoryUsername
@@ -92,6 +91,28 @@ function mountHighlightControlBar($element: JQuery<Element>, username: string, m
     return host;
 }
 
+function getCurrentHighlightIndex() {
+    return $("body > div section._ac0a header._ac0k > ._ac3r ._ac3n ._ac3p[style]").length ||
+        $('body > div section:visible > div > div:not([class]) > div > div div.x1ned7t2.x78zum5 div.x1caxmr6').length ||
+        $('body > div div:not([hidden]) section:visible > div div[style]:not([class]) > div').find('div div.x1ned7t2.x78zum5 div.x1caxmr6').length;
+}
+
+async function getCurrentHighlightItem(highlightId: string): Promise<{ username: string; target: StoryItem }> {
+    let stories = state.GL_dataCache.highlights[highlightId];
+    if (!stories) {
+        stories = await getHighlightStories(highlightId);
+        state.GL_dataCache.highlights[highlightId] = stories;
+    }
+    else {
+        logger('Fetch from memory cache:', highlightId);
+    }
+
+    const reel = stories.data.reels_media[0];
+    const target = reel.items[reel.items.length - getCurrentHighlightIndex()];
+    if (!target) throw new Error('Current highlight could not be identified');
+    return { username: reel.owner.username, target };
+}
+
 /**
  * onHighlightsStoryAll
  * @description Trigger user's highlight all download event.
@@ -129,37 +150,12 @@ export async function onHighlightsStory(isDownload = false, isPreview = false): 
         const date = new Date().getTime();
         let timestamp = Math.floor(date / 1000);
         const highlightId = location.href.replace(/\/$/ig, '').split('/').at(-1) ?? '';
-        const nowIndex = $("body > div section._ac0a header._ac0k > ._ac3r ._ac3n ._ac3p[style]").length ||
-            $('body > div section:visible > div > div:not([class]) > div > div div.x1ned7t2.x78zum5 div.x1caxmr6').length ||
-            $('body > div div:not([hidden]) section:visible > div div[style]:not([class]) > div').find('div div.x1ned7t2.x78zum5 div.x1caxmr6').length;
-        let target: StoryItem | undefined;
 
         return runWithLoadingBar(async () => {
-            if (state.GL_dataCache.highlights[highlightId]) {
-                logger('Fetch from memory cache:', highlightId);
-
-                // OPTIMIZATION: cache items array — avoids 4 repeated property lookups
-                const items = state.GL_dataCache.highlights[highlightId].data.reels_media[0].items;
-                const totIndex = items.length;
-                username = state.GL_dataCache.highlights[highlightId].data.reels_media[0].owner.username;
-                target = items[totIndex - nowIndex];
-            }
-            else {
-                const highStories = await getHighlightStories(highlightId);
-                const items = highStories.data.reels_media[0].items;
-                const totIndex = items.length;
-                username = highStories.data.reels_media[0].owner.username;
-                target = items[totIndex - nowIndex];
-
-                state.GL_dataCache.highlights[highlightId] = highStories;
-            }
-
+            const current = await getCurrentHighlightItem(highlightId);
+            username = current.username;
+            const target = current.target;
             logger('onHighlightsStory', highlightId, state.GL_dataCache.highlights[highlightId]);
-
-            if (!target) {
-                showToast('Could not identify the current highlight.');
-                return;
-            }
             const targetId = target.id;
 
             if (USER_SETTING.RENAME_PUBLISH_DATE) {
@@ -168,7 +164,7 @@ export async function onHighlightsStory(isDownload = false, isPreview = false): 
 
             if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
                 const cached = getImageFromCache(targetId);
-                if (cached && state.GL_dataCache.highlights[highlightId].data.reels_media[0].items.find(item => item.id === targetId)?.is_video === false) {
+                if (cached && target.is_video === false) {
                     logger("[Restore Cached onHighlight]", targetId);
                     await openOrSaveMedia(cached, { username, sourceType: 'highlights', timestamp, filetype: 'jpg', shortcode: targetId }, isPreview);
                     return;
@@ -184,9 +180,7 @@ export async function onHighlightsStory(isDownload = false, isPreview = false): 
                         state.tempFetchRateLimit = true;
                         return onHighlightsStory(true, isPreview);
                     }
-                    showToast('Could not fetch this highlight from Instagram.');
-                    logger('onHighlightsStory()', 'Media API rejected request', result.message);
-                    return;
+                    throw new Error(result.message ?? 'Media API rejected highlight request');
                 }
 
                 const mediaItem = result.items[0];
@@ -226,7 +220,10 @@ export async function onHighlightsStory(isDownload = false, isPreview = false): 
                 state.tempFetchRateLimit = false;
             }
 
-        }).catch(err => { logger('onHighlightsStory()', 'failed', err); });
+        }).catch(err => {
+            logger('onHighlightsStory()', 'failed', err);
+            showMediaActionFailure(err, 'Could not get this highlight.');
+        });
     }
     else {
         const $element = findHighlightControlElement();
@@ -248,36 +245,9 @@ export async function onHighlightsStoryThumbnail(isDownload = false): Promise<vo
         const date = new Date().getTime();
         let timestamp = Math.floor(date / 1000);
         const highlightId = location.href.replace(/\/$/ig, '').split('/').at(-1) ?? '';
-        let username = "";
-        const nowIndex = $("body > div section._ac0a header._ac0k > ._ac3r ._ac3n ._ac3p[style]").length ||
-            $('body > div section:visible > div > div:not([class]) > div > div div.x1ned7t2.x78zum5 div.x1caxmr6').length ||
-            $('body > div div:not([hidden]) section:visible > div div[style]:not([class]) > div').find('div div.x1ned7t2.x78zum5 div.x1caxmr6').length;
-        let target: StoryItem | undefined;
 
         return runWithLoadingBar(async () => {
-
-            if (state.GL_dataCache.highlights[highlightId]) {
-                logger('Fetch from memory cache:', highlightId);
-
-                const items = state.GL_dataCache.highlights[highlightId].data.reels_media[0].items;
-                const totIndex = items.length;
-                username = state.GL_dataCache.highlights[highlightId].data.reels_media[0].owner.username;
-                target = items[totIndex - nowIndex];
-            }
-            else {
-                const highStories = await getHighlightStories(highlightId);
-                const items = highStories.data.reels_media[0].items;
-                const totIndex = items.length;
-                username = highStories.data.reels_media[0].owner.username;
-                target = items[totIndex - nowIndex];
-
-                state.GL_dataCache.highlights[highlightId] = highStories;
-            }
-
-            if (!target) {
-                showToast('Could not identify the current highlight thumbnail.');
-                return;
-            }
+            const { username, target } = await getCurrentHighlightItem(highlightId);
 
             if (USER_SETTING.RENAME_PUBLISH_DATE) {
                 timestamp = target.taken_at_timestamp;
@@ -317,11 +287,7 @@ export async function onHighlightsStoryThumbnail(isDownload = false): Promise<vo
 
                         return await onHighlightsStoryThumbnail(true);
                     }
-                    else {
-                        showToast('Could not fetch this highlight from Instagram.');
-                    }
-
-                    logger('onHighlightsStoryThumbnail()', 'Media API rejected request', result?.message);
+                    throw new Error(result?.message ?? 'Media API rejected highlight thumbnail request');
                 }
             }
             else {
@@ -335,7 +301,10 @@ export async function onHighlightsStoryThumbnail(isDownload = false): Promise<vo
                 state.tempFetchRateLimit = false;
             }
 
-        }).catch(err => { logger('onHighlightsStoryThumbnail()', 'failed', err); });
+        }).catch(err => {
+            logger('onHighlightsStoryThumbnail()', 'failed', err);
+            showMediaActionFailure(err, 'Could not get this thumbnail.');
+        });
     }
     else {
         const $element = findHighlightControlElement();

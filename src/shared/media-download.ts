@@ -1,6 +1,6 @@
 import $ from 'jquery';
 import { USER_SETTING, state } from "../settings/state";
-import { getPostOwner, getMediaInfo } from "./api";
+import { getPostOwner, getMediaInfo, isMediaApiAuthError } from "./api";
 import { getImageFromCache } from "../features/media/image-cache";
 import { _i18n } from "./i18n";
 import { logger } from "./logger";
@@ -11,7 +11,17 @@ import { showToast, updateLoadingBar } from "./ui/status.tsx";
 import { Effect } from 'effect';
 
 export function openOrSaveMedia(url: string, metadata: SaveMetadata, isPreview: boolean): void | Promise<boolean> {
+    if (!url) return Promise.reject(new Error('Media URL is unavailable'));
     return isPreview ? openNewTab(url) : saveFiles(url, metadata);
+}
+
+export function showMediaActionFailure(error: unknown, fallbackMessage: string) {
+    const requiresLogin = isMediaApiAuthError(error);
+    showToast(
+        requiresLogin ? 'Log in to Instagram to access this media.' : fallbackMessage,
+        requiresLogin ? 'warning' : 'error',
+        requiresLogin ? 7000 : undefined,
+    );
 }
 
 export function saveMediaThumbnail($element: JQuery<Element> | Element, fallbackPostPath: string | null = null) {
@@ -84,8 +94,14 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
         const filetype = String($el.data('type') || 'jpg');
         const shortcode = String($el.data('path') || '');
         const href = String($el.data('href') || '');
-
-        const downloadOnly = !isPreview;
+        const metadata = { username, sourceType, timestamp, filetype, shortcode, index };
+        const useResource = (url: string, normalizePreviewUrl = false) => Effect.tryPromise({
+            try: async () => {
+                const resourceUrl = isPreview && normalizePreviewUrl ? replaceSameOriginHost(url) : url;
+                await openOrSaveMedia(resourceUrl, metadata, isPreview);
+            },
+            catch: cause => cause,
+        });
 
         if (!isPreview && index < 0) {
             showToast(_i18n('NO_CHECK_RESOURCE'), 'warning');
@@ -102,7 +118,7 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
                     sourceType,
                     timestamp,
                     shortcode,
-                    isPreview: downloadOnly ? false : isPreview,
+                    isPreview,
                     index,
                 }),
                 catch: cause => cause,
@@ -115,21 +131,7 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
             const cached = mediaId ? getImageFromCache(mediaId) : null;
 
             if (cached && filetype !== 'mp4') {
-                if (!downloadOnly && isPreview) {
-                    openNewTab(cached);
-                } else {
-                    yield* Effect.tryPromise({
-                        try: () => saveFiles(cached, {
-                            username,
-                            sourceType,
-                            timestamp,
-                            filetype: filetype || 'jpg',
-                            shortcode,
-                            index,
-                        }),
-                        catch: cause => cause,
-                    });
-                }
+                yield* useResource(cached);
                 return;
             }
         }
@@ -167,10 +169,7 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
                     resource_url = mediaItem.image_versions2.candidates[0].url;
                 }
 
-                if (!resource_url) {
-                    showToast('Cannot find download URL.');
-                    return;
-                }
+                if (!resource_url) return yield* Effect.fail(new Error('Media API returned no resource URL'));
 
                 if (
                     href &&
@@ -180,70 +179,27 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
                     resource_url = href;
                 }
 
-                if (!downloadOnly && isPreview) {
-                    openNewTab(replaceSameOriginHost(resource_url));
-                } else {
-                    yield* Effect.tryPromise({
-                        try: () => saveFiles(resource_url, {
-                            username,
-                            sourceType,
-                            timestamp,
-                            filetype,
-                            shortcode,
-                            index,
-                        }),
-                        catch: cause => cause,
-                    });
-                }
+                yield* useResource(resource_url, true);
                 return;
             }
 
             if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED && href) {
-                if (!downloadOnly && isPreview) {
-                    openNewTab(replaceSameOriginHost(href));
-                } else {
-                    yield* Effect.tryPromise({
-                        try: () => saveFiles(href, {
-                            username,
-                            sourceType,
-                            timestamp,
-                            filetype,
-                            shortcode,
-                            index,
-                        }),
-                        catch: cause => cause,
-                    });
-                }
+                yield* useResource(href, true);
                 return;
             }
 
-            showToast('Could not fetch this media from Instagram.');
-            logger('triggerLinkElement()', 'Media API rejected request', result?.message);
-            return;
+            return yield* Effect.fail(new Error(result?.message ?? 'Media API rejected media request'));
         }
 
         if (href) {
-            if (!downloadOnly && isPreview) {
-                openNewTab(replaceSameOriginHost(href));
-            } else {
-                yield* Effect.tryPromise({
-                    try: () => saveFiles(href, {
-                        username,
-                        sourceType,
-                        timestamp,
-                        filetype,
-                        shortcode,
-                        index,
-                    }),
-                    catch: cause => cause,
-                });
-            }
+            yield* useResource(href, true);
             return;
         }
 
-        showToast('Cannot find download URL.');
-    }).pipe(Effect.catchCause(cause => Effect.sync(() => {
-        logger('triggerLinkElement()', 'failed', cause);
-    })));
-    return Effect.runPromise(program);
+        return yield* Effect.fail(new Error('Media resource URL is unavailable'));
+    });
+    return Effect.runPromise(program).catch(error => {
+        logger('triggerLinkElement()', 'failed', error);
+        showMediaActionFailure(error, 'Could not get this media.');
+    });
 }

@@ -3,7 +3,7 @@ import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state } from "../settings/s
 import { appendMediaResource } from "../shared/ui/media-resource.tsx";
 import { saveFiles } from "../shared/download";
 import { getStoryProgress, getStoryId } from "../shared/story";
-import { openOrSaveMedia } from "../shared/media-download";
+import { openOrSaveMedia, showMediaActionFailure } from "../shared/media-download";
 import { tryHandleDashFromMediaItem } from "../shared/dash";
 import { logger } from "../shared/logger";
 import { getUserId, getStories, getMediaInfo } from "../shared/api";
@@ -13,7 +13,6 @@ import { batchDownloadPostFiles } from './post/post.ts';
 import { mountMediaControls } from './post/controls.tsx';
 import { openResourcePicker } from '../shared/ui/resource-picker.tsx';
 import { runWithLoadingBar } from './loading';
-import { showToast } from '../shared/ui/status.tsx';
 import type { StoryItem, StoryResponse } from '../shared/instagram-data.ts';
 
 /**
@@ -232,7 +231,10 @@ export function resolveStoryMediaIdByTimestamp(stories: StoryResponse): string |
     return bestId;  // always return best match — better than any index heuristic
 }
 
-function findVisibleStoryVideo(items: StoryItem[], username: string): StoryItem | undefined {
+function findCurrentStoryItem(items: StoryItem[], username: string, targetId?: string): StoryItem | undefined {
+    const exact = targetId ? items.find(item => item.id === targetId) : undefined;
+    if (exact) return exact;
+
     let selected: StoryItem | undefined;
     getStoryProgress(username).each(function (index) {
         if ($(this).children().length > 0) selected = items[index];
@@ -247,6 +249,13 @@ function findVisibleStoryVideo(items: StoryItem[], username: string): StoryItem 
         if ($(this).children().hasClass('_ac3q')) selected = items[index];
     });
     return selected;
+}
+
+function resolveCurrentStoryMediaId(stories: StoryResponse, username: string): string | null {
+    const items = stories.data.reels_media[0].items;
+    const pathId = location.pathname.split('/').filter(segment => /^\d{10,}$/.test(segment)).at(-1);
+    if (pathId && items.some(item => item.id === pathId)) return pathId;
+    return resolveStoryMediaIdByTimestamp(stories) ?? findCurrentStoryItem(items, username)?.id ?? pathId ?? null;
 }
 
 /**
@@ -266,64 +275,11 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
 
         return runWithLoadingBar(async () => {
             if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && !state.tempFetchRateLimit) {
-                let mediaId: string | null = null;
-
                 const userInfo = await getUserId(username);
-                const userId = userInfo.user.pk;
-                const stories = await getStories(userId);
-                const urlID = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1);
-
-                // OPTIMIZATION: cache items reference (used 4+ times)
+                const stories = await getStories(userInfo.user.pk);
                 const items = stories.data.reels_media[0].items;
-
-                items.forEach(item => {
-                    if (item.id == urlID) {
-                        mediaId = item.id;
-                    }
-                });
-
-                // FIX: timestamp-based match before fragile index/CSS fallbacks
-                if (mediaId == null) {
-                    mediaId = resolveStoryMediaIdByTimestamp(stories);
-                }
-
-                if (mediaId == null) {
-                    const $header = getStoryProgress(username);
-
-                    $header.each(function (index) {
-                        if ($(this).children().length > 0) {
-                            mediaId = items[index].id;
-                        }
-                    });
-                }
-
-                if (mediaId == null) {
-                    // appear in from profile page to story page
-                    $('body > div section:visible div.x1ned7t2.x78zum5 > div').each(function (index) {
-                        const $this = $(this);
-                        if ($this.hasClass('x1lix1fw')) {
-                            if ($this.children().length > 0) {
-                                mediaId = items[index].id;
-                            }
-                        }
-                    });
-
-                    // appear in from home page to story page
-                    $('body > div section:visible ._ac0k > ._ac3r > div').each(function (index) {
-                        if ($(this).children().hasClass('_ac3q')) {
-                            mediaId = items[index].id;
-                        }
-                    });
-                }
-
-                if (mediaId == null) {
-                    mediaId = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1) ?? null;
-                }
-
-                if (!mediaId) {
-                    showToast('Could not identify the current story.');
-                    return;
-                }
+                const mediaId = resolveCurrentStoryMediaId(stories, username);
+                if (!mediaId) throw new Error('Current story could not be identified');
 
                 if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
                     const cached = getImageFromCache(mediaId);
@@ -345,9 +301,7 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
                         state.tempFetchRateLimit = true;
                         return onStory(isDownload, isForce, isPreview);
                     }
-                    showToast('Could not fetch this story from Instagram.');
-                    logger('onStory()', 'Media API rejected request', result?.message);
-                    return;
+                    throw new Error(result?.message ?? 'Media API rejected story request');
                 }
 
                 // OPTIMIZATION: cache result.items[0]
@@ -419,7 +373,7 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
 
                     // GitHub issue #4: thinkpad4
                     if (videoURL.length == 0) {
-                        const selected = findVisibleStoryVideo(items, username);
+                        const selected = findCurrentStoryItem(items, username, targetURL);
                         videoURL = selected?.video_resources[0].src ?? videoURL;
                         timestamp = selected && USER_SETTING.RENAME_PUBLISH_DATE ? selected.taken_at_timestamp : timestamp;
                         mediaId = selected && USER_SETTING.RENAME_PUBLISH_DATE ? selected.id : mediaId;
@@ -429,7 +383,7 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
                 }
 
                 if (videoURL.length == 0) {
-                    showToast(_i18n("NO_VID_URL"));
+                    throw new Error(_i18n("NO_VID_URL"));
                 }
                 else {
                     await openOrSaveMedia(videoURL, { username, sourceType: 'stories', timestamp, filetype: type, shortcode: mediaId }, isPreview);
@@ -467,15 +421,17 @@ export async function onStory(isDownload = false, isForce = false, isPreview = f
                 }
 
                 if (!downloadLink) {
-                    showToast('Could not find the current story image.');
-                    return;
+                    throw new Error('Current story image is unavailable');
                 }
 
                 await openOrSaveMedia(downloadLink, { username, sourceType: 'stories', timestamp, filetype: type, shortcode: mediaId }, isPreview);
             }
 
             state.tempFetchRateLimit = false;
-        }).catch(err => { logger('onStory()', 'failed', err); });
+        }).catch(err => {
+            logger('onStory()', 'failed', err);
+            showMediaActionFailure(err, 'Could not get this story.');
+        });
     }
     if (!document.querySelector('.IG_STORY_CONTROL_BAR')) {
         state.GL_dataCache.stories = {};
@@ -534,60 +490,9 @@ export async function onStoryThumbnail(isDownload = false, isForce = false): Pro
         return runWithLoadingBar(async () => {
             if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && !state.tempFetchRateLimit) {
                 const userInfo = await getUserId(username);
-                const userId = userInfo.user.pk;
-                const stories = await getStories(userId);
-                const urlID = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1);
-                // OPTIMIZATION: cache items reference
-                const items = stories.data.reels_media[0].items;
-
-                items.forEach(item => {
-                    if (item.id == urlID) {
-                        mediaId = item.id;
-                    }
-                });
-
-                // FIX: timestamp-based match before fragile index/CSS fallbacks
-                if (mediaId == null) {
-                    mediaId = resolveStoryMediaIdByTimestamp(stories);
-                }
-
-                if (mediaId == null) {
-                    const $header = getStoryProgress(username);
-
-                    $header.each(function (index) {
-                        if ($(this).children().length > 0) {
-                            mediaId = items[index].id;
-                        }
-                    });
-                }
-
-                if (mediaId == null) {
-                    // appear in from profile page to story page
-                    $('body > div section:visible div.x1ned7t2.x78zum5 > div').each(function (index) {
-                        const $this = $(this);
-                        if ($this.hasClass('x1lix1fw')) {
-                            if ($this.children().length > 0) {
-                                mediaId = items[index].id;
-                            }
-                        }
-                    });
-
-                    // appear in from home page to story page
-                    $('body > div section:visible ._ac0k > ._ac3r > div').each(function (index) {
-                        if ($(this).children().hasClass('_ac3q')) {
-                            mediaId = items[index].id;
-                        }
-                    });
-                }
-
-                if (mediaId == null) {
-                    mediaId = location.pathname.split('/').filter(s => s.length > 0 && s.match(/^([0-9]{10,})$/)).at(-1) ?? null;
-                }
-
-                if (!mediaId) {
-                    showToast('Could not identify the current story thumbnail.');
-                    return;
-                }
+                const stories = await getStories(userInfo.user.pk);
+                mediaId = resolveCurrentStoryMediaId(stories, username);
+                if (!mediaId) throw new Error('Current story thumbnail could not be identified');
 
                 if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
                     const cached = getImageFromCache(mediaId);
@@ -625,11 +530,7 @@ export async function onStoryThumbnail(isDownload = false, isForce = false): Pro
                         state.tempFetchRateLimit = true;
                         return await onStoryThumbnail(true, isForce);
                     }
-                    else {
-                        showToast('Could not fetch this story from Instagram.');
-                    }
-
-                    logger('onStoryThumbnail()', 'Media API rejected request', result?.message);
+                    throw new Error(result?.message ?? 'Media API rejected story thumbnail request');
                 }
 
                 return;
@@ -637,15 +538,12 @@ export async function onStoryThumbnail(isDownload = false, isForce = false): Pro
 
             if (state.GL_dataCache.stories[username] && !isForce) {
                 logger('Fetch from memory cache:', username);
-                state.GL_dataCache.stories[username].data.reels_media[0].items.forEach(item => {
-                    if (item.id == targetURL) {
-                        videoThumbnailURL = item.display_url;
-                        if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                            timestamp = item.taken_at_timestamp;
-                            mediaId = item.id;
-                        }
-                    }
-                });
+                const item = findCurrentStoryItem(state.GL_dataCache.stories[username].data.reels_media[0].items, username, targetURL);
+                videoThumbnailURL = item?.display_url ?? '';
+                if (item && USER_SETTING.RENAME_PUBLISH_DATE) {
+                    timestamp = item.taken_at_timestamp;
+                    mediaId = item.id;
+                }
 
                 if (videoThumbnailURL.length == 0) {
                     logger('Memory cache not found, try fetch from API:', username);
@@ -656,62 +554,16 @@ export async function onStoryThumbnail(isDownload = false, isForce = false): Pro
                 const userInfo = await getUserId(username);
                 const userId = userInfo.user.pk;
                 const stories = await getStories(userId);
-                // OPTIMIZATION: cache items
                 const items = stories.data.reels_media[0].items;
-
-                items.forEach(item => {
-                    if (item.id == targetURL) {
-                        videoThumbnailURL = item.display_url;
-                        if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                            timestamp = item.taken_at_timestamp;
-                            mediaId = item.id;
-                        }
-                    }
-                });
-
-                // GitHub issue #4: thinkpad4
-                if (videoThumbnailURL.length == 0) {
-                    const $header = getStoryProgress(username);
-
-                    $header.each(function (index) {
-                        if ($(this).children().length > 0) {
-                            videoThumbnailURL = items[index].display_url;
-                            if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                                timestamp = items[index].taken_at_timestamp;
-                                mediaId = items[index].id;
-                            }
-                        }
-                    });
-
-                    if (videoThumbnailURL.length == 0) {
-                        // appear in from profile page to story page
-                        $('body > div section:visible div.x1ned7t2.x78zum5 > div').each(function (index) {
-                            const $this = $(this);
-                            if ($this.hasClass('x1lix1fw')) {
-                                if ($this.children().length > 0) {
-                                    videoThumbnailURL = items[index].display_url;
-                                    if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                                        timestamp = items[index].taken_at_timestamp;
-                                        mediaId = items[index].id;
-                                    }
-                                }
-                            }
-                        });
-
-                        // appear in from home page to story page
-                        $('body > div section:visible ._ac0k > ._ac3r > div').each(function (index) {
-                            if ($(this).children().hasClass('_ac3q')) {
-                                videoThumbnailURL = items[index].display_url;
-                                if (USER_SETTING.RENAME_PUBLISH_DATE) {
-                                    timestamp = items[index].taken_at_timestamp;
-                                    mediaId = items[index].id;
-                                }
-                            }
-                        });
-                    }
+                const item = findCurrentStoryItem(items, username, targetURL);
+                videoThumbnailURL = item?.display_url ?? '';
+                if (item && USER_SETTING.RENAME_PUBLISH_DATE) {
+                    timestamp = item.taken_at_timestamp;
+                    mediaId = item.id;
                 }
             }
 
+            if (!videoThumbnailURL) throw new Error('Current story thumbnail is unavailable');
             await saveFiles(videoThumbnailURL, {
                 username,
                 sourceType: "thumbnail",
@@ -720,7 +572,10 @@ export async function onStoryThumbnail(isDownload = false, isForce = false): Pro
                 shortcode: mediaId
             });
             state.tempFetchRateLimit = false;
-        }).catch(err => { logger('onStoryThumbnail()', 'failed', err); });
+        }).catch(err => {
+            logger('onStoryThumbnail()', 'failed', err);
+            showMediaActionFailure(err, 'Could not get this thumbnail.');
+        });
     }
     else {
         const $element = findStoryControlElement();

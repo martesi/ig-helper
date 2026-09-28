@@ -1,10 +1,10 @@
 import $ from 'jquery';
 import { Effect } from 'effect';
 import { DIRECT_DOWNLOAD_MODE_OPTIONS, USER_SETTING, state, resourceCountSelector } from "../../settings/state";
-import { triggerLinkElement, saveMediaThumbnail } from "../../shared/media-download";
+import { triggerLinkElement, saveMediaThumbnail, showMediaActionFailure } from "../../shared/media-download";
 import { openNewTab, replaceSameOriginHost } from "../../shared/navigation";
 import { triggerReactClickHandler } from "../../shared/react";
-import { setDownloadProgress, showToast, updateLoadingBar } from "../../shared/ui/status.tsx";
+import { setDownloadProgress, showToast } from "../../shared/ui/status.tsx";
 import { logger } from "../../shared/logger";
 import { getBlobMedia, getMediaInfo } from "../../shared/api";
 import { _i18n } from "../../shared/i18n";
@@ -511,115 +511,62 @@ async function toClipboardPng(blob: Blob): Promise<Blob> {
     return Effect.runPromise(conversion);
 }
 
-function openPostVideoThumbnail(target: HTMLElement) {
-    return runWithLoadingBar(async () => {
-        const { $article, postPath } = await getPostContextFromButton(target);
-        if ($article.length === 0 || !postPath) {
-            showToast('Cannot determine post path.');
-            return;
-        }
-
+async function runPostResourceAction<T>(
+    operation: string,
+    target: HTMLElement,
+    action: ($article: JQuery<Element>, postPath: string) => Promise<T>,
+): Promise<T | undefined> {
+    return getPostContextFromButton(target).then(async ({ $article, postPath }) => {
+        if ($article.length === 0 || !postPath) throw new Error('Cannot determine post path');
         state.GL_username = $article.data('username');
         state.GL_postPath = postPath;
-        const index = getVisibleNodeIndex($article);
-        const resourceRoot = document.createElement('div');
-
-        const totalInserted = await createMediaListDOM(
-            postPath,
-            resourceRoot,
-            ""
-        );
-
-        if (!totalInserted || totalInserted < 1) {
-            showToast('Cannot find thumbnail URL.');
-            return;
-        }
-
-        const $link = $(resourceRoot).find('a[data-globalindex="' + (index + 1) + '"]').first();
-        if ($link.length === 0 || !await saveMediaThumbnail($link, postPath)) {
-            showToast('Cannot find thumbnail URL.');
-        }
-    }).catch(err => {
-        logger('openPostVideoThumbnail', err);
-        showToast('Cannot find thumbnail URL.');
+        return await action($article, postPath);
+    }).catch(error => {
+        logger(operation, error);
+        showMediaActionFailure(error, 'Could not get this media.');
+        return undefined;
     });
 }
 
+async function loadPostResources(postPath: string, message = ''): Promise<HTMLElement> {
+    const root = document.createElement('div');
+    if (await createMediaListDOM(postPath, root, message) < 1) throw new Error('No post resources found');
+    return root;
+}
+
+async function getVisiblePostResource($article: JQuery<Element>, postPath: string): Promise<JQuery<Element>> {
+    const root = await loadPostResources(postPath);
+    const $link = $(root).find(`a[data-globalindex="${getVisibleNodeIndex($article) + 1}"]`).first();
+    if ($link.length === 0) throw new Error('Current post resource not found');
+    return $link;
+}
+
+function openPostVideoThumbnail(target: HTMLElement) {
+    return runWithLoadingBar(() => runPostResourceAction('openPostVideoThumbnail', target, async ($article, postPath) => {
+        const $link = await getVisiblePostResource($article, postPath);
+        if (!await saveMediaThumbnail($link, postPath)) throw new Error('Post thumbnail is unavailable');
+    }));
+}
+
 function openPostResourceInNewTab(target: HTMLElement) {
-    return runWithLoadingBar(async () => {
-        const { $article, postPath } = await getPostContextFromButton(target);
-        if ($article.length === 0 || !postPath) {
-            showToast('Cannot determine post path.');
-            return;
-        }
-
-        state.GL_username = $article.data('username');
-        state.GL_postPath = postPath;
-        const index = getVisibleNodeIndex($article);
-        const resourceRoot = document.createElement('div');
-
-        const totalInserted = await createMediaListDOM(
-            postPath,
-            resourceRoot,
-            ""
-        );
-
-        if (!totalInserted || totalInserted < 1) {
-            showToast('Cannot find open tab URL.');
-            return;
-        }
-
-        const $link = $(resourceRoot).find('a[data-globalindex="' + (index + 1) + '"]').first();
-        if ($link.length === 0) {
-            showToast('Cannot find open tab URL.');
-            return;
-        }
-
+    return runWithLoadingBar(() => runPostResourceAction('openPostResourceInNewTab', target, async ($article, postPath) => {
+        const $link = await getVisiblePostResource($article, postPath);
         if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && USER_SETTING.NEW_TAB_ALWAYS_FORCE_MEDIA_IN_POST) {
             await triggerLinkElement($link[0], true);
             return;
         }
 
         const href = $link.data('href');
-        if (href) openNewTab(replaceSameOriginHost(href));
-        else showToast('Cannot find open tab URL.');
-    }).catch(err => {
-        logger('openPostResourceInNewTab', err);
-        showToast('Cannot find open tab URL.');
-    });
+        if (!href) throw new Error('Post resource URL is unavailable');
+        openNewTab(replaceSameOriginHost(href));
+    }));
 }
 
 async function downloadAllPostResources(target: HTMLElement) {
-    await (async () => {
-        const { $article, postPath } = await getPostContextFromButton(target);
-        if ($article.length === 0 || !postPath) {
-            showToast('Cannot determine post path.');
-            return;
-        }
-
-        state.GL_username = $article.data('username');
-        state.GL_postPath = postPath;
-
-        const popupBody = document.createElement('div');
-        updateLoadingBar(true);
-
-        const totalInserted = await createMediaListDOM(
-            state.GL_postPath,
-            popupBody,
-            _i18n("LOAD_BLOB_MULTIPLE")
-        );
-
-        if (!totalInserted || totalInserted < 1) return;
-
-        const links: JQuery<Element>[] = [];
-        $(popupBody).find('a').each(function () {
-            links.push($(this));
-        });
-
-        await batchDownloadPostFiles(links);
-    })().catch(err => {
-        logger('downloadAllPostResources', err);
-    }).finally(() => updateLoadingBar(false));
+    await runWithLoadingBar(() => runPostResourceAction('downloadAllPostResources', target, async (_article, postPath) => {
+        const popupBody = await loadPostResources(postPath, _i18n("LOAD_BLOB_MULTIPLE"));
+        await batchDownloadPostFiles($(popupBody).find('a').toArray());
+    }));
 }
 
 async function appendVisiblePostResources($article: JQuery<Element>, popupBody: HTMLElement, postPath: string) {
@@ -676,31 +623,10 @@ function appendPostImage(root: HTMLElement, imageLink: string, index: number, pu
 }
 
 async function downloadPostResource(target: HTMLElement) {
-    await (async () => {
-        const { $article, postPath } = await getPostContextFromButton(target);
-        if ($article.length === 0 || !postPath) {
-            showToast('Cannot determine post path.');
-            return;
-        }
-
-        state.GL_username = $article.data('username');
-        state.GL_postPath = postPath;
-
+    await runPostResourceAction('downloadPostResource', target, async ($article, postPath) => {
         if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ASK) {
-            const resourceRoot = document.createElement('div');
-
             await runWithLoadingBar(async () => {
-                const totalInserted = await createMediaListDOM(
-                    postPath,
-                    resourceRoot,
-                    _i18n("LOAD_BLOB_MULTIPLE")
-                );
-
-                if (!totalInserted) {
-                    showToast('Cannot find download URL.');
-                    return;
-                }
-
+                const resourceRoot = await loadPostResources(postPath, _i18n("LOAD_BLOB_MULTIPLE"));
                 const resources = Array.from(resourceRoot.querySelectorAll<HTMLAnchorElement>('a[data-needed="direct"]')).map(anchor => ({
                     mediaId: anchor.getAttribute('media-id'),
                     preview: anchor.dataset.preview ?? anchor.dataset.href,
@@ -722,31 +648,8 @@ async function downloadPostResource(target: HTMLElement) {
 
         if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE) {
             await runWithLoadingBar(async () => {
-                const index = getVisibleNodeIndex($article);
-
-                const totalInserted = await createMediaListDOM(
-                    postPath,
-                    popupBody,
-                    ""
-                );
-
-                if (!totalInserted || totalInserted < 1) {
-                    showToast('Cannot find download URL.');
-                    return;
-                }
-
-                const $popupBody = $(popupBody);
-                const $targetLink = $popupBody.find('a[data-globalindex="' + (index + 1) + '"]');
-
-                if ($targetLink.length > 0 && $targetLink.data('href')) {
-                    await triggerLinkElement($targetLink.first()[0], false);
-                }
-                else {
-                    showToast('Cannot find download URL.');
-                }
-            }).catch(err => {
-                logger('downloadPostResource visibleResource', err);
-                showToast('Cannot find download URL.');
+                const $targetLink = await getVisiblePostResource($article, postPath);
+                await triggerLinkElement($targetLink[0], false);
             });
 
             return;
@@ -757,25 +660,9 @@ async function downloadPostResource(target: HTMLElement) {
         }
 
         if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ALL) {
-            const totalInserted = await createMediaListDOM(
-                state.GL_postPath,
-                popupBody,
-                _i18n("LOAD_BLOB_MULTIPLE")
-            );
-
-            if (!totalInserted || totalInserted < 1) {
-                return;
-            }
-
-            const links: JQuery<Element>[] = [];
-            $(popupBody).find('a').each(function () {
-                links.push($(this));
-            });
-
-            await batchDownloadPostFiles(links);
+            const allResources = await loadPostResources(postPath, _i18n("LOAD_BLOB_MULTIPLE"));
+            await batchDownloadPostFiles($(allResources).find('a').toArray());
         }
-    })().catch(err => {
-        logger('downloadPostResource', err);
     });
 }
 
@@ -868,22 +755,16 @@ function compareImageCandidates(a: { url: string; width?: number }, b: { url: st
  * @param  {String}  message - i18n display loading message
  * @return {Promise<number>}  The number of <a> elements inserted into the DOM
  */
-export function createMediaListDOM(postURL: string, root: HTMLElement, message: string): Promise<number> {
+export async function createMediaListDOM(postURL: string, root: HTMLElement, message: string): Promise<number> {
     const $target = $(root);
-    return (async () => {
-        $target.find('a').remove();
-        appendLoadingMessage($target[0], message);
-        const result = await getBlobMedia(postURL);
+    $target.find('a').remove();
+    appendLoadingMessage($target[0], message);
+    return getBlobMedia(postURL).then(result => {
         if (result.type === 'query_hash') appendLegacyMediaResources($target[0], filterResourceData(result.data));
         else appendModernMediaResources($target[0], filterResourceData(result.data));
-
-        $target.find('#_SNLOAD').remove();
-
         return $target.find('a').length;
-    })().catch(err => {
-        logger('createMediaListDOM', err);
+    }).finally(() => {
         $target.find('#_SNLOAD').remove();
-        return 0;
     });
 }
 
@@ -1031,17 +912,13 @@ async function getPostPathFromMedia(target: HTMLElement): Promise<string | null>
     const mediaId = mediaURL ? mediaIdFromURL(mediaURL) : null;
     if (!mediaId) return null;
 
-    return getMediaInfo(mediaId).then(async apiResponse => {
-        const mediaItem = apiResponse?.items?.[0];
-        if (!mediaItem?.code) return null;
-        if (mediaItem.product_type !== 'carousel_item') return mediaItem.code;
+    const apiResponse = await getMediaInfo(mediaId);
+    const mediaItem = apiResponse?.items?.[0];
+    if (!mediaItem?.code) return null;
+    if (mediaItem.product_type !== 'carousel_item') return mediaItem.code;
 
-        const fetchResponse = await fetch(`/p/${mediaItem.code}/`, { credentials: 'same-origin' });
-        return getPostPathFromURL(fetchResponse.url) || mediaItem.code;
-    }).catch(err => {
-        logger('getPostPathFromMedia', err);
-        return null;
-    });
+    const fetchResponse = await fetch(`/p/${mediaItem.code}/`, { credentials: 'same-origin' });
+    return getPostPathFromURL(fetchResponse.url) || mediaItem.code;
 }
 
 /**

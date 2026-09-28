@@ -1,5 +1,4 @@
 import { userIdCache } from "../settings/state";
-import { showToast, updateLoadingBar } from "./ui/status.tsx";
 import { logger } from "./logger";
 import * as z from "zod/mini";
 import { Effect } from 'effect';
@@ -241,9 +240,7 @@ export function getMediaInfo(mediaId: string) {
         const message = !mediaId
             ? 'Cannot call Media API because the media id is invalid.'
             : 'Cannot call Media API because the app id is invalid.';
-        showToast('Could not fetch this media from Instagram.');
         logger('getMediaInfo()', 'reject', message);
-        updateLoadingBar(false);
         return Promise.reject(new Error(message));
     }
 
@@ -271,11 +268,11 @@ export function getMediaInfo(mediaId: string) {
 
     return Effect.runPromise(request).catch(error => {
         logger('getMediaInfo()', 'reject', error);
-        if (error instanceof RequestError && error.cause instanceof Error &&
-            error.cause.message === 'The account must be logged in to access Media API.') {
-            showToast('Log in to Instagram to access this media.', 'warning', 7000);
-        }
-        updateLoadingBar(false);
         throw error;
     });
+}
+
+export function isMediaApiAuthError(error: unknown): boolean {
+    return error instanceof RequestError && error.cause instanceof Error &&
+        error.cause.message === 'The account must be logged in to access Media API.';
 }
