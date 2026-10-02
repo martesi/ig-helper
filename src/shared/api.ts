@@ -1,4 +1,4 @@
-import { userIdCache } from "../settings/state";
+import { userIdCache, state } from "../settings/state";
 import { logger } from "./logger";
 import * as z from "zod/mini";
 import { Effect } from 'effect';
@@ -7,6 +7,7 @@ import type { Request } from './transport.ts';
 import { assertInstagramPostShortcode } from './instagram-path.ts';
 import { legacyMediaSchema, mediaInfoSchema, modernMediaSchema, storyResponseSchema, userInfoSchema } from './instagram-data.ts';
 import type { BlobMediaResponse, ModernMedia, StoryResponse, UserInfo } from './instagram-data.ts';
+import { findLocalUserInfo, getPageUserInfo, userInfoFromOwner } from './local-user';
 
 const objectResponseSchema = z.record(z.string(), z.unknown());
 
@@ -91,6 +92,11 @@ export async function getUserId(username: string): Promise<UserInfo> {
     if (!username) throw new Error('Instagram username is missing');
     const cached = userIdCache.get(username);
     if (cached) return cached;
+    const local = findLocalUserInfo(state.GL_dataCache, username) ?? getPageUserInfo(username);
+    if (local) {
+        userIdCache.set(username, local);
+        return local;
+    }
 
     const url = `https://www.instagram.com/web/search/topsearch/?query=${encodeURIComponent(username)}`;
     const searchSchema = z.object({ users: z.array(rawUserSchema) });
@@ -183,6 +189,7 @@ export async function getBlobMedia(postPath: string, request: Request = GM_xmlht
     if (!legacyData) return { type: 'query_id', data: await getBlobMediaWithQueryID(postPath, request) };
 
     const legacyMedia = legacyData.shortcode_media;
+    rememberMediaOwner(legacyMedia.owner);
     const legacyCarouselCount = legacyMedia.edge_sidecar_to_children?.edges.length ?? 0;
 
     if (legacyMedia.__typename === 'GraphSidecar' && legacyCarouselCount >= 10) {
@@ -224,7 +231,13 @@ export async function getBlobMediaWithQueryID(postPath: string, request: Request
     }), response.data);
     const media = payload.xdt_api__v1__media__shortcode__web_info.items[0];
     if (!media) throw new Error('Instagram web-info response did not include media');
+    rememberMediaOwner(media.owner ?? media.user);
     return normalizeModernMedia(media, fallbackUsername);
+}
+
+function rememberMediaOwner(owner: unknown) {
+    const info = userInfoFromOwner(owner);
+    if (info) userIdCache.set(info.user.username, info);
 }
 
 /**
@@ -266,7 +279,10 @@ export function getMediaInfo(mediaId: string) {
         })),
     );
 
-    return Effect.runPromise(request).catch(error => {
+    return Effect.runPromise(request).then(result => {
+        result.items.forEach(item => rememberMediaOwner(item.user));
+        return result;
+    }).catch(error => {
         logger('getMediaInfo()', 'reject', error);
         throw error;
     });

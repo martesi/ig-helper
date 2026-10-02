@@ -4,6 +4,7 @@ import { logger } from './logger';
 import { updateLoadingBar } from './ui/status.tsx';
 import { Effect } from 'effect';
 import { DownloadError, fetchMedia, managerDownload } from './download-effect.ts';
+import { needsDownloadUserId } from './download-metadata';
 
 export interface SaveMetadata {
     username?: string;
@@ -19,6 +20,8 @@ export function saveFiles(downloadLink: string, metadata: SaveMetadata): Promise
     const program = Effect.gen(function* () {
         yield* Effect.sleep('50 millis');
         yield* Effect.sync(() => updateLoadingBar(true));
+
+        yield* Effect.tryPromise({ try: () => resolveDownloadUserId(metadata), catch: cause => cause });
 
         const { filetype, shortcode, sourceType } = metadata;
         const needsExif = USER_SETTING.MODIFY_RESOURCE_EXIF &&
@@ -159,20 +162,8 @@ export function getSaveFileName(downloadLink: string, metadata: SaveMetadata): s
  * @return {void}
  */
 export async function createSaveFileElement(downloadLink: string, object: Blob, metadata: SaveMetadata): Promise<void> {
-    let username = metadata.username;
     const { sourceType, filetype, shortcode } = metadata;
-
-    if (metadata.uid == null) {
-        username = metadata.username;
-        if (username && !userIdCache.has(username)) {
-            userIdCache.set(username, getUserId(username));
-        }
-        const userInfo = await Promise.resolve(username ? userIdCache.get(username) : undefined).catch(() => {
-            if (username) userIdCache.delete(username);
-            return undefined;
-        });
-        metadata.uid = userInfo?.user?.id ?? null;
-    }
+    await resolveDownloadUserId(metadata);
 
     const downloadName = getSaveFileName(downloadLink, metadata);
 
@@ -192,6 +183,21 @@ export async function createSaveFileElement(downloadLink: string, object: Blob, 
     else {
         await triggerDownload(object, downloadName);
     }
+}
+
+async function resolveDownloadUserId(metadata: SaveMetadata): Promise<void> {
+    if (metadata.uid !== undefined || !metadata.username) return;
+    const username = metadata.username;
+    metadata.uid = null;
+    if (!needsDownloadUserId(metadata, USER_SETTING, state.fileRenameFormat)) return;
+    const lookup = getUserId(username);
+    userIdCache.set(username, lookup);
+    const info = await lookup.catch(error => {
+        userIdCache.delete(username);
+        logger('resolveDownloadUserId()', 'user ID unavailable', error);
+        return undefined;
+    });
+    metadata.uid = info?.user.id ?? null;
 }
 
 /**

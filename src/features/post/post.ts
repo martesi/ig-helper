@@ -16,6 +16,8 @@ import { openResourcePicker } from '../../shared/ui/resource-picker.tsx';
 import type { LegacyMedia, LegacyMediaRoot, ModernMedia } from '../../shared/instagram-data.ts';
 import { currentRouteScope } from '../../shared/route-scope.ts';
 import { runWithLoadingBar } from '../loading';
+import { downloadLocalPostImage } from './local-image';
+import { getPostShortcodeFromURL as getPostPathFromURL } from '../../shared/instagram-path';
 
 /**
  * onReadyMyDW
@@ -631,6 +633,7 @@ function appendPostImage(root: HTMLElement, imageLink: string, index: number, pu
 }
 
 async function downloadPostResource(target: HTMLElement) {
+    if (await downloadLocalPostImage(target, getVisibleNodeIndex(getPostContainerFromButton(target)))) return;
     await runPostResourceAction('downloadPostResource', target, async ($article, postPath) => {
         if (USER_SETTING.DIRECT_DOWNLOAD_MODE === DIRECT_DOWNLOAD_MODE_OPTIONS.ASK) {
             await runWithLoadingBar(async () => {
@@ -901,14 +904,8 @@ function containsPostMedia($candidate: JQuery<Element>): boolean {
     }).length > 0;
 }
 
-const postLinkPattern = /(?:^\/|instagram\.com\/)(?:[^/?#]+\/)?(?:p|reel)\/([^/?#;]+)/i;
-
 function getPostContainerFromButton(target: HTMLElement): JQuery<Element> {
     return $(target).closest('[data-snig="canDownload"]');
-}
-
-function getPostPathFromURL(url: string | undefined | null): string | null {
-    return url?.match(postLinkPattern)?.[1] || null;
 }
 
 async function getPostPathFromMedia(target: HTMLElement): Promise<string | null> {

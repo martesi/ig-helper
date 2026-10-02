@@ -1,4 +1,5 @@
 import * as z from 'zod/mini';
+import { mediaOwnerSchema } from './local-user';
 
 const imageResource = z.object({
     src: z.string(),
@@ -18,8 +19,8 @@ export const storyResponseSchema = z.object({
     data: z.object({
         reels_media: z.array(z.object({
             items: z.array(storyItem),
-            owner: z.object({ username: z.string() }),
-            user: z.optional(z.object({ username: z.string() })),
+            owner: mediaOwnerSchema,
+            user: z.optional(mediaOwnerSchema),
         })),
     }),
 });
@@ -51,6 +52,7 @@ export const mediaInfoSchema = z.object({
         taken_at: z.number(),
         code: z.optional(z.string()),
         product_type: z.optional(z.string()),
+        user: z.nullish(mediaOwnerSchema),
         video_dash_manifest: z.optional(z.string()),
         video_versions: z.optional(z.array(mediaCandidate)),
         image_versions2: z.object({ candidates: z.array(mediaCandidate) }),
@@ -83,7 +85,7 @@ export const legacyMediaSchema = z.object({
     __typename: z.string(),
     id: z.string(),
     shortcode: z.string(),
-    owner: z.object({ username: z.string() }),
+    owner: mediaOwnerSchema,
     taken_at_timestamp: z.number(),
     is_video: z.optional(z.boolean()),
     video_url: z.optional(z.string()),
@@ -101,8 +103,8 @@ export const modernMediaSchema = z.object({
     pk: z.prefault(z.string(), ''),
     code: z.prefault(z.string(), ''),
     taken_at: z.prefault(z.number(), 0),
-    owner: z.nullish(z.object({ username: z.string() })),
-    user: z.nullish(z.object({ username: z.string() })),
+    owner: z.nullish(mediaOwnerSchema),
+    user: z.nullish(mediaOwnerSchema),
     video_dash_manifest: z.nullish(z.string()),
     video_versions: z.nullish(z.array(mediaCandidate)),
     image_versions2: z.prefault(mediaImageVersions, fallbackMediaImageVersions),
@@ -110,7 +112,7 @@ export const modernMediaSchema = z.object({
 });
 
 export type ModernMedia = Omit<z.infer<typeof modernMediaSchema>, 'owner'> & {
-    owner: { username: string };
+    owner: z.infer<typeof mediaOwnerSchema>;
 };
 export type BlobMediaResponse =
     | { type: 'query_hash'; data: LegacyMediaRoot }
