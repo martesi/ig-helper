@@ -437,8 +437,16 @@ function openPostImageViewer(target: HTMLElement) {
 
 function getCurrentPostImageUrl(target: HTMLElement): string | null {
     const $article = getPostContainerFromButton(target);
-    const index = getVisibleNodeIndex($article);
-    const currentImage = $article.find(resourceCountSelector).eq(index).find<HTMLImageElement>('img[alt][src]').first()[0];
+    const resourceItems = $article.find(resourceCountSelector).toArray();
+    const viewportRect = resourceItems[0]?.parentElement?.parentElement?.parentElement?.getBoundingClientRect();
+    const currentItem = viewportRect && resourceItems
+        .map(item => ({
+            item,
+            visibleWidth: Math.max(0, Math.min(item.getBoundingClientRect().right, viewportRect.right)
+                - Math.max(item.getBoundingClientRect().left, viewportRect.left)),
+        }))
+        .sort((a, b) => b.visibleWidth - a.visibleWidth)[0]?.item;
+    const currentImage = $(currentItem || resourceItems[0]).find<HTMLImageElement>('img[alt][src]').first()[0];
     let url: string | undefined = currentImage?.currentSrc || currentImage?.src;
 
     if (!url) {
