@@ -39,7 +39,7 @@ export async function downloadLocalPostImage(target: HTMLElement, index: number)
     return true;
 }
 
-function findVisiblePostImage(article: JQuery<Element>): HTMLImageElement | null {
+export function findVisiblePostImage(article: JQuery<Element>): HTMLImageElement | null {
     const items = article.find(resourceCountSelector).toArray();
     if (items.length) {
         const viewport = items[0]?.parentElement?.parentElement?.parentElement?.getBoundingClientRect();

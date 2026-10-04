@@ -16,7 +16,7 @@ import { openResourcePicker } from '../../shared/ui/resource-picker.tsx';
 import type { LegacyMedia, LegacyMediaRoot, ModernMedia } from '../../shared/instagram-data.ts';
 import { currentRouteScope } from '../../shared/route-scope.ts';
 import { runWithLoadingBar } from '../loading';
-import { downloadLocalPostImage } from './local-image';
+import { downloadLocalPostImage, findVisiblePostImage } from './local-image';
 import { getPostShortcodeFromURL as getPostPathFromURL } from '../../shared/instagram-path';
 
 /**
@@ -438,27 +438,8 @@ function openPostImageViewer(target: HTMLElement) {
 }
 
 function getCurrentPostImageUrl(target: HTMLElement): string | null {
-    const $article = getPostContainerFromButton(target);
-    const resourceItems = $article.find(resourceCountSelector).toArray();
-    const viewportRect = resourceItems[0]?.parentElement?.parentElement?.parentElement?.getBoundingClientRect();
-    const currentItem = viewportRect && resourceItems
-        .map(item => ({
-            item,
-            visibleWidth: Math.max(0, Math.min(item.getBoundingClientRect().right, viewportRect.right)
-                - Math.max(item.getBoundingClientRect().left, viewportRect.left)),
-        }))
-        .sort((a, b) => b.visibleWidth - a.visibleWidth)[0]?.item;
-    const currentImage = $(currentItem || resourceItems[0]).find<HTMLImageElement>('img[alt][src]').first()[0];
-    let url: string | undefined = currentImage?.currentSrc || currentImage?.src;
-
-    if (!url) {
-        url = $article.find('img:visible').filter(function () {
-            const $img = $(this);
-            return (($img.attr('alt') || '').length > 0) && (($img.attr('src') || '').length > 0);
-        }).first().attr('src');
-    }
-
-    return typeof url === 'string' ? url : null;
+    const image = findVisiblePostImage(getPostContainerFromButton(target));
+    return image?.currentSrc || image?.src || null;
 }
 
 async function copyPostResourceToClipboard(target: HTMLElement): Promise<boolean> {
