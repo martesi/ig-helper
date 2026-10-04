@@ -61,3 +61,57 @@ function visibleWidth(item: Element, viewport: DOMRect): number {
     const rect = item.getBoundingClientRect();
     return Math.max(0, Math.min(rect.right, viewport.right) - Math.max(rect.left, viewport.left));
 }
+
+/**
+ * getVisibleNodeIndex
+ * @description Get element visible node.
+ *
+ * @param  {Object}  $main
+ * @return {Integer}
+ */
+export function getVisibleNodeIndex($main: JQuery<Element>): number {
+    // 1. Prioritize the most efficient rule: check if the "back" button exists.
+    const hasBackButton = $main.find('button._afxv._al46._al47').length > 0;
+
+    // 2. If the "back" button does not exist, it is determined to be the first image, and the result is returned immediately.
+    if (!hasBackButton) {
+        return 0;
+    }
+    let index = 0;
+
+    // 3. If the code execution reaches here, it means it is not the first image, and the final geometric algorithm is enabled.
+
+    // a. Locate the "viewport" element: it is the grandparent of ul
+    // "_acay" class of <ul> has been removed by Instagram; [class] added to <ul> to get much lesser matches in page
+    // The parent of the parent of ul[class] always has the attributes "role"
+    // '*:not([data-pagelet])>*:not([role]):not([data-pagelet])>*>*>*[role]>*>ul[class]' is useful for avoiding the homepage stories section, account highlights section, and notes section in Messages.
+    const $viewport = $main.find('*:not([data-pagelet])>*:not([role]):not([data-pagelet])>*>*>*[role]>*>ul[class]').parent().parent('[role]');
+
+    if ($viewport.length > 0) {
+        const viewportRect = $viewport.get(0)?.getBoundingClientRect();
+        if (!viewportRect) return 0;
+        // b. Get itemWidth: directly use the width of the viewport, this method is the most generalizable
+        const itemWidth = viewportRect.width;
+
+        // Must successfully obtain the width to continue, to prevent division by zero errors
+        if (itemWidth > 0) {
+            // STAGE 1: Visual positioning, find the currently displayed <li> element
+            // "_acaz" class of <li> has been removed by Instagram; [class] added to <li> to get much lesser matches in page
+            const viewportRight = viewportRect.right;
+            const closestSlideElement = $main.find('li[class]').toArray()
+                .filter(element => element.getBoundingClientRect().width > 0)
+                .sort((a, b) => Math.abs(a.getBoundingClientRect().right - viewportRight) - Math.abs(b.getBoundingClientRect().right - viewportRight))[0];
+
+            // STAGE 2: Index calculation, use the found <li> and itemWidth to calculate the global index
+            if (closestSlideElement) index = getSlideIndex(closestSlideElement, itemWidth);
+        }
+    }
+    return index;
+}
+
+function getSlideIndex(element: HTMLElement, itemWidth: number) {
+    const style = $(element).attr('style');
+    if (!style?.includes('translateX')) return 0;
+    const offset = style.match(/translateX\(([^p]+)px\)/)?.[1];
+    return offset ? Math.round(parseFloat(offset) / itemWidth) : 0;
+}
