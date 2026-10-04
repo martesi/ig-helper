@@ -18,11 +18,17 @@ function schemaIssuePaths(error: unknown): unknown[] | undefined {
     if (typeof error !== 'object' || error === null || !('issues' in error) || !Array.isArray(error.issues)) return undefined;
     return error.issues.map(issue => typeof issue === 'object' && issue !== null && 'path' in issue ? JSON.stringify(issue.path) : undefined);
 }
-function requestParsed<T extends z.ZodMiniType>(operation: string, url: string, schema: T, headers?: Record<string, string>, request?: Request) {
-    return Effect.runPromise(gmGet(operation, url, { headers, request }).pipe(
+function requestParsed<T extends z.ZodMiniType>(operation: string, url: string, schema: T, headers?: Record<string, string>, request?: Request, anonymous = false) {
+    return Effect.runPromise(gmGet(operation, url, { headers, request, anonymous }).pipe(
         Effect.flatMap(response => Effect.try({
-            try: () => z.parse(schema, parseResponse(response)),
-            catch: cause => new RequestError({ operation, kind: 'http', cause }),
+            try: () => {
+                const data = parseResponse(response);
+                if (data.message === 'login_required' || data.error_type === 'login_required') {
+                    throw new RequestError({ operation, kind: 'http', requiresLogin: true });
+                }
+                return z.parse(schema, data);
+            },
+            catch: cause => cause instanceof RequestError ? cause : new RequestError({ operation, kind: 'http', cause }),
         })),
     ));
 }
@@ -152,7 +158,7 @@ export async function getPostOwner(postPath: string, request: Request = GM_xmlht
     const url = `https://www.instagram.com/graphql/query/?query_hash=2c4c2e343a8f64c625ba02b2aa12c7f8&variables=%7B%22shortcode%22:%22${encodeURIComponent(postPath)}%22%7D`;
     return requestParsed('getPostOwner', url, z.object({
             data: z.object({ shortcode_media: z.object({ owner: z.object({ username: z.string() }) }) }),
-        }), undefined, request).then(response => response.data.shortcode_media.owner.username).catch(async error => {
+        }), undefined, request, true).then(response => response.data.shortcode_media.owner.username).catch(async error => {
         logger('getPostOwner()', 'legacy query failed; trying web-info', schemaIssuePaths(error) ?? error);
         const media = await getBlobMediaWithQueryID(postPath, request);
         if (!media.owner.username) throw new Error('Instagram web-info response did not include an owner');
@@ -180,7 +186,7 @@ export async function getBlobMedia(postPath: string, request: Request = GM_xmlht
     const legacyData = await requestParsed('getBlobMedia', url, z.object({
             status: z.optional(z.string()),
             data: z.optional(z.unknown()),
-        }), { 'User-Agent': MOBILE_USER_AGENT }, request).then(response => response.status === 'fail'
+        }), { 'User-Agent': MOBILE_USER_AGENT }, request, true).then(response => response.status === 'fail'
         ? null
         : z.parse(z.object({ shortcode_media: legacyMediaSchema }), response.data)).catch(error => {
         logger('getBlobMedia()', 'legacy query failed; trying web-info', schemaIssuePaths(error) ?? error);
@@ -213,7 +219,7 @@ export async function getBlobMediaWithQueryID(postPath: string, request: Request
     assertInstagramPostShortcode(postPath);
     const appId = getAppID();
     const url = `https://www.instagram.com/graphql/query/?query_id=9496392173716084&variables={%22shortcode%22:%22${encodeURIComponent(postPath)}%22,%22__relay_internal__pv__PolarisFeedShareMenurelayprovider%22:true,%22__relay_internal__pv__PolarisIsLoggedInrelayprovider%22:true}`;
-    const response = await requestParsed('getBlobMediaWithQueryID', url, z.object({
+    const load = (anonymous: boolean) => requestParsed('getBlobMediaWithQueryID', url, z.object({
         status: z.optional(z.string()),
         message: z.optional(z.string()),
         feedback_message: z.optional(z.string()),
@@ -221,7 +227,12 @@ export async function getBlobMediaWithQueryID(postPath: string, request: Request
     }), {
         'User-Agent': MOBILE_USER_AGENT,
         ...(appId ? { 'X-IG-App-ID': appId } : {}),
-    }, request);
+    }, request, anonymous);
+    const response = await load(true).catch(error => {
+        if (!isMediaApiAuthError(error)) throw error;
+        logger('getBlobMediaWithQueryID()', 'anonymous access requires login; using the existing session');
+        return load(false);
+    });
 
     if (response.status === 'fail') {
         throw new Error(`Instagram web-info request failed: ${response.message ?? response.feedback_message ?? 'unknown error'}`);
@@ -289,6 +300,6 @@ export function getMediaInfo(mediaId: string) {
 }
 
 export function isMediaApiAuthError(error: unknown): boolean {
-    return error instanceof RequestError && error.cause instanceof Error &&
-        error.cause.message === 'The account must be logged in to access Media API.';
+    return error instanceof RequestError && (error.requiresLogin === true || (error.cause instanceof Error &&
+        error.cause.message === 'The account must be logged in to access Media API.'));
 }
