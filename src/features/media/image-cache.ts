@@ -6,6 +6,7 @@
 
 import { IMAGE_CACHE_KEY, IMAGE_CACHE_MAX_AGE, IMAGE_MAX_CACHE_ITEMS, state, USER_SETTING } from "../../settings/state";
 import { Effect } from 'effect';
+import { preferHigherResolutionImage } from '../../shared/instagram-image';
 
 let mediaCacheDirty = false;
 let mediaCacheSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -52,6 +53,9 @@ export function mediaIdFromURL(url: string): string | null {
  */
 export function putInCache(mediaId: string, url: string) {
     if (!mediaId) return;
+
+    const current = state.GL_imageCache[mediaId];
+    if (current && preferHigherResolutionImage(current.url, url) === current.url) return;
 
     const keys = Object.keys(state.GL_imageCache);
     if (keys.length >= IMAGE_MAX_CACHE_ITEMS) {
@@ -111,7 +115,7 @@ export function registerPerformanceObserver() {
                     ) return;
 
                     const id = mediaIdFromURL(url);
-                    if (id && !state.GL_imageCache[id]) putInCache(id, url);
+                    if (id) putInCache(id, url);
                 });
             });
             observer.observe({ entryTypes: ['resource'] });

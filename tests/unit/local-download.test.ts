@@ -5,6 +5,7 @@ import { needsDownloadUserId } from '../../src/shared/download-metadata';
 import { DEFAULT_USER_SETTINGS } from '../../src/settings/schema';
 import { modernMediaSchema } from '../../src/shared/instagram-data';
 import { selectImageURL } from '../../src/features/post/image-source';
+import { preferHigherResolutionImage } from '../../src/shared/instagram-image';
 
 const metadata = { username: 'owner', sourceType: 'photo', filetype: 'jpg', shortcode: 'Post123', timestamp: 1700000000 };
 
@@ -40,4 +41,11 @@ test('local images choose the largest advertised resource and reject video blob 
     expect(selectImageURL({ src: 'https://cdn.test/small.jpg', currentSrc: '', srcset: 'https://cdn.test/small.jpg 320w, https://cdn.test/full.jpg 1080w' })).toBe('https://cdn.test/full.jpg');
     expect(selectImageURL({ src: 'https://cdn.test/fallback.jpg', currentSrc: 'https://cdn.test/current.jpg', srcset: '' })).toBe('https://cdn.test/current.jpg');
     expect(selectImageURL({ src: 'blob:video', currentSrc: '', srcset: '' })).toBeNull();
+});
+
+test('responsive image cache does not override a larger DOM candidate', () => {
+    const small = 'https://cdn.test/image.jpg?stp=dst-jpg_e35_p320x320&ig_cache_key=MQ==';
+    const large = 'https://cdn.test/image.jpg?stp=dst-jpg_e35_p1080x1080&ig_cache_key=MQ==';
+    expect(preferHigherResolutionImage(small, large)).toBe(large);
+    expect(preferHigherResolutionImage(large, small)).toBe(large);
 });

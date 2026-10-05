@@ -5,6 +5,7 @@ import { showToast } from '../../shared/ui/status.tsx';
 import { getPostShortcodeFromURL } from '../../shared/instagram-path';
 import { selectImageURL } from './image-source';
 import { getImageFromCache, mediaIdFromURL } from '../media/image-cache';
+import { preferHigherResolutionImage } from '../../shared/instagram-image';
 
 export async function downloadLocalPostImage(target: HTMLElement, index: number): Promise<boolean> {
     if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA || USER_SETTING.DIRECT_DOWNLOAD_MODE !== DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE) return false;
@@ -14,7 +15,7 @@ export async function downloadLocalPostImage(target: HTMLElement, index: number)
     const source = selectImageURL(image);
     const mediaId = source ? mediaIdFromURL(source) : null;
     const cached = USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE && mediaId ? getImageFromCache(mediaId) : null;
-    const url = cached ?? source;
+    const url = preferHigherResolutionImage(cached, source);
     if (!url) return false;
     const username = String(article.data('username') || '');
     if (!username) return false;

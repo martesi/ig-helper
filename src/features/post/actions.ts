@@ -13,6 +13,7 @@ import { mediaIdFromURL } from '../media/image-cache';
 import { openResourcePicker } from '../../shared/ui/resource-picker.tsx';
 import { runWithLoadingBar } from '../loading';
 import { downloadLocalPostImage, findVisiblePostImage, getVisibleNodeIndex } from './local-image';
+import { selectImageURL } from './image-source';
 import { getPostShortcodeFromURL as getPostPathFromURL } from '../../shared/instagram-path';
 import { createMediaListDOM, batchDownloadPostFiles } from './resources';
 
@@ -28,7 +29,7 @@ export function openPostImageViewer(target: HTMLElement) {
 
 function getCurrentPostImageUrl(target: HTMLElement): string | null {
     const image = findVisiblePostImage(getPostContainerFromButton(target));
-    return image?.currentSrc || image?.src || null;
+    return image ? selectImageURL(image) : null;
 }
 
 export async function copyPostResourceToClipboard(target: HTMLElement): Promise<boolean> {
@@ -168,7 +169,7 @@ async function appendVisiblePostResources($article: JQuery<Element>, popupBody: 
 
         const videos = $article.find('video');
         const images = $article.find('._aagv img');
-        const imageLink = images.attr('srcset')?.split(' ')[0] || images.attr('src');
+        const imageLink = images[0] instanceof HTMLImageElement ? selectImageURL(images[0]) : null;
         if (videos.attr('src')) await createMediaListDOM(postPath, popupBody, _i18n('LOAD_BLOB_ONE'));
         if (imageLink) appendPostImage(popupBody, imageLink, 1, publishTime, postPath);
         return;
@@ -190,7 +191,7 @@ async function appendVisiblePostResources($article: JQuery<Element>, popupBody: 
         const $this = $(this);
         const videos = $this.find('video');
         const images = $this.find('._aagv img');
-        const imageLink = images.attr('srcset')?.split(' ')[0] || images.attr('src');
+        const imageLink = images[0] instanceof HTMLImageElement ? selectImageURL(images[0]) : null;
         if (videos.attr('src')) foundBlob = true;
         if (imageLink) appendPostImage(popupBody, imageLink, index, publishTime, postPath);
     });
