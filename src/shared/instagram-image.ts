@@ -10,3 +10,12 @@ export function preferHigherResolutionImage(first: string | null, second: string
     if (!second) return first;
     return getInstagramImageScale(second) > getInstagramImageScale(first) ? second : first;
 }
+
+export function selectMediaApiImageURL(candidates: readonly { url: string; width?: number; height?: number }[]): string | null {
+    const ranked = [...candidates].sort((a, b) =>
+        (b.width ?? 0) - (a.width ?? 0) ||
+        (b.height ?? 0) - (a.height ?? 0) ||
+        getInstagramImageScale(b.url) - getInstagramImageScale(a.url),
+    );
+    return ranked[0]?.url ?? null;
+}

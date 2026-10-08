@@ -5,7 +5,7 @@ import { needsDownloadUserId } from '../../src/shared/download-metadata';
 import { DEFAULT_USER_SETTINGS } from '../../src/settings/schema';
 import { modernMediaSchema } from '../../src/shared/instagram-data';
 import { selectImageURL } from '../../src/features/post/image-source';
-import { preferHigherResolutionImage } from '../../src/shared/instagram-image';
+import { preferHigherResolutionImage, selectMediaApiImageURL } from '../../src/shared/instagram-image';
 
 const metadata = { username: 'owner', sourceType: 'photo', filetype: 'jpg', shortcode: 'Post123', timestamp: 1700000000 };
 
@@ -48,4 +48,15 @@ test('responsive image cache does not override a larger DOM candidate', () => {
     const large = 'https://cdn.test/image.jpg?stp=dst-jpg_e35_p1080x1080&ig_cache_key=MQ==';
     expect(preferHigherResolutionImage(small, large)).toBe(large);
     expect(preferHigherResolutionImage(large, small)).toBe(large);
+});
+
+test('Media API image selection prefers advertised dimensions over URL parameter length', () => {
+    const candidates = [
+        { url: 'https://cdn.test/small.jpg?stp=short', width: 320, height: 320 },
+        { url: 'https://cdn.test/full.jpg?stp=much_longer_parameter', width: 1440, height: 1440 },
+    ];
+    expect(selectMediaApiImageURL(candidates)).toBe(candidates[1].url);
+    expect(selectMediaApiImageURL(candidates.map(({ url, width, height }) => ({ url: url.split('?')[0], width, height })))).toBe('https://cdn.test/full.jpg');
+    expect(candidates[0].width).toBe(320);
+    expect(selectMediaApiImageURL([])).toBeNull();
 });

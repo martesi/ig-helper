@@ -2,7 +2,7 @@ import $ from 'jquery';
 import { USER_SETTING, state } from "../settings/state";
 import { getPostOwner, getMediaInfo, isMediaApiAuthError } from "./api";
 import { getImageFromCache } from "../features/media/image-cache";
-import { getInstagramImageScale } from './instagram-image';
+import { getInstagramImageScale, selectMediaApiImageURL } from './instagram-image';
 import { _i18n } from "./i18n";
 import { logger } from "./logger";
 import { saveFiles, type SaveMetadata } from "./download";
@@ -120,7 +120,7 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
             if (handled) return;
         }
 
-        if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE) {
+        if (USER_SETTING.CAPTURE_IMAGE_VIA_MEDIA_CACHE && !USER_SETTING.FORCE_RESOURCE_VIA_MEDIA) {
             const cached = mediaId ? getImageFromCache(mediaId) : null;
 
             if (cached && filetype !== 'mp4') {
@@ -144,22 +144,7 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
                 if (mediaItem?.video_versions?.length) {
                     resource_url = mediaItem.video_versions[0].url;
                 } else if (mediaItem?.image_versions2?.candidates?.length) {
-                    mediaItem.image_versions2.candidates.sort(function (a, b) {
-                        const aSTP = new URL(a.url).searchParams.get('stp');
-                        const bSTP = new URL(b.url).searchParams.get('stp');
-
-                        if (aSTP && bSTP) {
-                            if (aSTP.length > bSTP.length) return 1;
-                            if (aSTP.length < bSTP.length) return -1;
-                        } else {
-                            if ((a.width || 0) > (b.width || 0)) return 1;
-                            if ((a.width || 0) < (b.width || 0)) return -1;
-                        }
-
-                        return 0;
-                    });
-
-                    resource_url = mediaItem.image_versions2.candidates[0].url;
+                    resource_url = selectMediaApiImageURL(mediaItem.image_versions2.candidates);
                 }
 
                 if (!resource_url) return yield* Effect.fail(new Error('Media API returned no resource URL'));
