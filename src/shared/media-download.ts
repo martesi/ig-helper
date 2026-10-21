@@ -132,7 +132,11 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
         if (USER_SETTING.FORCE_RESOURCE_VIA_MEDIA && mediaId) {
             updateLoadingBar(true);
             const result = yield* Effect.tryPromise({
-                try: () => getMediaInfo(mediaId),
+                try: () => getMediaInfo(mediaId).catch(error => {
+                    if (!href) throw error;
+                    logger('triggerLinkElement()', 'Media API unavailable; using post resource', error);
+                    return null;
+                }),
                 catch: cause => cause,
             }).pipe(Effect.ensuring(Effect.sync(() => updateLoadingBar(false))));
 
@@ -147,6 +151,7 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
                     resource_url = selectMediaApiImageURL(mediaItem.image_versions2.candidates);
                 }
 
+                if (!resource_url && href) resource_url = href;
                 if (!resource_url) return yield* Effect.fail(new Error('Media API returned no resource URL'));
 
                 if (
@@ -161,7 +166,7 @@ export function triggerLinkElement($element: JQuery<Element> | Element, isPrevie
                 return;
             }
 
-            if (USER_SETTING.FALLBACK_TO_BLOB_FETCH_IF_MEDIA_API_THROTTLED && href) {
+            if (href) {
                 yield* useResource(href, true);
                 return;
             }

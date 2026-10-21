@@ -6,7 +6,7 @@ import { gmGet, RequestError } from './transport.ts';
 import type { Request } from './transport.ts';
 import { assertInstagramPostShortcode } from './instagram-path.ts';
 import { legacyMediaSchema, mediaInfoSchema, modernMediaSchema, storyResponseSchema, userInfoSchema } from './instagram-data.ts';
-import type { BlobMediaResponse, ModernMedia, StoryResponse, UserInfo } from './instagram-data.ts';
+import type { BlobMediaResponse, LegacyMedia, ModernMedia, StoryResponse, UserInfo } from './instagram-data.ts';
 import { findLocalUserInfo, getPageUserInfo, userInfoFromOwner } from './local-user';
 
 const objectResponseSchema = z.record(z.string(), z.unknown());
@@ -180,6 +180,40 @@ function normalizeModernMedia(value: z.infer<typeof modernMediaSchema>, fallback
     return { ...value, owner: owner ?? { username: fallbackUsername } };
 }
 
+function isMediaURL(url: string | undefined): boolean {
+    return Boolean(url && URL.canParse(url) && /^https?:$/.test(new URL(url).protocol));
+}
+
+function hasUsableLegacyMedia(media: LegacyMedia): boolean {
+    const items = media.__typename === 'GraphSidecar'
+        ? media.edge_sidecar_to_children?.edges.map(edge => edge.node) ?? []
+        : [media];
+    return items.length > 0 && items.every(item => {
+        if (!isMediaURL(item.display_resources[1]?.src)) return false;
+        if (item.__typename === 'GraphVideo') return isMediaURL(item.video_url);
+        return item.__typename === 'GraphImage' && isMediaURL(item.display_resources.at(-1)?.src);
+    });
+}
+
+function hasUsableModernMedia(media: z.infer<typeof modernMediaSchema>): boolean {
+    if (media.media_type === 8 && !media.carousel_media?.length) return false;
+    const items = media.carousel_media ?? [media];
+    return items.length > 0 && items.every(item => {
+        if (!isMediaURL(item.image_versions2.candidates[0]?.url)) return false;
+        if (item.media_type === 2 || item.video_versions != null) return isMediaURL(item.video_versions?.[0]?.url);
+        return true;
+    });
+}
+
+function shouldRetryWithSession(error: unknown): boolean {
+    if (error instanceof RequestError) {
+        if (error.requiresLogin) return true;
+        if (error.status != null) return [401, 403, 404].includes(error.status);
+        return error.kind === 'http';
+    }
+    return !(error instanceof Error && /rate.?limit|too many requests|please wait a few minutes/i.test(error.message));
+}
+
 export async function getBlobMedia(postPath: string, request: Request = GM_xmlhttpRequest): Promise<BlobMediaResponse> {
     assertInstagramPostShortcode(postPath);
     const url = `https://www.instagram.com/graphql/query/?query_hash=2c4c2e343a8f64c625ba02b2aa12c7f8&variables=%7B%22shortcode%22:%22${encodeURIComponent(postPath)}%22%7D`;
@@ -192,7 +226,9 @@ export async function getBlobMedia(postPath: string, request: Request = GM_xmlht
         logger('getBlobMedia()', 'legacy query failed; trying web-info', schemaIssuePaths(error) ?? error);
         return null;
     });
-    if (!legacyData) return { type: 'query_id', data: await getBlobMediaWithQueryID(postPath, request) };
+    if (!legacyData || !hasUsableLegacyMedia(legacyData.shortcode_media)) {
+        return { type: 'query_id', data: await getBlobMediaWithQueryID(postPath, request) };
+    }
 
     const legacyMedia = legacyData.shortcode_media;
     rememberMediaOwner(legacyMedia.owner);
@@ -228,20 +264,24 @@ export async function getBlobMediaWithQueryID(postPath: string, request: Request
         'User-Agent': MOBILE_USER_AGENT,
         ...(appId ? { 'X-IG-App-ID': appId } : {}),
     }, request, anonymous);
-    const response = await load(true).catch(error => {
-        if (!isMediaApiAuthError(error)) throw error;
-        logger('getBlobMediaWithQueryID()', 'anonymous access requires login; using the existing session');
-        return load(false);
+    const parseMedia = (response: Awaited<ReturnType<typeof load>>) => {
+        if (response.status === 'fail') {
+            throw new Error(`Instagram web-info request failed: ${response.message ?? response.feedback_message ?? 'unknown error'}`);
+        }
+        const payload = z.parse(z.object({
+            xdt_api__v1__media__shortcode__web_info: z.object({ items: z.array(modernMediaSchema) }),
+        }), response.data);
+        const media = payload.xdt_api__v1__media__shortcode__web_info.items[0];
+        if (!media || (media.code && media.code !== postPath) || !hasUsableModernMedia(media)) {
+            throw new Error('Instagram web-info response did not include usable media for this post');
+        }
+        return media;
+    };
+    const media = await load(true).then(parseMedia).catch(error => {
+        if (!shouldRetryWithSession(error)) throw error;
+        logger('getBlobMediaWithQueryID()', 'anonymous media unavailable; retrying with current session', error);
+        return load(false).then(parseMedia);
     });
-
-    if (response.status === 'fail') {
-        throw new Error(`Instagram web-info request failed: ${response.message ?? response.feedback_message ?? 'unknown error'}`);
-    }
-    const payload = z.parse(z.object({
-        xdt_api__v1__media__shortcode__web_info: z.object({ items: z.array(modernMediaSchema) }),
-    }), response.data);
-    const media = payload.xdt_api__v1__media__shortcode__web_info.items[0];
-    if (!media) throw new Error('Instagram web-info response did not include media');
     rememberMediaOwner(media.owner ?? media.user);
     return normalizeModernMedia(media, fallbackUsername);
 }

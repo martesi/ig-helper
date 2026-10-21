@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import * as z from 'zod/mini';
-import { assertInstagramPostShortcode } from '../../src/shared/instagram-path.ts';
+import { assertInstagramPostShortcode, getPostShortcodeFromURL } from '../../src/shared/instagram-path.ts';
 import { modernMediaSchema } from '../../src/shared/instagram-data.ts';
 
 test('validates Instagram post shortcodes before API requests', () => {
@@ -8,6 +8,11 @@ test('validates Instagram post shortcodes before API requests', () => {
     expect(() => assertInstagramPostShortcode('/p/shortcode')).toThrow();
     expect(() => assertInstagramPostShortcode('bad shortcode')).toThrow();
     expect(() => assertInstagramPostShortcode(null)).toThrow();
+});
+
+test('normalizes private share URLs without changing normal post shortcodes', () => {
+    expect(getPostShortcodeFromURL('https://www.instagram.com/p/DeitHxulGZKjL7QRl0hz2Px-FSkYj2H7nFRJqs0/')).toBe('DeitHxulGZK');
+    expect(getPostShortcodeFromURL('/p/DeufEDZEWW7/')).toBe('DeufEDZEWW7');
 });
 
 test('accepts null video fields in Instagram image carousel responses', () => {

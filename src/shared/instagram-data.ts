@@ -39,6 +39,7 @@ const fallbackMediaImageVersions = { candidates: [] };
 const carouselMediaSchema = z.object({
     pk: z.prefault(z.string(), ''),
     taken_at: z.prefault(z.number(), 0),
+    media_type: z.optional(z.number()),
     video_dash_manifest: z.nullish(z.string()),
     video_versions: z.nullish(z.array(mediaCandidate)),
     image_versions2: z.prefault(mediaImageVersions, fallbackMediaImageVersions),
@@ -103,6 +104,7 @@ export const modernMediaSchema = z.object({
     pk: z.prefault(z.string(), ''),
     code: z.prefault(z.string(), ''),
     taken_at: z.prefault(z.number(), 0),
+    media_type: z.optional(z.number()),
     owner: z.nullish(mediaOwnerSchema),
     user: z.nullish(mediaOwnerSchema),
     video_dash_manifest: z.nullish(z.string()),
