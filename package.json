@@ -1,6 +1,6 @@
 {
   "name": "ig-helper",
-  "version": "4.2.23",
+  "version": "4.2.24",
   "packageManager": "bun@1.3.13",
   "description": "Simple and fast download of resources from Instagram (posts, reels, stories, and more).",
   "private": true,
@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "test:unit": "bun test tests/unit",
     "preview": "vite preview --outDir dist/page",
-    "test:e2e": "bun tests/e2e/run.ts anonymous",
+    "test:e2e": "bun tests/e2e/run.ts anonymous && bun run test:regression:post",
+    "test:regression:post": "bun run test:agent -- goto about:blank && bun run test:agent -- eval 'async () => await (await import(\"http://127.0.0.1:9000/tests/agent/permalink-download.js\")).checkPermalinkDownload()'",
     "test:e2e:all": "bun tests/e2e/run.ts all",
     "test:e2e:ui": "bun tests/e2e/run.ts ui",
     "test:e2e:execution": "bun tests/e2e/run.ts execution",

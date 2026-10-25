@@ -448,7 +448,7 @@ function getPostControlsMount($actionSection: JQuery<Element>): HTMLElement {
 function findPermalinkPostContainer(marker: Element): Element | undefined {
     return $(marker).parents('div').filter(function () {
         const $candidate = $(this);
-        return containsPostMedia($candidate) && findPostActionSection($candidate).length > 0;
+        return $candidate.find('._aagv img, video').length > 0 && findPostActionSection($candidate).length > 0;
     }).first()[0];
 }
 
