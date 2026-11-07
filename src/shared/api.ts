@@ -180,6 +180,42 @@ function normalizeModernMedia(value: z.infer<typeof modernMediaSchema>, fallback
     return { ...value, owner: owner ?? { username: fallbackUsername } };
 }
 
+function getEmbeddedMedia(postPath: string): ModernMedia | null {
+    for (const script of document.querySelectorAll('script[type="application/json"]')) {
+        const text = script.textContent ?? '';
+        if (!text.includes(postPath) || !/video_versions|image_versions2/.test(text)) continue;
+
+        const data = Effect.runSync(Effect.try({
+            try: (): unknown => JSON.parse(text),
+            catch: () => null,
+        }).pipe(Effect.catchCause(() => Effect.succeed(null))));
+        const media = findEmbeddedMedia(data, postPath);
+        if (media) return media;
+    }
+    return null;
+}
+
+function findEmbeddedMedia(value: unknown, postPath: string): ModernMedia | null {
+    const pending: unknown[] = [value];
+    const visited = new WeakSet<object>();
+
+    for (let count = 0; pending.length && count < 10000; count++) {
+        const node = pending.pop();
+        if (!node || typeof node !== 'object' || visited.has(node)) continue;
+        visited.add(node);
+
+        if (Reflect.get(node, 'code') === postPath) {
+            const parsed = z.safeParse(modernMediaSchema, node);
+            if (parsed.success && hasUsableModernMedia(parsed.data)) {
+                return normalizeModernMedia(parsed.data);
+            }
+        }
+
+        pending.push(...Object.values(node).slice(0, 10000 - count - pending.length));
+    }
+    return null;
+}
+
 function isMediaURL(url: string | undefined): boolean {
     return Boolean(url && URL.canParse(url) && /^https?:$/.test(new URL(url).protocol));
 }
@@ -205,17 +241,30 @@ function hasUsableModernMedia(media: z.infer<typeof modernMediaSchema>): boolean
     });
 }
 
+function isRateLimitError(error: unknown): boolean {
+    if (error instanceof RequestError) return error.status === 429;
+    return error instanceof Error && /rate.?limit|too many requests|please wait a few minutes/i.test(error.message);
+}
+
 function shouldRetryWithSession(error: unknown): boolean {
+    if (isRateLimitError(error)) return true;
     if (error instanceof RequestError) {
         if (error.requiresLogin) return true;
         if (error.status != null) return [401, 403, 404].includes(error.status);
         return error.kind === 'http';
     }
-    return !(error instanceof Error && /rate.?limit|too many requests|please wait a few minutes/i.test(error.message));
+    return true;
 }
 
 export async function getBlobMedia(postPath: string, request: Request = GM_xmlhttpRequest): Promise<BlobMediaResponse> {
     assertInstagramPostShortcode(postPath);
+    const embeddedMedia = getEmbeddedMedia(postPath);
+    if (embeddedMedia) {
+        logger('getBlobMedia()', 'using media embedded in the Instagram page');
+        rememberMediaOwner(embeddedMedia.owner);
+        return { type: 'query_id', data: embeddedMedia };
+    }
+
     const url = `https://www.instagram.com/graphql/query/?query_hash=2c4c2e343a8f64c625ba02b2aa12c7f8&variables=%7B%22shortcode%22:%22${encodeURIComponent(postPath)}%22%7D`;
     const legacyData = await requestParsed('getBlobMedia', url, z.object({
             status: z.optional(z.string()),

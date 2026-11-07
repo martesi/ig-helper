@@ -39,9 +39,10 @@ function fakeRequests(...replies: Array<{ status?: number; body?: unknown }>) {
     return { request, calls };
 }
 
-async function withFakePage<T>(action: () => Promise<T>): Promise<T> {
+async function withFakePage<T>(action: () => Promise<T>, scripts: string[] = []): Promise<T> {
     const previousDocument = globalThis.document;
-    globalThis.document = { querySelectorAll: () => [] } as unknown as Document;
+    const scriptNodes = scripts.map(textContent => ({ textContent, type: 'application/json' }));
+    globalThis.document = { querySelectorAll: () => scriptNodes } as unknown as Document;
     try {
         return await action();
     } finally {
@@ -52,6 +53,30 @@ async function withFakePage<T>(action: () => Promise<T>): Promise<T> {
 function webRequest(request: ReturnType<typeof fakeRequests>['request']) {
     return withFakePage(() => getBlobMediaWithQueryID(shortcode, request));
 }
+
+test('embedded page media avoids a rate-limited API lookup', async () => {
+    const fake = fakeRequests();
+    const embedded = {
+        code: shortcode,
+        pk: '123',
+        taken_at: 1700000000,
+        media_type: 2,
+        user: { username: 'example', pk: '42' },
+        image_versions2: { candidates: [{ url: 'https://cdn.example.test/thumb.jpg' }] },
+        video_versions: [{ url: videoURL }],
+        video_dash_manifest: null,
+    };
+    const result = await withFakePage(
+        () => getBlobMedia(shortcode, fake.request),
+        [JSON.stringify({ data: { media: { code: shortcode }, nested: embedded } })],
+    );
+
+    expect(result.type).toBe('query_id');
+    if (result.type !== 'query_id') return;
+    expect(result.data.video_versions?.[0]?.url).toBe(videoURL);
+    expect(result.data.owner.username).toBe('example');
+    expect(fake.calls).toHaveLength(0);
+});
 
 test('public media is returned anonymously without touching the session', async () => {
     const fake = fakeRequests({ body: webInfo(videoMedia()) });
@@ -98,14 +123,17 @@ test('malformed anonymous payload retries with session', async () => {
     expect(fake.calls.map(call => call.anonymous)).toEqual([true, false]);
 });
 
-test('HTTP 200 API rejection retries with session except when throttled', async () => {
+test('HTTP 200 API rejection retries with session including throttled responses', async () => {
     const denied = fakeRequests({ body: { status: 'fail', message: 'Media not available' } }, { body: webInfo(videoMedia()) });
     expect((await webRequest(denied.request)).video_versions?.[0].url).toBe(videoURL);
     expect(denied.calls.map(call => call.anonymous)).toEqual([true, false]);
 
-    const throttled = fakeRequests({ body: { status: 'fail', message: 'Please wait a few minutes before you try again.' } });
-    await expect(webRequest(throttled.request)).rejects.toThrow();
-    expect(throttled.calls.map(call => call.anonymous)).toEqual([true]);
+    const throttled = fakeRequests(
+        { body: { status: 'fail', message: 'Please wait a few minutes before you try again.' } },
+        { body: webInfo(videoMedia()) },
+    );
+    expect((await webRequest(throttled.request)).video_versions?.[0].url).toBe(videoURL);
+    expect(throttled.calls.map(call => call.anonymous)).toEqual([true, false]);
 });
 
 test('missing video versions are not accepted as a downloadable video', async () => {
@@ -128,10 +156,10 @@ test('missing and invalid video URLs retry before accepting a download', async (
     expect(invalid.calls.map(call => call.anonymous)).toEqual([true, false]);
 });
 
-test('rate limits do not trigger authenticated retries', async () => {
+test('HTTP rate limits retry with the authenticated session', async () => {
     const fake = fakeRequests({ status: 429 }, { body: webInfo(videoMedia()) });
-    await expect(webRequest(fake.request)).rejects.toThrow();
-    expect(fake.calls.map(call => call.anonymous)).toEqual([true]);
+    expect((await webRequest(fake.request)).video_versions?.[0].url).toBe(videoURL);
+    expect(fake.calls.map(call => call.anonymous)).toEqual([true, false]);
 });
 
 test('denied session access stays an error instead of claiming the post is private', async () => {
