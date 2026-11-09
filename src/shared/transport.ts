@@ -79,8 +79,15 @@ function responseRequiresLogin(response: Tampermonkey.Response<object>): boolean
         try: (): unknown => JSON.parse(response.response), catch: () => null,
     }).pipe(Effect.catchCause(() => Effect.succeed(null))));
     const parsed = z.safeParse(loginFailureSchema, body);
-    return parsed.success && /login[_ ]required|not (?:logged in|authenticated)|must (?:log|sign) in/i
-        .test(`${parsed.data.message ?? ''} ${parsed.data.error_type ?? ''}`);
+    return parsed.success && (
+        parsed.data.require_login === true ||
+        /login[_ ]required|not (?:logged in|authenticated)|must (?:log|sign) in/i
+            .test(`${parsed.data.message ?? ''} ${parsed.data.error_type ?? ''}`)
+    );
 }
 
-const loginFailureSchema = z.object({ message: z.optional(z.string()), error_type: z.optional(z.string()) });
+const loginFailureSchema = z.object({
+    message: z.optional(z.string()),
+    error_type: z.optional(z.string()),
+    require_login: z.optional(z.boolean()),
+});

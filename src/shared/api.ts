@@ -8,6 +8,7 @@ import { assertInstagramPostShortcode } from './instagram-path.ts';
 import { legacyMediaSchema, mediaInfoSchema, modernMediaSchema, storyResponseSchema, userInfoSchema } from './instagram-data.ts';
 import type { BlobMediaResponse, LegacyMedia, ModernMedia, StoryResponse, UserInfo } from './instagram-data.ts';
 import { findLocalUserInfo, getPageUserInfo, userInfoFromOwner } from './local-user';
+import { extractMediaFromDOM, isMediaURL } from './dom-media';
 
 const objectResponseSchema = z.record(z.string(), z.unknown());
 
@@ -23,7 +24,7 @@ function requestParsed<T extends z.ZodMiniType>(operation: string, url: string, 
         Effect.flatMap(response => Effect.try({
             try: () => {
                 const data = parseResponse(response);
-                if (data.message === 'login_required' || data.error_type === 'login_required') {
+                if (data.message === 'login_required' || data.error_type === 'login_required' || data.require_login === true) {
                     throw new RequestError({ operation, kind: 'http', requiresLogin: true });
                 }
                 return z.parse(schema, data);
@@ -32,12 +33,14 @@ function requestParsed<T extends z.ZodMiniType>(operation: string, url: string, 
         })),
     ));
 }
-function getAppID() {
-    for (const script of document.querySelectorAll('script[type="application/json"]')) {
-        const match = script.textContent?.match(/"APP_ID":"([0-9]+)"/i);
-        if (match) return match[1];
+export function getAppID(): string {
+    if (typeof document !== 'undefined') {
+        for (const script of document.querySelectorAll('script[type="application/json"]')) {
+            const match = script.textContent?.match(/"APP_ID":"([0-9]+)"/i);
+            if (match) return match[1];
+        }
     }
-    return null;
+    return '936619743392459';
 }
 
 const rawUserSchema = z.object({
@@ -155,10 +158,21 @@ export async function getUserHighSizeProfile(userId: string): Promise<string> {
 /** Get the owner name for a post shortcode. */
 export async function getPostOwner(postPath: string, request: Request = GM_xmlhttpRequest): Promise<string> {
     assertInstagramPostShortcode(postPath);
+    const embedded = getEmbeddedMedia(postPath);
+    if (embedded?.owner.username) {
+        rememberMediaOwner(embedded.owner);
+        return embedded.owner.username;
+    }
+
+    const appId = getAppID();
     const url = `https://www.instagram.com/graphql/query/?query_hash=2c4c2e343a8f64c625ba02b2aa12c7f8&variables=%7B%22shortcode%22:%22${encodeURIComponent(postPath)}%22%7D`;
+    const headers = {
+        'User-Agent': MOBILE_USER_AGENT,
+        ...(appId ? { 'X-IG-App-ID': appId } : {}),
+    };
     return requestParsed('getPostOwner', url, z.object({
-            data: z.object({ shortcode_media: z.object({ owner: z.object({ username: z.string() }) }) }),
-        }), undefined, request, true).then(response => response.data.shortcode_media.owner.username).catch(async error => {
+        data: z.object({ shortcode_media: z.object({ owner: z.object({ username: z.string() }) }) }),
+    }), headers, request, true).then(response => response.data.shortcode_media.owner.username).catch(async error => {
         logger('getPostOwner()', 'legacy query failed; trying web-info', schemaIssuePaths(error) ?? error);
         const media = await getBlobMediaWithQueryID(postPath, request);
         if (!media.owner.username) throw new Error('Instagram web-info response did not include an owner');
@@ -181,16 +195,22 @@ function normalizeModernMedia(value: z.infer<typeof modernMediaSchema>, fallback
 }
 
 function getEmbeddedMedia(postPath: string): ModernMedia | null {
-    for (const script of document.querySelectorAll('script[type="application/json"]')) {
-        const text = script.textContent ?? '';
-        if (!text.includes(postPath) || !/video_versions|image_versions2/.test(text)) continue;
+    if (typeof document !== 'undefined') {
+        for (const script of document.querySelectorAll('script[type="application/json"]')) {
+            const text = script.textContent ?? '';
+            if (!text.includes(postPath) || !/video_versions|image_versions2/.test(text)) continue;
 
-        const data = Effect.runSync(Effect.try({
-            try: (): unknown => JSON.parse(text),
-            catch: () => null,
-        }).pipe(Effect.catchCause(() => Effect.succeed(null))));
-        const media = findEmbeddedMedia(data, postPath);
-        if (media) return media;
+            const data = Effect.runSync(Effect.try({
+                try: (): unknown => JSON.parse(text),
+                catch: () => null,
+            }).pipe(Effect.catchCause(() => Effect.succeed(null))));
+            const media = findEmbeddedMedia(data, postPath);
+            if (media) return media;
+        }
+    }
+    const domMedia = extractMediaFromDOM(postPath);
+    if (domMedia && hasUsableModernMedia(domMedia)) {
+        return domMedia;
     }
     return null;
 }
@@ -214,10 +234,6 @@ function findEmbeddedMedia(value: unknown, postPath: string): ModernMedia | null
         pending.push(...Object.values(node).slice(0, 10000 - count - pending.length));
     }
     return null;
-}
-
-function isMediaURL(url: string | undefined): boolean {
-    return Boolean(url && URL.canParse(url) && /^https?:$/.test(new URL(url).protocol));
 }
 
 function hasUsableLegacyMedia(media: LegacyMedia): boolean {
@@ -265,11 +281,16 @@ export async function getBlobMedia(postPath: string, request: Request = GM_xmlht
         return { type: 'query_id', data: embeddedMedia };
     }
 
+    const appId = getAppID();
     const url = `https://www.instagram.com/graphql/query/?query_hash=2c4c2e343a8f64c625ba02b2aa12c7f8&variables=%7B%22shortcode%22:%22${encodeURIComponent(postPath)}%22%7D`;
+    const headers = {
+        'User-Agent': MOBILE_USER_AGENT,
+        ...(appId ? { 'X-IG-App-ID': appId } : {}),
+    };
     const legacyData = await requestParsed('getBlobMedia', url, z.object({
             status: z.optional(z.string()),
             data: z.optional(z.unknown()),
-        }), { 'User-Agent': MOBILE_USER_AGENT }, request, true).then(response => response.status === 'fail'
+        }), headers, request, true).then(response => response.status === 'fail'
         ? null
         : z.parse(z.object({ shortcode_media: legacyMediaSchema }), response.data)).catch(error => {
         logger('getBlobMedia()', 'legacy query failed; trying web-info', schemaIssuePaths(error) ?? error);

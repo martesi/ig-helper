@@ -298,7 +298,7 @@ export async function getPostContextFromButton(target: HTMLElement): Promise<{ $
     });
 
     let postPath = candidates.map(getPostPathFromURL).find(Boolean) || getPostPathFromURL(location.href);
-    if (!postPath) postPath = await getPostPathFromMedia(target);
+    if (!postPath) postPath = await getPostPathFromMedia(target).catch(() => null);
     if (postPath) $article.data('igHelper_postPath', postPath);
 
     return { $article, postPath };
