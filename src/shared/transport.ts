@@ -11,20 +11,25 @@ export class RequestError extends Data.TaggedError('RequestError')<{
 
 export type Request = (details: Tampermonkey.Request) => Tampermonkey.AbortHandle<void>;
 
-interface GetOptions {
+export interface RequestOptions {
+    readonly method?: 'GET' | 'POST';
     readonly headers?: Record<string, string>;
     readonly request?: Request;
     readonly anonymous?: boolean;
+    readonly data?: Tampermonkey.Request['data'];
 }
 
-export function gmGet(operation: string, url: string, options: GetOptions = {}) {
+export type GetOptions = RequestOptions;
+
+export function gmRequest(operation: string, url: string, options: RequestOptions = {}) {
     const request = options.request ?? GM_xmlhttpRequest;
     const attempt = Effect.callback<Tampermonkey.Response<object>, RequestError>((resume) => {
         const handle = Effect.runSync(Effect.match(Effect.try({
             try: () => request({
-                method: 'GET',
+                method: options.method ?? (options.data == null ? 'GET' : 'POST'),
                 url,
                 headers: options.headers,
+                data: options.data,
                 anonymous: options.anonymous ?? false,
                 timeout: 8000,
                 onload: response => {
@@ -70,6 +75,14 @@ export function gmGet(operation: string, url: string, options: GetOptions = {}) 
             schedule: Schedule.exponential('400 millis', 3),
         }),
     );
+}
+
+export function gmGet(operation: string, url: string, options: GetOptions = {}) {
+    return gmRequest(operation, url, { ...options, method: 'GET', data: undefined });
+}
+
+export function gmPost(operation: string, url: string, data: Tampermonkey.Request['data'], options: RequestOptions = {}) {
+    return gmRequest(operation, url, { ...options, method: 'POST', data });
 }
 
 function responseRequiresLogin(response: Tampermonkey.Response<object>): boolean {

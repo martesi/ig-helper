@@ -2,13 +2,14 @@ import { userIdCache, state } from "../settings/state";
 import { logger } from "./logger";
 import * as z from "zod/mini";
 import { Effect } from 'effect';
-import { gmGet, RequestError } from './transport.ts';
+import { gmGet, gmPost, RequestError } from './transport.ts';
 import type { Request } from './transport.ts';
 import { assertInstagramPostShortcode } from './instagram-path.ts';
-import { legacyMediaSchema, mediaInfoSchema, modernMediaSchema, storyResponseSchema, userInfoSchema } from './instagram-data.ts';
+import { legacyMediaSchema, mediaInfoSchema, modernMediaSchema, normalizeStoryResponse, storyResponseSchema, userInfoSchema } from './instagram-data.ts';
 import type { BlobMediaResponse, LegacyMedia, ModernMedia, StoryResponse, UserInfo } from './instagram-data.ts';
 import { findLocalUserInfo, getPageUserInfo, userInfoFromOwner } from './local-user';
 import { extractMediaFromDOM, isMediaURL } from './dom-media';
+import { buildInstagramGraphQLRequest, highlightGraphQL, highlightVariables, storyGraphQL, storyVariables } from './instagram-graphql';
 
 const objectResponseSchema = z.record(z.string(), z.unknown());
 
@@ -19,6 +20,12 @@ function schemaIssuePaths(error: unknown): unknown[] | undefined {
     if (typeof error !== 'object' || error === null || !('issues' in error) || !Array.isArray(error.issues)) return undefined;
     return error.issues.map(issue => typeof issue === 'object' && issue !== null && 'path' in issue ? JSON.stringify(issue.path) : undefined);
 }
+function isRateLimitPayload(payload: Record<string, unknown>): boolean {
+    const message = [payload.message, payload.feedback_message, payload.error_type]
+        .filter(value => typeof value === 'string')
+        .join(' ');
+    return /rate.?limit|too many requests|please wait a few minutes|try again later/i.test(message);
+}
 function requestParsed<T extends z.ZodMiniType>(operation: string, url: string, schema: T, headers?: Record<string, string>, request?: Request, anonymous = false) {
     return Effect.runPromise(gmGet(operation, url, { headers, request, anonymous }).pipe(
         Effect.flatMap(response => Effect.try({
@@ -27,11 +34,37 @@ function requestParsed<T extends z.ZodMiniType>(operation: string, url: string, 
                 if (data.message === 'login_required' || data.error_type === 'login_required' || data.require_login === true) {
                     throw new RequestError({ operation, kind: 'http', requiresLogin: true });
                 }
+                if (isRateLimitPayload(data)) {
+                    throw new RequestError({ operation, kind: 'http', status: 429, cause: data });
+                }
                 return z.parse(schema, data);
             },
             catch: cause => cause instanceof RequestError ? cause : new RequestError({ operation, kind: 'http', cause }),
         })),
     ));
+}
+function requestPostedParsed<T extends z.ZodMiniType>(operation: string, url: string, data: Tampermonkey.Request['data'], schema: T, headers?: Record<string, string>, request?: Request, anonymous = false) {
+    return Effect.runPromise(gmPost(operation, url, data, { headers, request, anonymous }).pipe(
+        Effect.flatMap(response => Effect.try({
+            try: () => {
+                const payload = parseResponse(response);
+                if (payload.message === 'login_required' || payload.error_type === 'login_required' || payload.require_login === true) {
+                    throw new RequestError({ operation, kind: 'http', requiresLogin: true });
+                }
+                if (isRateLimitPayload(payload)) {
+                    throw new RequestError({ operation, kind: 'http', status: 429, cause: payload });
+                }
+                return z.parse(schema, payload);
+            },
+            catch: cause => cause instanceof RequestError ? cause : new RequestError({ operation, kind: 'http', cause }),
+        })),
+    ));
+}
+function shouldFallbackStoryRequest(error: unknown): boolean {
+    if (!(error instanceof RequestError)) return true;
+    if (error.requiresLogin === true || error.kind === 'network' || error.kind === 'timeout' || error.kind === 'server') return false;
+    if (error.status == null) return error.kind === 'http';
+    return [400, 404, 405, 410].includes(error.status);
 }
 export function getAppID(): string {
     if (typeof document !== 'undefined') {
@@ -73,9 +106,16 @@ function normalizeUserInfo(value: z.infer<typeof rawUserSchema>): UserInfo {
  * @param  {Integer}  highlightId
  * @return {Object}
  */
-export function getHighlightStories(highlightId: string): Promise<StoryResponse> {
-    const url = `https://www.instagram.com/graphql/query/?query_hash=45246d3fe16ccc6577e0bd297a5db1ab&variables=%7B%22highlight_reel_ids%22:%5B%22${highlightId}%22%5D,%22precomposed_overlay%22:false%7D`;
-    return requestParsed('getHighlightStories', url, storyResponseSchema);
+export function getHighlightStories(highlightId: string, request?: Request): Promise<StoryResponse> {
+    const modern = buildInstagramGraphQLRequest(getAppID(), highlightGraphQL, highlightVariables(highlightId));
+    return requestPostedParsed('getHighlightStories', modern.url, modern.data, objectResponseSchema, modern.headers, request)
+        .then(normalizeStoryResponse)
+        .catch(error => {
+            if (!shouldFallbackStoryRequest(error)) throw error;
+            logger('getHighlightStories()', 'modern query failed; trying legacy query', error);
+            const url = `https://www.instagram.com/graphql/query/?query_hash=45246d3fe16ccc6577e0bd297a5db1ab&variables=%7B%22highlight_reel_ids%22:%5B%22${encodeURIComponent(highlightId)}%22%5D,%22precomposed_overlay%22:false%7D`;
+            return requestParsed('getHighlightStories', url, storyResponseSchema, undefined, request).then(normalizeStoryResponse);
+        });
 }
 
 /**
@@ -85,9 +125,16 @@ export function getHighlightStories(highlightId: string): Promise<StoryResponse>
  * @param  {Integer}  userId
  * @return {Object}
  */
-export function getStories(userId: string): Promise<StoryResponse> {
-    const url = `https://www.instagram.com/graphql/query/?query_hash=15463e8449a83d3d60b06be7e90627c7&variables=%7B%22reel_ids%22:%5B%22${userId}%22%5D,%22precomposed_overlay%22:false%7D`;
-    return requestParsed('getStories', url, storyResponseSchema);
+export function getStories(userId: string, request?: Request): Promise<StoryResponse> {
+    const modern = buildInstagramGraphQLRequest(getAppID(), storyGraphQL, storyVariables(userId));
+    return requestPostedParsed('getStories', modern.url, modern.data, objectResponseSchema, modern.headers, request)
+        .then(normalizeStoryResponse)
+        .catch(error => {
+            if (!shouldFallbackStoryRequest(error)) throw error;
+            logger('getStories()', 'modern query failed; trying legacy query', error);
+            const url = `https://www.instagram.com/graphql/query/?query_hash=15463e8449a83d3d60b06be7e90627c7&variables=%7B%22reel_ids%22:%5B%22${encodeURIComponent(userId)}%22%5D,%22precomposed_overlay%22:false%7D`;
+            return requestParsed('getStories', url, storyResponseSchema, undefined, request).then(normalizeStoryResponse);
+        });
 }
 
 /**
