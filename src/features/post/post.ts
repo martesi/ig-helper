@@ -294,6 +294,9 @@ export function createDownloadButton() {
                 const $actionSection = findPostActionSection($mainElement);
                 if ($actionSection.length === 0) return;
 
+                $actionSection.toggleClass('IG_HIDE_PERMALINK_POST_COUNTS',
+                    isPermalinkPostPage() && USER_SETTING.HIDE_PERMALINK_POST_COUNTS);
+
                 const controlsMount = getPostControlsMount($actionSection);
 
                 const resource_count = $mainElement.find(resourceCountSelector).length;
@@ -422,6 +425,10 @@ function findPostActionSection($mainElement: JQuery<Element>): JQuery<Element> {
     return $mainElement.find('section').filter(function () {
         return $(this).find('svg[aria-label="Save"], svg[aria-label="Remove"]').length > 0;
     }).first();
+}
+
+function isPermalinkPostPage(): boolean {
+    return /^\/(?:[^/]+\/)?p\/[^/]+\/?$/.test(location.pathname);
 }
 
 function getPostControlsMount($actionSection: JQuery<Element>): HTMLElement {

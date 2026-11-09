@@ -20,6 +20,10 @@
     justify-content: flex-end;
 }
 
+.IG_HIDE_PERMALINK_POST_COUNTS [role="button"]:not(:has(svg)) {
+    display: none !important;
+}
+
 .IG_HIGHLIGHT_CONTROL_BAR {
     position: absolute;
     top: 8px;
