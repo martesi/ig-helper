@@ -299,6 +299,22 @@ function CollapsibleControls(props: MediaControlsProps) {
         }
 
         const triggerRect = trigger.getBoundingClientRect();
+        const measuredMenuRect = menu.getBoundingClientRect();
+        const scaleX = menu.offsetWidth > 0 ? clampScale(measuredMenuRect.width / menu.offsetWidth) : 1;
+        const scaleY = menu.offsetHeight > 0 ? clampScale(measuredMenuRect.height / menu.offsetHeight) : 1;
+        // The trigger has no hover transform, so its ratio reflects ancestor scaling without
+        // including the menu's entry animation. Keeping this stable avoids resize-observer churn.
+        const ancestorScaleX = trigger.offsetWidth > 0 ? clampScale(triggerRect.width / trigger.offsetWidth) : scaleX;
+        const ancestorScaleY = trigger.offsetHeight > 0 ? clampScale(triggerRect.height / trigger.offsetHeight) : scaleY;
+        const maxWidthPx = Math.floor(Math.max(0, window.innerWidth - VIEWPORT_MARGIN * 2) / ancestorScaleX);
+        const maxHeightPx = Math.floor(Math.max(0, window.innerHeight - VIEWPORT_MARGIN * 2) / ancestorScaleY);
+        const maxWidth = `${maxWidthPx}px`;
+        const maxHeight = `${maxHeightPx}px`;
+        const minWidth = `${Math.min(44, maxWidthPx)}px`;
+        if (menu.style.minWidth !== minWidth) menu.style.minWidth = minWidth;
+        if (menu.style.maxWidth !== maxWidth) menu.style.maxWidth = maxWidth;
+        if (menu.style.maxHeight !== maxHeight) menu.style.maxHeight = maxHeight;
+
         const menuRect = menu.getBoundingClientRect();
         // Use the painted size: an ancestor transform scales the visual box even though
         // offsetWidth/Height stay unscaled, and the two must not be mixed.
@@ -317,8 +333,6 @@ function CollapsibleControls(props: MediaControlsProps) {
         // The fixed coordinates map through any transformed ancestor, so converge on the
         // intended viewport position across frames. Divide by the painted/CSS scale so a
         // scaled (or zoomed) ancestor cannot overshoot or oscillate.
-        const scaleX = menu.offsetWidth > 0 ? clampScale(menuRect.width / menu.offsetWidth) : 1;
-        const scaleY = menu.offsetHeight > 0 ? clampScale(menuRect.height / menu.offsetHeight) : 1;
         const applied = appliedPosition.current
             ? { left: parseFloat(menu.style.left), top: parseFloat(menu.style.top) }
             : { left: 0, top: 0 };
