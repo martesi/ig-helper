@@ -56,7 +56,7 @@ const english: Record<string, string> = {
     SKIP_SHARED_WITH_YOU_DIALOG: 'Skip "shared this with you" dialog on shared profile links',
     CAPTURE_IMAGE_VIA_MEDIA_CACHE: 'Capture Image Resource Using Media Cache',
     USE_EXTERNAL_DOWNLOAD_MODE: 'Use External Download Mode',
-    AUTO_RENAME_INTRO: 'Auto rename file to a custom format.',
+    AUTO_RENAME_INTRO: 'Use a custom filename format. %SOURCE_TYPE% is video for MP4/M4A files and photo otherwise; %SOURCE% is the download source or section. Previously, %SOURCE_TYPE% showed the section for non-post downloads; switch saved formats to %SOURCE% to keep that label.',
     RENAME_PUBLISH_DATE_INTRO: 'Use the resource publish date in the renamed file timestamp.',
     DISABLE_VIDEO_LOOPING_INTRO: 'Disable video auto-looping in Reels and posts.',
     HTML5_VIDEO_CONTROL_INTRO: 'Display the native HTML5 video controller.',
