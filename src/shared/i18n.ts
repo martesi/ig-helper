@@ -154,7 +154,25 @@ export function translateText() {
  * @return {Object}
  */
 export function getTranslationText(lang: string): Record<string, string> | undefined {
-    return translations[lang];
+    return translations[resolveLocale(lang)];
+}
+
+/**
+ * Resolves a browser language (`es-ES`, `pt-PT`, ...) to a bundled catalog code.
+ */
+export function resolveLocale(lang: string | null | undefined): string {
+    const raw = String(lang ?? '');
+    if (raw && Object.hasOwn(translations, raw)) return raw;
+
+    const lower = raw.toLowerCase();
+    if (!lower || lower === 'en' || lower.startsWith('en-')) return 'en-US';
+    if (Object.hasOwn(translations, lower)) return lower;
+
+    const base = lower.split('-')[0];
+    return Object.keys(translations).find(code => {
+        const candidate = code.toLowerCase();
+        return candidate === base || candidate.startsWith(`${base}-`);
+    }) ?? 'en-US';
 }
 
 /**
@@ -166,9 +184,13 @@ export function getTranslationText(lang: string): Record<string, string> | undef
  */
 export function _i18n(text: string): string {
     const translate = translateText();
+    const language = resolveLocale(state.lang);
 
-    if (translate[state.lang] != undefined && translate[state.lang][text] != undefined) {
+    if (translate[state.lang]?.[text] != undefined) {
         return translate[state.lang][text];
+    }
+    else if (translate[language]?.[text] != undefined) {
+        return translate[language][text];
     }
     else {
         return translate["en-US"][text] ?? text;

@@ -82,6 +82,7 @@ export class IgHelperE2E {
         await this.page.goto(url, { waitUntil: 'domcontentloaded' });
         await this.page.bringToFront();
         await sleep(1200);
+        await this.dismissInstagramWall();
     }
 
     async reload() {
@@ -133,11 +134,28 @@ export class IgHelperE2E {
     async dismissInstagramNotificationPrompt() {
         if (!this.page.url().startsWith('https://www.instagram.com/')) return;
 
+        await this.dismissInstagramWall();
+
         const turnOn = this.page.getByRole('button', { name: 'Turn On', exact: true });
         if (!await turnOn.isVisible().catch(() => false)) return;
 
         const notNow = this.page.getByRole('button', { name: 'Not Now', exact: true });
         if (await notNow.isVisible().catch(() => false)) await notNow.click();
+    }
+
+    /** Logged-out Instagram intermittently covers the page with a "Sign up" dialog that swallows pointer events. */
+    async dismissInstagramWall() {
+        if (!this.page?.url().startsWith('https://www.instagram.com/')) return;
+
+        const dialog = this.page.locator('div[role="dialog"]')
+            .filter({ hasText: /Sign up for Instagram|Never miss a post/i })
+            .first();
+        if (!await dialog.isVisible().catch(() => false)) return;
+
+        const close = dialog.getByRole('button', { name: 'Close', exact: true });
+        if (await close.isVisible().catch(() => false)) await close.click();
+        else await this.page.keyboard.press('Escape').catch(() => {});
+        await sleep(250);
     }
 
     async pressLegacyHotkey(keyCode) {
@@ -148,6 +166,7 @@ export class IgHelperE2E {
     }
 
     async openSettings(section = 'general') {
+        await this.page.setViewportSize({ width: 1280, height: 900 });
         await this.goto(`${VITE_URL}/#/settings`);
         await this.waitFor(`document.querySelectorAll('[data-settings-section]').length === 8`, 10000);
         await this.locateSettingsSection(section);
@@ -256,6 +275,15 @@ export class IgHelperE2E {
             state: 'visible',
             timeout: 15000,
         });
+    }
+
+    /** Post controls are collapsed: hover the download button to reveal the secondary actions. */
+    async openPostMenu(wrapper = this.page.locator('.button_wrapper.IG_CONTROL_BAR').first()) {
+        await this.actionDelay();
+        await this.dismissInstagramWall();
+        await wrapper.locator('.IG_DW_MAIN').hover();
+        await wrapper.locator('.IG_CONTROL_MENU[data-open="true"]').waitFor({ state: 'visible', timeout: 3000 });
+        await sleep(120);
     }
 
     async configureDownloads() {

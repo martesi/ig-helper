@@ -32,40 +32,87 @@ test.describe('IG Helper browser E2E', () => {
             expect(state.media).toBe(true);
         });
 
-        test('post control bar renders real visible button DOM', async () => {
+        test('post control bar keeps only download visible and reveals the rest on hover', async () => {
             await e2e.withSettings({
                 SHOW_MEDIA_PREVIEW: true,
                 SHOW_OPEN_IN_NEW_TAB_BUTTON: true,
             }, async () => {
                 await e2e.ensurePostControls();
 
-            const controls = await e2e.json(`(() => {
-                const wrapper = document.querySelector('.button_wrapper.IG_CONTROL_BAR');
-                const root = wrapper?.shadowRoot;
-                const buttons = [...(root?.children || [])];
+            const wrapper = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR').first();
+
+            const closed = await wrapper.evaluate(host => {
+                const root = host?.shadowRoot;
+                const download = root?.querySelector('.IG_DW_MAIN');
+                const menu = root?.querySelector('.IG_CONTROL_MENU');
+                const rect = download?.getBoundingClientRect();
                 return {
-                    wrapper: Boolean(wrapper),
-                    allButtons: buttons.length > 0 && buttons.every(button =>
-                        button.tagName === 'BUTTON' &&
-                        button.classList.contains('IG_POST_CONTROL') &&
-                        Boolean(button.getAttribute('aria-label')) &&
-                        Boolean(button.querySelector('svg')) &&
-                        button.getBoundingClientRect().width > 0 &&
-                        button.getBoundingClientRect().height > 0
-                    ),
+                    downloadVisible: Boolean(rect && rect.width === 40 && rect.height === 40),
+                    menuClosed: menu?.getAttribute('data-open') === 'false'
+                        && menu?.getAttribute('aria-hidden') === 'true'
+                        && getComputedStyle(menu).visibility === 'hidden',
+                    toggle: download?.getAttribute('aria-haspopup') === 'menu'
+                        && download?.getAttribute('aria-expanded') === 'false',
+                    sidebarHidden: [...(root?.querySelectorAll('.IG_POST_CONTROL') || [])]
+                        .filter(button => !button.classList.contains('IG_DW_MAIN'))
+                        .every(button => getComputedStyle(button).visibility === 'hidden'),
+                };
+            });
+            expect(closed).toEqual({ downloadVisible: true, menuClosed: true, toggle: true, sidebarHidden: true });
+
+            await e2e.openPostMenu(wrapper);
+
+            const controls = await wrapper.evaluate(host => {
+                const root = host?.shadowRoot;
+                const menu = root?.querySelector('.IG_CONTROL_MENU');
+                const items = [...(menu?.querySelectorAll('[role="menuitem"]') || [])];
+                const triggerRect = root?.querySelector('.IG_DW_MAIN')?.getBoundingClientRect();
+                const menuRect = menu?.getBoundingClientRect();
+                return {
                     viewerOrThumbnail: Boolean(root?.querySelector('.IG_IMAGE_VIEWER, .IG_THUMBNAIL_MAIN')),
                     newTab: Boolean(root?.querySelector('.IG_NEWTAB_MAIN')),
                     copy: Boolean(root?.querySelector('.IG_COPY_MAIN')),
                     download: Boolean(root?.querySelector('.IG_DW_MAIN')),
+                    menuOpen: menu?.getAttribute('data-open') === 'true'
+                        && menu?.getAttribute('aria-hidden') === 'false',
+                    expanded: root?.querySelector('.IG_DW_MAIN')?.getAttribute('aria-expanded') === 'true',
+                    itemsMounted: items.length,
+                    allItems: items.length > 0 && items.every(item =>
+                        item.tagName === 'BUTTON' &&
+                        item.classList.contains('IG_POST_CONTROL') &&
+                        Boolean(item.getAttribute('aria-label')) &&
+                        Boolean(item.querySelector('svg')) &&
+                        (item.textContent || '').trim().length > 0 &&
+                        item.getBoundingClientRect().height === 40
+                    ),
+                    anchored: Boolean(triggerRect && menuRect) && (() => {
+                        const gapBelow = Math.round(menuRect.top - triggerRect.bottom);
+                        const gapAbove = Math.round(triggerRect.top - menuRect.bottom);
+                        return menu?.getAttribute('data-placement') === 'top'
+                            ? Math.abs(gapAbove - 6) <= 1
+                            : Math.abs(gapBelow - 6) <= 1;
+                    })(),
+                    inViewport: Boolean(menuRect)
+                        && menuRect.left >= 0
+                        && menuRect.right <= innerWidth + 1
+                        && menuRect.top >= 0
+                        && menuRect.bottom <= innerHeight + 1,
                 };
-            })()`);
+            });
 
-            expect(controls.wrapper).toBe(true);
-            expect(controls.allButtons).toBe(true);
             expect(controls.viewerOrThumbnail).toBe(true);
             expect(controls.newTab).toBe(true);
             expect(controls.copy).toBe(true);
-                expect(controls.download).toBe(true);
+            expect(controls.download).toBe(true);
+            expect(controls.menuOpen).toBe(true);
+            expect(controls.expanded).toBe(true);
+            expect(controls.itemsMounted).toBeGreaterThan(0);
+            expect(controls.allItems).toBe(true);
+            expect(controls.anchored).toBe(true);
+            expect(controls.inViewport).toBe(true);
+
+            await e2e.page.mouse.move(8, 8);
+            await e2e.waitFor(`document.querySelector('.button_wrapper.IG_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_CONTROL_MENU')?.getAttribute('data-open') === 'false'`, 3000);
             });
         });
 
@@ -90,7 +137,7 @@ test.describe('IG Helper browser E2E', () => {
                 const saveItem = saveIcon?.closest('[role="button"]');
                 const wrapperRect = wrapper?.getBoundingClientRect();
                 const saveRect = saveIcon?.getBoundingClientRect();
-                const buttonRects = [...(root?.querySelectorAll('.IG_POST_CONTROL') || [])]
+                const buttonRects = [...(root?.querySelectorAll('.IG_DW_MAIN') || [])]
                     .map(button => button.getBoundingClientRect());
                 return {
                     wrappers: document.querySelectorAll('.button_wrapper.IG_CONTROL_BAR').length,
@@ -125,6 +172,120 @@ test.describe('IG Helper browser E2E', () => {
             expect(controls.saveItem).toBe(true);
             expect(controls.position).toBe('static');
 
+            await e2e.openPostMenu(imageControls);
+            const menu = await imageControls.evaluate(wrapper => {
+                const root = wrapper?.shadowRoot;
+                const triggerRect = root?.querySelector('.IG_DW_MAIN')?.getBoundingClientRect();
+                const menuElement = root?.querySelector('.IG_CONTROL_MENU');
+                const menuRect = menuElement?.getBoundingClientRect();
+                const rows = [...(menuElement?.querySelectorAll('[role="menuitem"]') || [])]
+                    .map(item => `${Math.round(item.getBoundingClientRect().width)}x${Math.round(item.getBoundingClientRect().height)}`);
+                const placement = menuElement?.getAttribute('data-placement');
+                const gap = triggerRect && menuRect
+                    ? placement === 'top'
+                        ? Math.round(triggerRect.top - menuRect.bottom)
+                        : Math.round(menuRect.top - triggerRect.bottom)
+                    : null;
+                return {
+                    open: menuElement?.getAttribute('data-open'),
+                    placement,
+                    gap,
+                    rightAligned: Boolean(triggerRect && menuRect) && Math.abs(menuRect.right - triggerRect.right) <= 1,
+                    inViewport: Boolean(menuRect) && menuRect.bottom <= innerHeight + 1 && menuRect.left >= 0,
+                    rows,
+                };
+            });
+            expect(menu.open).toBe('true');
+            // The action row sits in the lower third of a 900px viewport, so the menu opens upward.
+            expect(menu.placement).toBe('top');
+            expect(menu.gap).toBe(6);
+            expect(menu.rightAligned).toBe(true);
+            expect(menu.inViewport).toBe(true);
+            expect(menu.rows.length).toBeGreaterThan(0);
+            expect(menu.rows.every(row => row.endsWith('x40'))).toBe(true);
+
+            await e2e.page.setViewportSize({ width: 1280, height: 1400 });
+            await e2e.waitFor(`document.querySelector('.button_wrapper.IG_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_CONTROL_MENU')?.dataset.placement === 'bottom'`, 3000);
+            const belowMenu = await imageControls.evaluate(wrapper => {
+                const root = wrapper?.shadowRoot;
+                const trigger = root?.querySelector('.IG_DW_MAIN')?.getBoundingClientRect();
+                const menuElement = root?.querySelector('.IG_CONTROL_MENU');
+                const menuRect = menuElement?.getBoundingClientRect();
+                return {
+                    placement: menuElement?.getAttribute('data-placement'),
+                    gap: trigger && menuRect ? Math.round(menuRect.top - trigger.bottom) : null,
+                };
+            });
+            expect(belowMenu.placement).toBe('bottom');
+            expect(belowMenu.gap).toBe(6);
+            await e2e.page.setViewportSize({ width: 1280, height: 900 });
+
+            });
+        });
+
+        test('post control menu handles keyboard, long-press and carousel remounts', async () => {
+            await e2e.withSettings({ SHOW_MEDIA_PREVIEW: true }, async () => {
+                await e2e.ensurePostControls();
+                const wrapper = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR').first();
+                const download = wrapper.locator('.IG_DW_MAIN');
+                const menuState = () => wrapper.evaluate(host =>
+                    host.shadowRoot?.querySelector('.IG_CONTROL_MENU')?.getAttribute('data-open'));
+
+                // Keyboard: ArrowDown opens and focuses the first item; Escape restores the trigger.
+                await download.focus();
+                await download.press('ArrowDown');
+                await wrapper.locator('.IG_CONTROL_MENU[data-open="true"]').waitFor({ state: 'visible', timeout: 3000 });
+
+                const keyboard = await wrapper.evaluate(host => {
+                    const root = host?.shadowRoot;
+                    const items = [...(root?.querySelectorAll('[role="menuitem"]') || [])];
+                    return {
+                        focusedFirst: root?.activeElement === items[0],
+                        roving: items.filter(item => item.tabIndex === 0).length,
+                        expanded: root?.querySelector('.IG_DW_MAIN')?.getAttribute('aria-expanded'),
+                    };
+                });
+                expect(keyboard).toEqual({ focusedFirst: true, roving: 1, expanded: 'true' });
+
+                // Pointer drift must not dismiss a menu that owns keyboard focus.
+                await e2e.page.mouse.move(8, 8);
+                await e2e.page.waitForTimeout(400);
+                expect(await menuState()).toBe('true');
+
+                await e2e.page.keyboard.press('Escape');
+                await e2e.waitFor(`document.querySelector('.button_wrapper.IG_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_CONTROL_MENU')?.getAttribute('data-open') === 'false'`, 3000);
+                expect(await wrapper.evaluate(host =>
+                    host.shadowRoot?.activeElement === host.shadowRoot?.querySelector('.IG_DW_MAIN'))).toBe(true);
+
+                // A focused trigger (e.g. after a click) must not pin a hover-opened menu open.
+                await e2e.openPostMenu(wrapper);
+                await download.focus();
+                await e2e.page.mouse.move(8, 8);
+                await e2e.waitFor(`document.querySelector('.button_wrapper.IG_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_CONTROL_MENU')?.getAttribute('data-open') === 'false'`, 3000);
+
+                // Long-press (touch) opens the menu without triggering a download.
+                const cdp = await e2e.context.newCDPSession(e2e.page);
+                const box = await download.boundingBox();
+                await cdp.send('Input.dispatchTouchEvent', {
+                    type: 'touchStart',
+                    touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }],
+                });
+                await e2e.page.waitForTimeout(700);
+                await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+                await cdp.detach();
+                await wrapper.locator('.IG_CONTROL_MENU[data-open="true"]').waitFor({ state: 'visible', timeout: 3000 });
+
+                // Close with a synthetic outside pointerdown so the test never navigates the page.
+                await wrapper.evaluate(() => {
+                    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }));
+                });
+                await e2e.waitFor(`document.querySelector('.button_wrapper.IG_CONTROL_BAR')?.shadowRoot?.querySelector('.IG_CONTROL_MENU')?.getAttribute('data-open') === 'false'`, 3000);
+
+                // Carousel navigation re-mounts the controls, which dismisses the menu.
+                await e2e.openPostMenu(wrapper);
+                await e2e.page.getByRole('button', { name: 'Next' }).first().click({ timeout: 5000 });
+                await e2e.page.waitForTimeout(900);
+                expect(await menuState()).toBe('false');
             });
         });
 
@@ -208,6 +369,7 @@ test.describe('IG Helper browser E2E', () => {
                 await downloadButton.hover();
                 await expect(downloadButton).toHaveCSS('transform', 'matrix(1.05, 0, 0, 1.05, 0, 0)');
                 await expect(downloadButton).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+                await e2e.openPostMenu(imageControls);
                 await imageControls.locator('.IG_IMAGE_VIEWER').click();
                 await e2e.waitFor(`!!document.getElementById(${JSON.stringify(IMAGE_VIEWER_ROOT_ID)})`, 3000);
 
@@ -399,7 +561,7 @@ test.describe('IG Helper browser E2E', () => {
                 .filter({ has: e2e.page.locator('.IG_IMAGE_VIEWER') })
                 .first();
             const copyButton = imageControls.locator('.IG_COPY_MAIN');
-            await copyButton.waitFor({ state: 'visible', timeout: 15000 });
+            await copyButton.waitFor({ state: 'attached', timeout: 15000 });
 
             await e2e.evaluate(`(() => {
                 window.__igHelperCopyWrites = 0;
@@ -435,6 +597,7 @@ test.describe('IG Helper browser E2E', () => {
             try {
                 await e2e.dismissInstagramNotificationPrompt();
                 await e2e.actionDelay();
+                await e2e.openPostMenu(imageControls);
                 await copyButton.click();
                 await e2e.waitFor(`window.__igHelperCopyWrites === 1`, 3000);
                 await expect(copyButton).toHaveAttribute('data-copied', 'true');
@@ -462,6 +625,8 @@ test.describe('IG Helper browser E2E', () => {
         test('open-in-new-tab creates a real Chrome target', async () => {
             await e2e.withSettings({ SHOW_OPEN_IN_NEW_TAB_BUTTON: true }, async () => {
                 await e2e.ensurePostControls();
+                await e2e.dismissInstagramNotificationPrompt();
+                await e2e.openPostMenu();
 
                 const created = await e2e.clickAndWaitForPage('.button_wrapper .IG_NEWTAB_MAIN');
 
@@ -473,7 +638,9 @@ test.describe('IG Helper browser E2E', () => {
         test('download-all bypasses the resource picker', async () => {
             await e2e.withSettings({ DIRECT_DOWNLOAD_MODE: DIRECT_DOWNLOAD_MODE_OPTIONS.VISIBLE }, async () => {
                 await e2e.goto(PERMALINK_URL);
-                const downloadAllButton = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR').first().locator('.IG_DW_ALL_MAIN');
+                const wrapper = e2e.page.locator('.button_wrapper.IG_CONTROL_BAR').first();
+                await e2e.openPostMenu(wrapper);
+                const downloadAllButton = wrapper.locator('.IG_DW_ALL_MAIN');
                 await downloadAllButton.waitFor({ state: 'visible', timeout: 15000 });
 
                 await e2e.dismissInstagramNotificationPrompt();
