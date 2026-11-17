@@ -12,7 +12,7 @@ ready = [
 ]
 
 [profile.default]
-args = ["--disable-features=LocalNetworkAccessChecks"]
+args = ["--disable-features=LocalNetworkAccessChecks", "--no-sandbox", "--disable-dev-shm-usage"]
 
 [profile.authenticated]
 port = 2001
