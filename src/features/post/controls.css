@@ -37,9 +37,10 @@
     user-select: none;
 }
 
-.IG_POST_CONTROL.IG_DW_MENU_TRIGGER:hover {
-    background-color: var(--accent);
-    color: var(--accent-foreground);
+/* Must beat basecoat ghost hover regardless of adopted-sheet order. */
+.IG_CONTROL_SHELL .IG_POST_CONTROL.IG_DW_MENU_TRIGGER:hover {
+    background-color: transparent;
+    color: inherit;
     transform: none;
 }
 
@@ -126,6 +127,16 @@
     align-items: center;
     justify-content: center;
     flex: none;
+}
+
+.IG_CONTROL_MENU .IG_POST_CONTROL svg {
+    width: 18px;
+    height: 18px;
+}
+
+.IG_CONTROL_MENU .IG_CONTROL_ICON {
+    width: 18px;
+    height: 18px;
 }
 
 .IG_CONTROL_LABEL {

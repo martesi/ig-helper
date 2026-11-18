@@ -72,6 +72,38 @@ The harness does not expose its internal Playwright CLI driver as project config
 
 Extension loading does not automatically make a profile headed. The harness uses `--headless=new` when `headed = false`, including when extensions are loaded. Set `headed = true` only for visual work or a runtime that actually requires it.
 
+## Low shared memory and full tmp
+
+`cdp-runtime.ts` always launches Chromium with `--disable-dev-shm-usage`, so a small
+`/dev/shm` alone is not a problem. That flag redirects shared-memory spillover to the
+temp directory instead — so a full `/tmp` tmpfs surfaces as renderer failures such as
+`page.goto: net::ERR_INSUFFICIENT_RESOURCES`, before any test code runs.
+
+When that happens:
+
+- Check both mounts: `df -h /dev/shm /tmp`. Suspect `/tmp` when `/dev/shm` is small
+  but the flag is in effect and `/tmp` is at 100%.
+- Free scratch space, or redirect the browser's temp dir to a volume with room
+  (Chromium honors `TMPDIR` for its spill files; the harness propagates the
+  caller's environment to the browser process):
+  ```sh
+  mkdir -p .cache/arca/tmp
+  TMPDIR=$PWD/.cache/arca/tmp node .agents/skills/e2e/scripts/harness.ts \
+    playwright --profile default -- test
+  ```
+  Stop the harness first (`... stop --profile default`) so the browser relaunches
+  under the new environment; a running browser is reused as-is.
+
+`--browser-arg` replaces the profile's configured `args` instead of appending, so
+repeat the flags the run still needs (e.g. `--no-sandbox` when running as root):
+
+```sh
+node .agents/skills/e2e/scripts/harness.ts playwright --profile default \
+  --browser-arg --no-sandbox \
+  --browser-arg --disable-features=LocalNetworkAccessChecks \
+  --browser-arg --disable-dev-shm-usage -- test
+```
+
 ## Dev processes
 
 Each `[[dev]]` contains its own command and readiness URLs. The command chooses its port; there is no shared dev-server port in the harness schema.

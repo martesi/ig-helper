@@ -29,6 +29,10 @@
     box-sizing: border-box;
 }
 
+#iv_header button {
+    cursor: pointer;
+}
+
 #iv_header svg {
     fill: none !important;
     stroke: currentColor !important;
